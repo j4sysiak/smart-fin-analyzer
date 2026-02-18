@@ -60,4 +60,34 @@ class TransactionIngesterSpec extends Specification {
         result.size() == 2
         result.amount.sum() == 300.0
     }
+
+    def "powinien przetworzyć wiele źródeł równolegle i połączyć wyniki w jedną listę"() {
+        given: "trzy niezależne paczki danych (np. dane z 3 różnych plików)"
+        def pack1 = [
+                new Transaction(id: "S1-1", amount: 1000.0, category: "Pensja"),
+                new Transaction(id: "S1-2", amount: -200.0, category: "Zakupy")
+        ]
+        def pack2 = [
+                new Transaction(id: "S2-1", amount: -50.0, category: "Paliwo")
+        ]
+        def pack3 = [
+                new Transaction(id: "S3-1", amount: -300.0, category: "Czynsz"),
+                new Transaction(id: "S3-2", amount: 50.0, category: "Zwrot")
+        ]
+
+        def allInput = [pack1, pack2, pack3]
+
+        when: "uruchamiamy wielowątkowy ingester"
+        def finalResults = ingesterService.ingestFromMultipleSources(allInput)
+
+        then: "łączna liczba transakcji powinna wynosić 5 (2 + 1 + 2)"
+        finalResults.size() == 5
+
+        and: "suma wszystkich transakcji powinna być poprawna"
+        // (1000 - 200 - 50 - 300 + 50) = 500
+        finalResults.amount.sum() == 500.0
+
+        and: "możemy łatwo sprawdzić czy konkretna kategoria istnieje w wynikach"
+        finalResults.category.contains("Paliwo")
+    }
 }
