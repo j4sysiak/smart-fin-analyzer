@@ -37,6 +37,7 @@ class TransactionRuleService {
      * Przykład reguły: "if (amount < -500) addTag('BIG_EXPENSE')"
      */
     void applyRules(Transaction tx, List<String> rules) {
+
         // Binding udostępnia pola transakcji bezpośrednio w skrypcie
         Binding binding = new Binding([
                 amount: tx.amount,
