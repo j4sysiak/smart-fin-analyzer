@@ -3,9 +3,14 @@ package pl.edu.praktyki.service
 import org.springframework.stereotype.Service
 import pl.edu.praktyki.domain.Transaction
 import groovyx.gpars.GParsPool
+import org.springframework.beans.factory.annotation.Autowired // DODANE
 
 @Service
 class TransactionIngesterService {
+
+    // Wstrzykujemy nasz silnik reguł
+    @Autowired
+    TransactionRuleService ruleService
 
     /**
      * Docelowo ta metoda będzie przyjmować listę ścieżek do plików
@@ -17,7 +22,7 @@ class TransactionIngesterService {
     }
 
     /**
-     * NOWA METODA: Przyjmuje listę list transakcji.
+     * KROK-3: Przyjmuje listę list transakcji.
      * Przetwarza każdą wewnętrzną listę w osobnym wątku i zwraca jedną, płaską listę transakcji.
      */
     List<Transaction> ingestFromMultipleSources(List<List<Transaction>> allSources) {
@@ -39,5 +44,28 @@ class TransactionIngesterService {
             // używamy flatten(), aby otrzymać jedną, płaską listę transakcji.
             return parallelResults.flatten()
         } as List<Transaction>
+    }
+
+    /**
+     * KROK 4: Kompletny rurociąg (pipeline).
+     * Pobiera paczki danych, wielowątkowo analizuje je pod kątem reguł i łączy w całość.
+     */
+    List<Transaction> ingestAndApplyRules(List<List<Transaction>> allSources, List<String> rules) {
+        if (!allSources) return[]
+
+        return GParsPool.withPool {
+            def parallelResults = allSources.collectParallel { List<Transaction> source ->
+                println " Analizuję paczkę (${source.size()} szt.) w wątku: ${Thread.currentThread().name}"
+
+                // Dla każdej transakcji w tej paczce wywołujemy silnik reguł
+                source.each { tx ->
+                    ruleService.applyRules(tx, rules)
+                }
+
+                return source
+            }
+
+            return parallelResults.flatten()
+        } as List<Transaction> // Rzutowanie, o którym pamiętamy!
     }
 }

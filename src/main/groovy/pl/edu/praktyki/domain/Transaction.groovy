@@ -8,6 +8,8 @@ class Transaction {
     String id
     LocalDate date
     BigDecimal amount
+    String currency = "PLN" // Domyślnie PLN
+    BigDecimal amountPLN    // Kwota po przeliczeniu
     String category
     String description
     List<String> tags = [] // Lista tagów nadanych przez reguły
