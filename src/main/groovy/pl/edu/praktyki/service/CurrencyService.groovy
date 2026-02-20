@@ -9,8 +9,17 @@ import java.net.http.HttpResponse
 @Service
 class CurrencyService {
 
-    private final HttpClient client = HttpClient.newHttpClient()
+    private final HttpClient client
     private final JsonSlurper slurper = new JsonSlurper()
+
+    CurrencyService() {
+        this.client = HttpClient.newHttpClient()
+    }
+
+    // Konstruktor do wstrzykiwania HttpClient (np. w testach)
+    CurrencyService(HttpClient client) {
+        this.client = client
+    }
 
     /**
      * Pobiera aktualny kurs wymiany dla danej waluty względem PLN.
@@ -30,11 +39,18 @@ class CurrencyService {
 
             // API zwraca kursy względem bazy (PLN).
             // Jeśli 1 PLN = 0.23 EUR, to kurs EUR -> PLN to 1 / 0.23
-            def rateToPlo = json.rates[fromCurrency]
-            return rateToPlo ? (1.0 / rateToPlo).toBigDecimal() : 1.0
+            def rateToPLN = json.rates[fromCurrency]
+            return rateToPLN ? (1.0 / rateToPLN).toBigDecimal() : 1.0
         } catch (Exception e) {
             println "Błąd pobierania kursu: ${e.message}. Używam kursu 1.0"
             return 1.0
         }
+    }
+
+    /**
+     * Przelicza kwotę z podanej waluty na PLN.
+     */
+    BigDecimal convertToPLN(BigDecimal amount, String fromCurrency) {
+        return amount * getExchangeRate(fromCurrency)
     }
 }

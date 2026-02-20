@@ -6,7 +6,7 @@ import org.springframework.test.context.ContextConfiguration // ZMIANA
 import pl.edu.praktyki.domain.Transaction
 
 // Używamy @ContextConfiguration zamiast @SpringBootTest dla lepszej kontroli
-@ContextConfiguration(classes = [TransactionIngesterService])
+@ContextConfiguration(classes = [TransactionIngesterService, TransactionRuleService])
 class TransactionIngesterSpec extends Specification {
 
     @Autowired
