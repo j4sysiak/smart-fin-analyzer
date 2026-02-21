@@ -48,14 +48,14 @@ class FinancialAnalyticsService {
                 .sort() // Sortowanie po dacie (kluczu mapy)
     }
 
+
+
     /*
     Wyzwanie: Dodaj do serwisu metodę
     getTopSpendingCategory(List<Transaction> transactions),
-    która zwróci nazwę kategorii (String), na którą wydano najwięcej pieniędzy.
-            Podpowiedź: Użyj getSpendingByCategory(transactions).max { it.value }.key.
-
+         która zwróci nazwę kategorii (String), na którą wydano najwięcej pieniędzy.
+    Podpowiedź: Użyj getSpendingByCategory(transactions).max { it.value }.key.
      */
-
     String getTopSpendingCategory(List<Transaction> transactions) {
         def spendingByCategory = getSpendingByCategory(transactions)
 
@@ -64,7 +64,4 @@ class FinancialAnalyticsService {
         return spendingByCategory
                 .max { it.value }.key
     }
-
-
-
 }

@@ -14,13 +14,9 @@ Stworzenie serwisu, który na podstawie przeliczonych kwot (amountPLN) wygeneruj
 
 Ten serwis nie potrzebuje bazy danych – operuje na listach obiektów w pamięci, co czyni go niesamowicie szybkim.
 
-Stwórz plik src/main/groovy/pl/edu/praktyki/service/FinancialAnalyticsService.groovy:
+Stwórz plik `src/main/groovy/pl/edu/praktyki/service/FinancialAnalyticsService.groovy`:
 
-code
-Groovy
-download
-content_copy
-expand_less
+```groovy
 package pl.edu.praktyki.service
 
 import org.springframework.stereotype.Service
@@ -43,7 +39,7 @@ class FinancialAnalyticsService {
      */
     Map<String, BigDecimal> getSpendingByCategory(List<Transaction> transactions) {
         return transactions
-            .findAll { it.isExpense() } // Tylko wydatki (ujemne)
+            .findAll { it.isExpense() && it.amountPLN < 0 } // Tylko wydatki (ujemne)
             .groupBy { it.category }    // Grupowanie w Mapę [Category: List<Transaction>]
             .collectEntries { category, list -> 
                 [category, list*.amountPLN.sum().abs()] // Sumujemy i bierzemy wartość bezwzględną
@@ -69,17 +65,15 @@ class FinancialAnalyticsService {
             .sort() // Sortowanie po dacie (kluczu mapy)
     }
 }
+```
+
 6.2. Test Analityki (FinancialAnalyticsSpec.groovy)
 
 Sprawdźmy, czy nasze algorytmy poprawnie interpretują dane finansowe.
 
 Stwórz plik src/test/groovy/pl/edu/praktyki/service/FinancialAnalyticsSpec.groovy:
 
-code
-Groovy
-download
-content_copy
-expand_less
+```groovy
 package pl.edu.praktyki.service
 
 import spock.lang.Specification
@@ -126,21 +120,162 @@ class FinancialAnalyticsSpec extends Specification {
         expensive.amountPLN == -1200.0
     }
 }
+```
+
 Dlaczego to jest "Senior Level Groovy"?
 
-collectEntries: To jedna z najbardziej eleganckich metod w Groovy. Pozwala w jednym kroku przekształcić jedną mapę w drugą (np. zamienić listę transakcji na ich sumę).
+collectEntries: 
+To jedna z najbardziej eleganckich metod w Groovy. 
+Pozwala w jednym kroku przekształcić jedną mapę w drugą (np. zamienić listę transakcji na ich sumę).
 
-Spread Operator (*.): Zapis list*.amountPLN błyskawicznie tworzy listę samych liczb, gotową do metody .sum(). W Javie to 3 linie kodu ze Streamami.
+Spread Operator (*.): 
+Zapis list*.amountPLN błyskawicznie tworzy listę samych liczb, gotową do metody .sum(). 
+W Javie to 3 linie kodu ze Streamami.
 
-abs(): Używamy wartości bezwzględnej w raporcie, bo biznes woli widzieć "Wydałeś 350 zł na jedzenie" niż "Wydałeś -350 zł".
+abs(): 
+Używamy wartości bezwzględnej w raporcie, bo biznes woli widzieć "Wydałeś 350 zł na jedzenie" niż "Wydałeś -350 zł".
 
-Implicit Return: Zauważ, że w metodach nie używamy słowa return tam, gdzie wynik jest oczywisty (ostatnia linia). To standard w Groovy.
+Implicit Return: 
+Zauważ, że w metodach nie używamy słowa return tam, gdzie wynik jest oczywisty (ostatnia linia). 
+To standard w Groovy.
 
-Twoje zadanie:
 
-Zaimplementuj serwis i uruchom test.
 
-Wyzwanie: Dodaj do serwisu metodę getTopSpendingCategory(List<Transaction> transactions), która zwróci nazwę kategorii (String), na którą wydano najwięcej pieniędzy.
+
+Wyzwanie: 
+---------
+
+Dodaj do serwisu metodę getTopSpendingCategory(List<Transaction> transactions), która zwróci nazwę kategorii (String), na którą wydano najwięcej pieniędzy.
 Podpowiedź: Użyj getSpendingByCategory(transactions).max { it.value }.key.
 
-Daj znać, gdy testy przejdą! W następnym kroku (Krok 7) połączymy wszystko w Finałowy Raport HTML/PDF, używając silnika szablonów, który poznałeś w Lab 15. Twoja aplikacja zacznie generować profesjonalne dokumenty! 📄🚀
+nowa metoda w FinancialAnalyticsService.groovy:
+
+```groovy
+String getTopSpendingCategory(List<Transaction> transactions) {
+def spendingByCategory = getSpendingByCategory(transactions)
+
+        if ( spendingByCategory.isEmpty ( ) ) return null // Brak wydatków
+
+        return spendingByCategory
+                .max { it.value }.key
+    }
+```
+
+testy:
+------
+Zanim przejdziemy do generowania raportów, sprawdźmy tę metodę w teście, aby mieć 100% pewności, że Twój "mózg analityczny" działa bezbłędnie.
+Krok 6.3: Test dla Top Spending Category
+Dopisz ten przypadek do FinancialAnalyticsSpec.groovy:
+
+
+
+
+```groovy
+package pl.edu.praktyki.service
+
+import pl.edu.praktyki.domain.Transaction
+import spock.lang.Specification
+
+import java.time.LocalDate
+
+class FinancialAnalyticsServiceSpec extends Specification {
+
+    FinancialAnalyticsService service = new FinancialAnalyticsService()
+
+    def "should return null when there are no transactions"() {
+        given:
+        List<Transaction> transactions = []
+
+        when:
+        def result = service.getTopSpendingCategory(transactions)
+
+        then:
+        result == null
+    }
+
+    def "should return null when there are no expenses"() {
+        given:
+        List<Transaction> transactions = [new Transaction(description: "Wypłata", amountPLN: 5000.0, category: "Wynagrodzenie", date: LocalDate.now())
+        ]
+
+        when:
+        def result = service.getTopSpendingCategory(transactions)
+
+        then:
+        result == null
+    }
+
+    def "powinien wskazać kategorię z największymi wydatkami"() {
+        given:
+        def data = [
+                new Transaction(amountPLN: -100.0, category: "Jedzenie"),
+                new Transaction(amountPLN: -500.0, category: "Rozrywka"),
+                new Transaction(amountPLN: -200.0, category: "Jedzenie")
+        ]
+
+        expect: "Rozrywka (500) jest większa niż suma Jedzenia (300)"
+        analyticsService.getTopSpendingCategory(data) == "Rozrywka"
+    }
+    
+    def "should return the category with highest spending"() {
+        given:
+        List<Transaction> transactions = [
+                new Transaction(description: "Obiad", amountPLN: -50.0, category: "Jedzenie", date: LocalDate.now()),
+                new Transaction(description: "Zakupy", amountPLN: -150.0, category: "Jedzenie", date: LocalDate.now()),
+                new Transaction(description: "Paliwo", amountPLN: -100.0, category: "Transport", date: LocalDate.now()),
+                new Transaction(description: "Kino", amountPLN: -30.0, category: "Rozrywka", date: LocalDate.now()),
+        ]
+
+        when:
+        def result = service.getTopSpendingCategory(transactions)
+
+        then:
+        result == "Jedzenie"
+    }
+
+    def "should return correct category when there is only one expense category"() {
+        given:
+        List<Transaction> transactions = [
+                new Transaction(description: "Bilet", amountPLN: -20.0, category: "Transport", date: LocalDate.now()),
+                new Transaction(description: "Paliwo", amountPLN: -80.0, category: "Transport", date: LocalDate.now()),
+        ]
+
+        when:
+        def result = service.getTopSpendingCategory(transactions)
+
+        then:
+        result == "Transport"
+    }
+
+    def "should ignore income transactions when determining top spending category"() {
+        given:
+        List<Transaction> transactions = [
+                new Transaction(description: "Wypłata", amountPLN: 10000.0, category: "Wynagrodzenie", date: LocalDate.now()),
+                new Transaction(description: "Obiad", amountPLN: -50.0, category: "Jedzenie", date: LocalDate.now()),
+                new Transaction(description: "Paliwo", amountPLN: -200.0, category: "Transport", date: LocalDate.now()),
+        ]
+
+        when:
+        def result = service.getTopSpendingCategory(transactions)
+
+        then:
+        result == "Transport"
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
