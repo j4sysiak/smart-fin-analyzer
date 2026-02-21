@@ -1,3 +1,6 @@
+Lab 3
+-----
+
 Znakomicie! Mamy działający, wielowątkowy mechanizm importu danych. 
 Teraz czas na "mózg" naszej aplikacji, czyli Krok 3: Inteligentny Silnik Reguł (Smart-Rules).
 

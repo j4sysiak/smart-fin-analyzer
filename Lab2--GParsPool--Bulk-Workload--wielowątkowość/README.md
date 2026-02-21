@@ -1,3 +1,6 @@
+Lab 2
+-----
+
 Skoro fundamenty działają i debugger przestał nas rozpraszać, wracamy do realizacji Kroku 2: Wielowątkowy Importer (GPars).
 
 To jest moment, w którym Twój projekt zaczyna nabierać profesjonalnych kształtów – nauczymy aplikację wykorzystywać pełną moc procesora.

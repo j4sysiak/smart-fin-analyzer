@@ -1,3 +1,6 @@
+Lab 4
+-----
+
 To jest moment, w którym nasz projekt zaczyna przypominać prawdziwy system klasy Enterprise. 
 Mamy "mięśnie" (wielowątkowy importer GPars) oraz "mózg" (dynamiczny silnik reguł).
 
