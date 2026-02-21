@@ -37,13 +37,13 @@ class TransactionRuleService {
      * Przykład reguły: "if (amount < -500) addTag('BIG_EXPENSE')"
      */
     void applyRules(Transaction tx, List<String> rules) {
-
-        // Binding udostępnia pola transakcji bezpośrednio w skrypcie
+        // DODAJEMY amountPLN do mapy bindingu
         Binding binding = new Binding([
                 amount: tx.amount,
+                amountPLN: tx.amountPLN, // <--- TO JEST KLUCZOWA POPRAWKA
                 category: tx.category,
                 description: tx.description,
-                addTag: { String tag -> tx.addTag(tag) } // Udostępniamy metodę jako domknięcie
+                addTag: { String tag -> tx.addTag(tag) }
         ])
 
         GroovyShell shell = new GroovyShell(binding, safeConfig)
@@ -52,6 +52,7 @@ class TransactionRuleService {
             try {
                 shell.evaluate(rule)
             } catch (Exception e) {
+                // Teraz błąd już nie powinien wystąpić
                 println "[RULE ERROR] Błąd w regule: $rule -> ${e.message}"
             }
         }

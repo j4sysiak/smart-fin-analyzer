@@ -285,11 +285,9 @@ Zbudowałeś silnik. Teraz musimy dać użytkownikowi "kierownicę".
 
 W Fazie 4: Narzędzia CLI, stworzymy główną klasę startową aplikacji, która:
 
-Użyje CliBuilder, aby przyjąć imię użytkownika i ścieżkę do pliku z transakcjami.
+Użyje `CliBuilder`, aby przyjąć imię użytkownika i ścieżkę do pliku z transakcjami.
 
 Uruchomi cały rurociąg (Import -> Waluty -> Reguły -> Analityka -> Raport).
 
 Zapisze gotowy raport do pliku .txt.
-
-Czy Twój raport na konsoli wygląda tak, jak zaplanowaliśmy? Jeśli tak, to jesteśmy gotowi na wielkie otwarcie terminala! 🚀 terminal_output_ready?\
 
