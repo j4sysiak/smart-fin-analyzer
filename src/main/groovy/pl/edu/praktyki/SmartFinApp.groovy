@@ -33,7 +33,7 @@ class SmartFinApp {
         // aby "odpalić" Springa wewnątrz zwykłego skryptu Groovy i uzyskać dostęp do wszystkich naszych serwisów.
         def ctx = new AnnotationConfigApplicationContext(SmartFinConfig)
 
-        // Pobieramy potrzebne serwisy
+        //  Pobieramy potrzebne serwisy
         //  To jest ręczne wstrzykiwanie zależności (dependency injection) — zamiast używać adnotacji @Autowired, bean jest pobierany programowo,
         //  ponieważ SmartFinApp nie jest zarządzany przez Springa (ma statyczną metodę main).
         def ingester = ctx.getBean(TransactionIngesterService)
@@ -52,10 +52,35 @@ class SmartFinApp {
         // 4. PROCESOWANIE (Rurociąg)
         println ">>> Przeliczanie walut i analiza..."
 
+
         // Pobieramy kursy i przeliczamy (Normalizacja)
+        def baseCurrency = opts.c ?: 'PLN'
+        println ">>> Waluta bazowa: $baseCurrency"
+        def rateTo = currencySvc.getExchangeRate(baseCurrency)
+
+        if (rateTo == null) {
+            System.err.println "BŁĄD: Waluta bazowa '$baseCurrency' nie jest obsługiwana przez system."
+            ctx.close()
+            return // Zatrzymujemy aplikację, bo nie mamy punktu odniesienia
+        }
+
+        println ">>> Waluta bazowa: $baseCurrency (kurs: ${1/rateTo})"
+
+        // 2. Pobieramy kursy i przeliczamy (Normalizacja)
+        println ">>> Przeliczanie transakcji..."
+
         rawData.each { tx ->
-            def rate = currencySvc.getExchangeRate(tx.currency)
-            tx.amountPLN = tx.amount * rate
+            def rateFrom = currencySvc.getExchangeRate(tx.currency)
+
+            if (rateFrom == null) {
+                // Obsługa błędu dla konkretnej transakcji (np. ktoś wpisał 'ZŁ' zamiast 'PLN')
+                println ">>> [OSTRZEŻENIE] Nieznana waluta '${tx.currency}' w transakcji ${tx.id}. Używam kursu 1.0"
+                rateFrom = 1.0
+            }
+
+            // Twoja logika przeliczania:
+            // (amount * rateFrom) zamienia na PLN, a dzielenie przez rateTo zamienia na walutę docelową
+            tx.amountPLN = tx.amount * (rateFrom / rateTo)
         }
 
         // Aplikujemy reguły (używamy reguł zdefiniowanych na sztywno dla przykładu)

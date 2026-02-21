@@ -126,7 +126,7 @@ Jak to przetestować?
 Odśwież Gradle w IntelliJ.
 
 Otwórz terminal i wpisz:
-./gradlew runSmartFin -PappArgs="-u 'Jacek'"
+`  ./gradlew runSmartFin -PappArgs="-u 'Jacek' -c 'EUR'"  `
 
 
 Co się teraz wydarzy?
@@ -149,6 +149,129 @@ Twoja aplikacja jest już prawie gotowa do portfolio. Brakuje jej tylko jednej r
 
 Zmodyfikuj SmartFinApp tak, aby po wpisaniu błędnej waluty (np. -c XYZ) aplikacja nie wybuchła, tylko wyświetliła komunikat: 
 BŁĄD: Waluta XYZ nie jest obsługiwana.
+
+Rozwizanie:
+-----------
+
+To zadanie uczy Cię budowania odpornych aplikacji (Robust Apps). 
+W profesjonalnych narzędziach CLI nie możemy pozwolić, aby błąd użytkownika (literówka w walucie) kończył się "brzydkim" błędem Javy (Stacktrace). 
+Musimy to obsłużyć z klasą.
+
+Oto jak zmodyfikować projekt, aby poprawnie walidował walutę.
+
+Krok 1: Poprawka w `CurrencyService.groovy`
+
+Musimy zmienić metodę `getExchangeRate`, aby zamiast domyślnego 1.0 zwracała null, gdy waluta jest nieznana. 
+Dzięki temu SmartFinApp będzie wiedział, że coś jest nie tak.
+
+Zaktualizuj plik `src/main/groovy/pl/edu/praktyki/service/CurrencyService.groovy`:
+
+```groovy
+BigDecimal getExchangeRate(String fromCurrency) {
+if (fromCurrency == "PLN") return 1.0
+
+        try {
+            def request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://open.er-api.com/v6/latest/PLN"))
+                    .GET()
+                    .build()
+
+            def response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            def json = slurper.parseText(response.body())
+
+            def rateToPln = json.rates[fromCurrency]
+            
+            // POPRAWKA: Jeśli waluty nie ma w mapie 'rates', zwracamy null
+            if (rateToPln == null) return null 
+            
+            return (1.0 / rateToPln).toBigDecimal()
+        } catch (Exception e) {
+            // W razie błędu sieciowego nadal możemy rzucić wyjątek lub zwrócić null
+            return null
+        }
+    }
+```
+
+Krok 2: Poprawka w SmartFinApp.groovy
+
+Teraz w głównej klasie dodamy logikę sprawdzającą parametr -c. Jeśli użytkownik go poda, od razu sprawdzimy jego poprawność.
+
+Zaktualizuj metodę main w src/main/groovy/pl/edu/praktyki/SmartFinApp.groovy:
+
+code
+Groovy
+download
+content_copy
+expand_less
+// ... (po uruchomieniu kontekstu Springa i pobraniu beanów) ...
+def currencySvc = ctx.getBean(CurrencyService)
+
+        // 1. WALIDACJA WALUTY (Zadanie dodatkowe)
+        def targetCurrency = opts.c ?: "PLN" // Jeśli brak -c, używamy PLN
+        
+        if (targetCurrency != "PLN") {
+            println ">>> Sprawdzanie dostępności waluty: $targetCurrency..."
+            def rate = currencySvc.getExchangeRate(targetCurrency)
+            
+            if (rate == null) {
+                // Wyświetlamy ładny komunikat i kończymy program
+                System.err.println "BŁĄD: Waluta $targetCurrency nie jest obsługiwana."
+                ctx.close()
+                return // Zatrzymuje dalsze wykonywanie main
+            }
+        }
+
+        // ... (reszta kodu importowania danych) ...
+Krok 3: Testowanie w terminalu
+
+Teraz sprawdźmy, czy aplikacja zachowuje się poprawnie w obu przypadkach.
+
+1. Test błędnej waluty:
+   Wpisz w terminalu:
+
+code
+Bash
+download
+content_copy
+expand_less
+./gradlew runSmartFin -PappArgs="-u Jacek -c XYZ"
+
+Oczekiwany wynik:
+
+code
+Text
+download
+content_copy
+expand_less
+>>> Inicjalizacja systemu Smart-Fin-Analyzer...
+>>> Sprawdzanie dostępności waluty: XYZ...
+BŁĄD: Waluta XYZ nie jest obsługiwana.
+
+(Zauważ, że raport się nie wygenerował – i o to chodziło!)
+
+2. Test poprawnej waluty:
+
+code
+Bash
+download
+content_copy
+expand_less
+./gradlew runSmartFin -PappArgs="-u Jacek -c EUR"
+
+Oczekiwany wynik:
+Aplikacja powinna przejść dalej i wygenerować raport.
+
+Dlaczego to jest ważne?
+
+User Experience (UX): Użytkownik dostaje jasną informację, co zrobił źle, zamiast czytać NullPointerException.
+
+Graceful Shutdown: Używamy ctx.close(), aby Spring poprawnie zamknął swoje zasoby przed wyjściem z programu.
+
+Fail-Fast: Sprawdzamy walutę na samym początku, zanim zaczniemy "ciężkie" procesowanie danych. Oszczędzamy czas i zasoby.
+
+Daj znać, czy komunikat o błędzie wyświetla się poprawnie! Jeśli tak, to Twój projekt jest już naprawdę "pancerny". Czy chcesz teraz przygotować to profesjonalne README.md, żeby projekt był gotowy do pokazania w portfolio? 📄✨
+
+
 
 Dla ambitnych: 
 Dodaj flagę -v (verbose), która po włączeniu będzie wypisywać każdą przeliczoną transakcję na konsolę przed wygenerowaniem raportu.

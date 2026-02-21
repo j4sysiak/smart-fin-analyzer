@@ -30,11 +30,15 @@ class CurrencyService {
 
             // API zwraca kursy względem bazy (PLN).
             // Jeśli 1 PLN = 0.23 EUR, to kurs EUR -> PLN to 1 / 0.23
-            def rateToPlo = json.rates[fromCurrency]
-            return rateToPlo ? (1.0 / rateToPlo).toBigDecimal() : 1.0
+            def rateToPln = json.rates[fromCurrency]
+
+            // POPRAWKA: Jeśli waluty nie ma w mapie 'rates', zwracamy null
+            if (rateToPln == null) return null
+
+            return rateToPln ? (1.0 / rateToPln).toBigDecimal() : 1.0
         } catch (Exception e) {
-            println "Błąd pobierania kursu: ${e.message}. Używam kursu 1.0"
-            return 1.0
+            // W razie błędu sieciowego nadal możemy rzucić wyjątek lub zwrócić null
+            return null
         }
     }
 }

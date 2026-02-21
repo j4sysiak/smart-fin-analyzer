@@ -48,7 +48,7 @@ class TransactionIngesterService {
 
     /**
      * KROK 4: Kompletny rurociąg (pipeline).
-     * Pobiera paczki danych, wielowątkowo analizuje je pod kątem reguł i łączy w całość.
+     * Pobiera paczki danych, wielowątkowo (dzięki GParsPool.withPool(...) ) analizuje je pod kątem reguł i łączy w całość.
      */
     List<Transaction> ingestAndApplyRules(List<List<Transaction>> allSources, List<String> rules) {
         if (!allSources) return[]
