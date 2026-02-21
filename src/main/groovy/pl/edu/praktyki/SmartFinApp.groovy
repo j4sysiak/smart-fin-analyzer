@@ -44,7 +44,7 @@ class SmartFinApp {
         // 3. Symulacja pobrania danych (w realnym systemie tu byłby odczyt z pliku)
         println ">>> Importowanie danych..."
         def rawData = [
-                new Transaction(id: "1", amount: 100, currency: "EUR", category: "Jedzenie", description: "Obiad w Berlinie"),
+                new Transaction(id: "1", amount: -100, currency: "EUR", category: "Jedzenie", description: "Obiad w Berlinie"),
                 new Transaction(id: "2", amount: -50, currency: "USD", category: "Rozrywka", description: "Kino NY"),
                 new Transaction(id: "3", amount: 2000, currency: "PLN", category: "Praca", description: "Bonus")
         ]
@@ -65,14 +65,12 @@ class SmartFinApp {
         }
 
         println ">>> Waluta bazowa: $baseCurrency (kurs: ${1/rateTo})"
-
-        // 2. Pobieramy kursy i przeliczamy (Normalizacja)
         println ">>> Przeliczanie transakcji..."
 
         rawData.each { tx ->
-            def rateFrom = currencySvc.getExchangeRate(tx.currency)
+            def rate = currencySvc.getExchangeRate(tx.currency)
 
-            if (rateFrom == null) {
+            if (rate == null) {
                 // Obsługa błędu dla konkretnej transakcji (np. ktoś wpisał 'ZŁ' zamiast 'PLN')
                 println ">>> [OSTRZEŻENIE] Nieznana waluta '${tx.currency}' w transakcji ${tx.id}. Używam kursu 1.0"
                 rateFrom = 1.0
@@ -80,9 +78,9 @@ class SmartFinApp {
 
             // Twoja logika przeliczania:
             // (amount * rateFrom) zamienia na PLN, a dzielenie przez rateTo zamienia na walutę docelową
-            tx.amountPLN = tx.amount * (rateFrom / rateTo)
+            tx.amountPLN = tx.amount * rate
         }
-
+        
         // Aplikujemy reguły (używamy reguł zdefiniowanych na sztywno dla przykładu)
         def rules = ["if (amountPLN < -100) addTag('BIG_SPENDER')"]
         ingester.ingestAndApplyRules([rawData], rules)

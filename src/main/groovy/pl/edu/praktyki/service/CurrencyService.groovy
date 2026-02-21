@@ -17,7 +17,7 @@ class CurrencyService {
      * W prawdziwym systemie warto tu dodać @Cacheable (Spring Cache).
      */
     BigDecimal getExchangeRate(String fromCurrency) {
-        if (fromCurrency == "PLN") return 1.0
+        if (fromCurrency == "PLN") return 1.0  // easy case: PLN -> PLN
 
         try {
             def request = HttpRequest.newBuilder()
@@ -29,7 +29,7 @@ class CurrencyService {
             def json = slurper.parseText(response.body())
 
             // API zwraca kursy względem bazy (PLN).
-            // Jeśli 1 PLN = 0.23 EUR, to kurs EUR -> PLN to 1 / 0.23
+            // np. jeśli 1 PLN = 0.23 EUR, to kurs EUR -> PLN to 1 / 0.23
             def rateToPln = json.rates[fromCurrency]
 
             // POPRAWKA: Jeśli waluty nie ma w mapie 'rates', zwracamy null
