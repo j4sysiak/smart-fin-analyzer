@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service
 import pl.edu.praktyki.domain.Transaction
 import groovyx.gpars.GParsPool
 import org.springframework.beans.factory.annotation.Autowired // DODANE
+import org.springframework.context.ApplicationEventPublisher // <-- Import
+import pl.edu.praktyki.event.TransactionImportedEvent // <-- Import
 
 @Service
 class TransactionIngesterService {
@@ -11,6 +13,9 @@ class TransactionIngesterService {
     // Wstrzykujemy nasz silnik reguł
     @Autowired
     TransactionRuleService ruleService
+
+    // DODAJ TO: Wbudowany w Springa mechanizm wysyłania zdarzeń
+    @Autowired ApplicationEventPublisher eventPublisher
 
     /**
      * Docelowo ta metoda będzie przyjmować listę ścieżek do plików
@@ -60,6 +65,9 @@ class TransactionIngesterService {
                 // Dla każdej transakcji w tej paczce wywołujemy silnik reguł
                 source.each { tx ->
                     ruleService.applyRules(tx, rules)
+
+                    // DODAJ TO: Wysyłamy zdarzenie w eter
+                    eventPublisher.publishEvent(new TransactionImportedEvent(transaction: tx))
                 }
 
                 return source

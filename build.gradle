@@ -38,6 +38,12 @@ dependencies {
 
 test {
     useJUnitPlatform()
+
+    // To każe Gradle wypisywać wszystko na ekran
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+        showStandardStreams = true
+    }
 }
 
 tasks.register('runSmartFin', JavaExec) {

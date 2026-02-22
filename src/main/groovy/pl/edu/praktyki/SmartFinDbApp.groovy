@@ -12,6 +12,7 @@ import pl.edu.praktyki.domain.Transaction
 import java.time.LocalDate
 
 @SpringBootApplication
+@org.springframework.cache.annotation.EnableCaching
 class SmartFinDbApp implements CommandLineRunner {
 
     @Autowired TransactionIngesterService ingester

@@ -1,5 +1,6 @@
 package pl.edu.praktyki
 
+import org.springframework.cache.annotation.EnableCaching
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -10,8 +11,10 @@ import java.time.LocalDate
 
 @Configuration
 @ComponentScan(basePackages = "pl.edu.praktyki.service")
+@EnableCaching // <-- DODAJ TO
 class SmartFinConfig {}
 
+@EnableCaching // <-- DODAJ TO
 class SmartFinApp {
 
     static void main(String[] args) {
@@ -45,8 +48,9 @@ class SmartFinApp {
         println ">>> Importowanie danych..."
         def rawData = [
                 new Transaction(id: "1", amount: -100, currency: "EUR", category: "Jedzenie", description: "Obiad w Berlinie"),
-                new Transaction(id: "2", amount: -50, currency: "USD", category: "Rozrywka", description: "Kino NY"),
-                new Transaction(id: "3", amount: 2000, currency: "PLN", category: "Praca", description: "Bonus")
+                new Transaction(id: "2", amount: -100, currency: "EUR", category: "Jedzenie", description: "Obiad w Berlinie2"),
+                new Transaction(id: "3", amount: -50, currency: "USD", category: "Rozrywka", description: "Kino NY"),
+                new Transaction(id: "4", amount: 2000, currency: "PLN", category: "Praca", description: "Bonus")
         ]
 
         // 4. PROCESOWANIE (Rurociąg)

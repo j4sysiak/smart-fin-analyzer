@@ -5,6 +5,7 @@ import groovy.json.JsonSlurper
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import org.springframework.cache.annotation.Cacheable
 
 @Service
 class CurrencyService {
@@ -16,7 +17,10 @@ class CurrencyService {
      * Pobiera aktualny kurs wymiany dla danej waluty względem PLN.
      * W prawdziwym systemie warto tu dodać @Cacheable (Spring Cache).
      */
+    @Cacheable("exchangeRates") // Spring zapamięta wynik dla każdego unikalnego 'fromCurrency'
     BigDecimal getExchangeRate(String fromCurrency) {
+        println ">>> [API CALL] Pobieram kurs z internetu dla: $fromCurrency"
+
         if (fromCurrency == "PLN") return 1.0  // easy case: PLN -> PLN
 
         try {
