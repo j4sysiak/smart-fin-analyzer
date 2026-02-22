@@ -1,0 +1,6 @@
+2026-02-22 13:56:04.155660+01:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "TRANSACTIONS" not found (this database is empty); SQL statement:
+SELECT * FROM TRANSACTIONS [42104-224]
+2026-02-22 13:58:18.759231+01:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "TRANSACTIONS" not found (this database is empty); SQL statement:
+SELECT * FROM TRANSACTIONS [42104-224]

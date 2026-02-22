@@ -29,6 +29,11 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.spockframework:spock-spring:2.3-groovy-4.0'
     testImplementation 'org.spockframework:spock-core'
+
+    // "silnik" bazy danych H2 i warstwa dostępu do danych (JPA)
+    runtimeOnly 'com.h2database:h2'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
 }
 
 test {
@@ -40,6 +45,23 @@ tasks.register('runSmartFin', JavaExec) {
     description = 'Uruchamia Smart-Fin-Analyzer CLI'
 
     mainClass.set('pl.edu.praktyki.SmartFinApp')
+    classpath = sourceSets.main.runtimeClasspath
+
+    // Wymuszenie Java 17
+    def toolchainService = project.extensions.getByType(JavaToolchainService)
+    javaLauncher.set(toolchainService.launcherFor(java.toolchain))
+
+    if (project.hasProperty('appArgs')) {
+        args(project.getProperty('appArgs').split('\\s+'))
+    }
+}
+
+tasks.register('runSmartFinDb', JavaExec) {
+    group = 'application'
+    description = 'Uruchamia Smart-Fin-Analyzer z bazą danych (Spring Boot)'
+
+    // Wskazujemy NOWĄ klasę
+    mainClass.set('pl.edu.praktyki.SmartFinDbApp')
     classpath = sourceSets.main.runtimeClasspath
 
     // Wymuszenie Java 17
