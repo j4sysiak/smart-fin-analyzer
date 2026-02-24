@@ -8,6 +8,9 @@ plugins {
 
     // NOWOŚĆ: Raport pokrycia testami
     id 'jacoco'
+
+    // Budowanie obrazu Dockerowego aplikacji za pomocą Jib
+    id 'com.google.cloud.tools.jib' version '3.4.0'
 }
 
 java {
@@ -40,6 +43,8 @@ dependencies {
     runtimeOnly 'com.h2database:h2'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 
+    // Web Adapter (REST API)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 }
 
 test {
@@ -98,5 +103,16 @@ jacocoTestReport {
     reports {
         xml.required = true
         html.required = true
+    }
+}
+
+jib {
+    to {
+        image = 'smart-fin-analyzer:latest' // Nazwa twojego obrazu
+    }
+    container {
+        // Wskazujemy główną klasę (tę z bazą danych)
+        mainClass = 'pl.edu.praktyki.SmartFinDbApp'
+        creationTime = 'USE_CURRENT_TIMESTAMP'
     }
 }

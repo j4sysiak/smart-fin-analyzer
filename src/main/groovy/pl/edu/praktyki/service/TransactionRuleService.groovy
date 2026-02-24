@@ -1,5 +1,6 @@
 package pl.edu.praktyki.service
 
+import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Service
 import pl.edu.praktyki.domain.Transaction
 import org.codehaus.groovy.control.CompilerConfiguration
@@ -8,6 +9,7 @@ import groovy.lang.Binding
 import groovy.lang.GroovyShell
 
 @Service
+@Slf4j
 class TransactionRuleService {
 
     // Konfiguracja bezpiecznego środowiska (z Lab 22) - C:\dev\proj-groovy\lab22--Dynamiczne-Reguły-Biznesowe--GroovyShell-and-Security
@@ -53,7 +55,7 @@ class TransactionRuleService {
                 shell.evaluate(rule)
             } catch (Exception e) {
                 // Teraz błąd już nie powinien wystąpić
-                println "[RULE ERROR] Błąd w regule: $rule -> ${e.message}"
+                log.error("[RULE ERROR] Błąd w regule: {} -> {}", rule, e.message)
             }
         }
     }

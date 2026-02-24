@@ -1,13 +1,15 @@
 package pl.edu.praktyki.service
 
+import groovy.util.logging.Slf4j // Import do logowania, jeśli chcemy użyć logów zamiast println
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import groovy.json.JsonSlurper
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import org.springframework.cache.annotation.Cacheable
 
 @Service
+@Slf4j // <-- Ta adnotacja wstrzykuje logger
 class CurrencyService {
 
     private final HttpClient client = HttpClient.newHttpClient()
@@ -19,9 +21,11 @@ class CurrencyService {
      */
     @Cacheable("exchangeRates") // Spring zapamięta wynik dla każdego unikalnego 'fromCurrency'
     BigDecimal getExchangeRate(String fromCurrency) {
-        println ">>> [API CALL] Pobieram kurs z internetu dla: $fromCurrency"
 
         if (fromCurrency == "PLN") return 1.0  // easy case: PLN -> PLN
+
+        // Zamiast println używamy log.info lub log.debug
+        log.info(">>> [API CALL] Pobieram kurs z internetu dla: {}", fromCurrency)
 
         try {
             def request = HttpRequest.newBuilder()
@@ -41,8 +45,11 @@ class CurrencyService {
 
             return rateToPln ? (1.0 / rateToPln).toBigDecimal() : 1.0
         } catch (Exception e) {
+            // Logowanie błędu ze stacktracem
+            log.error("Błąd pobierania kursu dla waluty {}: {}", fromCurrency, e.message)
             // W razie błędu sieciowego nadal możemy rzucić wyjątek lub zwrócić null
             return null
         }
+        return 1.0 // fallback (jeśli try się nie udał i nie było returna)
     }
 }

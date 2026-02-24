@@ -1,5 +1,6 @@
 package pl.edu.praktyki.service
 
+import groovy.util.logging.Slf4j // Import do logowania, jeśli chcemy użyć logów zamiast println
 import org.springframework.stereotype.Service
 import pl.edu.praktyki.domain.Transaction
 import groovyx.gpars.GParsPool
@@ -8,6 +9,7 @@ import org.springframework.context.ApplicationEventPublisher // <-- Import
 import pl.edu.praktyki.event.TransactionImportedEvent // <-- Import
 
 @Service
+@Slf4j // <-- Ta adnotacja wstrzykuje logger
 class TransactionIngesterService {
 
     // Wstrzykujemy nasz silnik reguł
@@ -39,7 +41,7 @@ class TransactionIngesterService {
             // collectParallel sprawia, że każda paczka (source)
             // jest przetwarzana równolegle na innym rdzeniu procesora
             def parallelResults = allSources.collectParallel { List<Transaction> source ->
-                println "[GPars] Przetwarzam paczkę danych (${source.size()} szt.) w wątku: ${Thread.currentThread().name}"
+                log.info('[GPars] Przetwarzam paczkę danych ({} szt.) w wątku: {}', source.size(), Thread.currentThread().name)
 
                 // Tutaj mogłaby być dodatkowa logika, np. filtrowanie duplikatów wewnątrz paczki
                 return source
@@ -60,7 +62,7 @@ class TransactionIngesterService {
 
         return GParsPool.withPool {
             def parallelResults = allSources.collectParallel { List<Transaction> source ->
-                println " Analizuję paczkę (${source.size()} szt.) w wątku: ${Thread.currentThread().name}"
+                log.info('Analizuję paczkę ({} szt.) w wątku: {}', source.size(), Thread.currentThread().name)
 
                 // Dla każdej transakcji w tej paczce wywołujemy silnik reguł
                 source.each { tx ->
