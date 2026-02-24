@@ -2,6 +2,12 @@ plugins {
     id 'groovy'
     id 'org.springframework.boot' version '3.2.1'
     id 'io.spring.dependency-management' version '1.1.4'
+
+    // NOWOŚĆ: Analiza statyczna dla Groovy
+    id 'codenarc'
+
+    // NOWOŚĆ: Raport pokrycia testami
+    id 'jacoco'
 }
 
 java {
@@ -76,5 +82,21 @@ tasks.register('runSmartFinDb', JavaExec) {
 
     if (project.hasProperty('appArgs')) {
         args(project.getProperty('appArgs').split('\\s+'))
+    }
+}
+
+codenarc {
+    toolVersion = '3.3.0'
+    // Jeśli true, błąd stylu zatrzyma build. Ustawiamy false, żeby najpierw zobaczyć raport.
+    ignoreFailures = true
+    configFile = file("config/codenarc/codenarc.groovy") // Zaraz stworzymy ten plik
+}
+
+// Konfiguracja raportu JaCoCo
+jacocoTestReport {
+    dependsOn test // Raport generuje się po testach
+    reports {
+        xml.required = true
+        html.required = true
     }
 }
