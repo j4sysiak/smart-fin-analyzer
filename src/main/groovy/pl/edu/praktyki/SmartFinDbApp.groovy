@@ -6,26 +6,33 @@ import org.springframework.boot.CommandLineRunner
 import org.springframework.beans.factory.annotation.Autowired
 import groovy.cli.picocli.CliBuilder
 import org.springframework.cache.annotation.EnableCaching
+import org.springframework.context.annotation.Profile
+import org.springframework.stereotype.Component
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.service.*
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.domain.Transaction
 import java.time.LocalDate
 
+// 1. GŁÓWNA KLASA (Teraz jest czysta, tylko startuje Springa)
 @SpringBootApplication
 @EnableCaching
-class SmartFinDbApp implements CommandLineRunner {
+class SmartFinDbApp {
+    static void main(String[] args) {
+        SpringApplication.run(SmartFinDbApp, args)
+    }
+}
+
+// 2. KLASA URUCHOMIENIOWA CLI
+@Component
+@Profile("!test") // <-- MAGIA: Uruchomi się zawsze, CHYBA ŻE aktywny jest profil "test"
+class SmartFinCliRunner implements CommandLineRunner {
 
     @Autowired TransactionIngesterService ingester
     @Autowired CurrencyService currencySvc
     @Autowired FinancialAnalyticsService analyticsSvc
     @Autowired ReportGeneratorService reportSvc
     @Autowired TransactionRepository repo
-
-    static void main(String[] args) {
-        // Uruchamiamy aplikację Spring Boota
-        SpringApplication.run(SmartFinDbApp, args)
-    }
 
     @Override
     void run(String... args) {
@@ -113,4 +120,5 @@ class SmartFinDbApp implements CommandLineRunner {
         println ">>> Raport zapisany: $fileName"
         println "=========================================\n"
     }
+
 }

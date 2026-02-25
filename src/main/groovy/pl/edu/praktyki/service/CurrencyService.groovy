@@ -1,6 +1,6 @@
 package pl.edu.praktyki.service
 
-import groovy.util.logging.Slf4j // Import do logowania, jeśli chcemy użyć logów zamiast println
+import groovy.util.logging.Slf4j
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
 import groovy.json.JsonSlurper
@@ -9,7 +9,7 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
 @Service
-@Slf4j // <-- Ta adnotacja wstrzykuje logger
+@Slf4j
 class CurrencyService {
 
     private final HttpClient client = HttpClient.newHttpClient()

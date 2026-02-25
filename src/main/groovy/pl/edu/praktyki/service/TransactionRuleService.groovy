@@ -35,14 +35,15 @@ class TransactionRuleService {
     }
 
     /**
-     * Aplikuje zestaw reguł tekstowych na transakcji.
-     * Przykład reguły: "if (amount < -500) addTag('BIG_EXPENSE')"
+     * Aplikuje zestaw reguł/rul tekstowych na transakcji.
+     * Przykład reguły/roli: "if (amount < -500) addTag('BIG_EXPENSE')"
      */
     void applyRules(Transaction tx, List<String> rules) {
-        // DODAJEMY amountPLN do mapy bindingu
+
+        // mapa bindingu
         Binding binding = new Binding([
                 amount: tx.amount,
-                amountPLN: tx.amountPLN, // <--- TO JEST KLUCZOWA POPRAWKA
+                amountPLN: tx.amountPLN,
                 category: tx.category,
                 description: tx.description,
                 addTag: { String tag -> tx.addTag(tag) }
@@ -54,7 +55,6 @@ class TransactionRuleService {
             try {
                 shell.evaluate(rule)
             } catch (Exception e) {
-                // Teraz błąd już nie powinien wystąpić
                 log.error("[RULE ERROR] Błąd w regule: {} -> {}", rule, e.message)
             }
         }
