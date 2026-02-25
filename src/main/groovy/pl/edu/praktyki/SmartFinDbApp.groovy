@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.CommandLineRunner
 import org.springframework.beans.factory.annotation.Autowired
 import groovy.cli.picocli.CliBuilder
+import org.springframework.cache.annotation.EnableCaching
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.service.*
 import pl.edu.praktyki.repository.TransactionRepository
@@ -12,7 +13,7 @@ import pl.edu.praktyki.domain.Transaction
 import java.time.LocalDate
 
 @SpringBootApplication
-@org.springframework.cache.annotation.EnableCaching
+@EnableCaching
 class SmartFinDbApp implements CommandLineRunner {
 
     @Autowired TransactionIngesterService ingester

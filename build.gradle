@@ -23,21 +23,26 @@ repositories {
     mavenCentral()
 }
 
-
 dependencies {
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter'
 
-    // Groovy
-    implementation 'org.apache.groovy:groovy-all:4.0.15'
+    // Groovy (wykluczamy groovy-test-junit5, bo koliduje z silnikiem Spock)
+    implementation('org.apache.groovy:groovy-all:4.0.15') {
+        exclude group: 'org.apache.groovy', module: 'groovy-test'
+        exclude group: 'org.apache.groovy', module: 'groovy-test-junit5'
+    }
 
     // Walidacja i narzędzia
     implementation 'org.codehaus.gpars:gpars:1.2.1'
 
-    // Testy
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Testy (wykluczamy junit-jupiter engine, aby SpockEngine był jedynym silnikiem)
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude module: 'junit-jupiter'
+    }
     testImplementation 'org.spockframework:spock-spring:2.3-groovy-4.0'
-    testImplementation 'org.spockframework:spock-core'
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // "silnik" bazy danych H2 i warstwa dostępu do danych (JPA)
     runtimeOnly 'com.h2database:h2'

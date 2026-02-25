@@ -15,18 +15,27 @@ class TransactionController {
 
     @GetMapping
     List<Transaction> getAll() {
-        // Zamiana encji na domene (uproszczona)
+        // Mapujemy Encje z bazy na domenę Transaction
         return repo.findAll().collect {
-            new Transaction(id: it.originalId, amountPLN: it.amountPLN, category: it.category)
+            new Transaction(
+                    id: it.originalId,
+                    amountPLN: it.amountPLN,
+                    category: it.category,
+                    description: it.description,
+                    date: it.date
+            )
         }
     }
 
     @GetMapping("/stats")
     Map<String, Object> getStats() {
+        // Wykorzystujemy metodę getAll(), żeby nie duplikować mapowania
         def all = getAll()
+
         return [
                 balance: analyticsService.calculateTotalBalance(all),
-                topCategory: analyticsSvc.getTopSpendingCategory(all)
+                topCategory: analyticsService.getTopSpendingCategory(all),
+                count: all.size()
         ]
     }
 }
