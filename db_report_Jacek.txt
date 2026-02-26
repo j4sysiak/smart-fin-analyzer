@@ -2,16 +2,16 @@
     =========================================
     RAPORT FINANSOWY DLA: JACEK
     =========================================
-    Data wygenerowania: 2026-02-25
+    Data wygenerowania: 2026-02-26
 
     PODSUMOWANIE:
     -----------------------------------------
-    Bilans ca³kowity:  17944.28 PLN
+    Bilans ca³kowity:  22440.30 PLN
     G³ówny wydatek:    Rozrywka
 
     WYDATKI WG KATEGORII:
     
-    - Rozrywka        : 1433.35 PLN
+    - Rozrywka        : 1790.97 PLN
     
     -----------------------------------------
     Status: NA PLUSIE
