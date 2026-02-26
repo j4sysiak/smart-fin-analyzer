@@ -1,5 +1,6 @@
 package pl.edu.praktyki.web
 
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
 import org.springframework.test.context.ActiveProfiles // <-- Dodaj to
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -67,10 +68,15 @@ class TransactionControllerSpec extends Specification {
                 .andExpect(jsonPath('$.count').value(2))
     }
 
-    def "GET /api/transactions/{id} powinien zwrócić 404 dla nieistniejącego ID"() {
-        expect: "próba pobrania rekordu nr 9999 kończy się błędem 404"
+    def "GET /api/transactions/{id} powinien zwrócić 404 w ustandaryzowanym formacie ApiError"() {
+        expect: "próba pobrania rekordu 9999 kończy się ustandaryzowanym błędem"
         mvc.perform(get("/api/transactions/9999"))
+                .andDo(print()) // <--- TA LINIJKA WYDRUKUJE WSZYSTKO NA EKRAN!
                 .andExpect(status().isNotFound())
+        // Sprawdzamy nową strukturę z klasy ApiError:
+                .andExpect(jsonPath('$.status').value(404))
+                .andExpect(jsonPath('$.message').value("Transakcja o ID 9999 nie istnieje"))
+                .andExpect(jsonPath('$.timestamp').exists())
     }
 
     def "POST /api/transactions powinien zapisać transakcję, przeliczyć walutę i nadać tagi"() {

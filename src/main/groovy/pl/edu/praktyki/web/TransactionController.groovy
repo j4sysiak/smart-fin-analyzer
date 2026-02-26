@@ -47,21 +47,17 @@ class TransactionController {
         ]
     }
 
-    // ZMIENIONA METODA: Zwracamy ResponseEntity
     @GetMapping("/{dbId}")
-    // ZMIANA: Musisz jawnie powiedzieć Springowi, że ta zmienna nazywa się "dbId"
-    ResponseEntity<Transaction> getById(@PathVariable("dbId") Long dbId) {
+    Transaction getById(@PathVariable("dbId") Long dbId) {
 
-        def entityOpt = repo.findById(dbId)
-
-        // Jeśli nie znaleziono, kulturalnie zwracamy kod 404 (Not Found) bez rzucania wyjątków
-        if (entityOpt.isEmpty()) {
-            return ResponseEntity.notFound().build()
+        // Szukamy w bazie. Jeśli nie ma, od razu rzucamy wyjątek!
+        def entity = repo.findById(dbId).orElseThrow {
+            // .toString() jest bardzo ważne, żeby Java nie pogniewała się na GStringa z Groovy
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Transakcja o ID ${dbId} nie istnieje".toString())
         }
 
-        // Jeśli znaleziono, mapujemy i zwracamy z kodem 200 (OK)
-        def entity = entityOpt.get()
-        def tx = new Transaction(
+        // Jeśli znaleziono, po prostu zwracamy obiekt
+        return new Transaction(
                 id: entity.originalId,
                 date: entity.date,
                 amount: entity.amount,
@@ -71,8 +67,6 @@ class TransactionController {
                 description: entity.description,
                 tags: entity.tags
         )
-
-        return ResponseEntity.ok(tx)
     }
 
     @PostMapping
