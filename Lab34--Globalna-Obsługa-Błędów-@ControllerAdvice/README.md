@@ -74,12 +74,15 @@ Gdy odpalisz ten pojedynczy test w IntelliJ (lub w terminalu poleceniem test),
 w logach konsoli zobaczysz wielki blok tekstu, a na jego końcu coś takiego:
 
 ```text
-MockHttpServletResponse:
-Status = 404
-Error message = null
-Headers = [Content-Type:"application/json"]
-Content type = application/json
-Body = {"status":404,"message":"Transakcja o ID 9999 nie istnieje","timestamp":"2026-02-26T22:10:05.123"}
+    MockHttpServletResponse:
+               Status = 404
+        Error message = null
+              Headers = [Content-Type:"application/json"]
+         Content type = application/json
+                 Body = {"status":404,"message":"Transakcja o ID 9999 nie istnieje","timestamp":"2026-02-26T22:24:10.1989532"}
+        Forwarded URL = null
+       Redirected URL = null
+              Cookies = []
 ```
 
 To Body to jest właśnie Twój piękny JSON wygenerowany przez GlobalExceptionHandler!
