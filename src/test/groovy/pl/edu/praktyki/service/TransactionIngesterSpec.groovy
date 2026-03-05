@@ -2,12 +2,24 @@ package pl.edu.praktyki.service
 
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.test.context.ContextConfiguration // ZMIANA
 import pl.edu.praktyki.domain.Transaction
 
+// Konfiguracja testowa dostarczająca mock ApplicationEventPublisher
+@Configuration
+class TransactionIngesterTestConfig {
+    @Bean
+    ApplicationEventPublisher eventPublisher() {
+        // Prosty mock — nic nie robi przy publikowaniu zdarzeń
+        return { event -> } as ApplicationEventPublisher
+    }
+}
+
 // Używamy @ContextConfiguration zamiast @SpringBootTest dla lepszej kontroli
-// @ContextConfiguration(classes = [TransactionIngesterService])
-@ContextConfiguration(classes = [TransactionIngesterService, TransactionRuleService])
+@ContextConfiguration(classes = [TransactionIngesterService, TransactionRuleService, TransactionIngesterTestConfig])
 class TransactionIngesterSpec extends Specification {
 
     @Autowired
@@ -18,7 +30,7 @@ class TransactionIngesterSpec extends Specification {
         ingesterService != null
 
         when: "tworzymy transakcję"
-        def tx = new Transaction(id: "1", amount: -50.0, category: "Kawa")
+        def tx = new Transaction(id: "1", amount: -50.0, amountPLN: -50.0, category: "Kawa")
 
         then: "logika domeny działa"
         tx.isExpense()

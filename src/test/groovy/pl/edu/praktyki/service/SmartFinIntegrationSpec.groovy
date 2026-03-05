@@ -10,7 +10,7 @@ import java.time.LocalDate
 // ContextConfiguration: Mówimy Springowi:
 // "Stwórz obiekty klas TransactionIngesterService oraz TransactionRuleService
 // i powiąż je ze sobą (wstrzyknij jeden w drugi)".
-@ContextConfiguration(classes = [TransactionIngesterService, TransactionRuleService])
+@ContextConfiguration(classes = [TransactionIngesterService, TransactionRuleService, TransactionIngesterTestConfig])
 class SmartFinIntegrationSpec extends Specification {
 
     @Autowired
