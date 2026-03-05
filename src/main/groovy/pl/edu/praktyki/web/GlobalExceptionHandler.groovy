@@ -1,5 +1,6 @@
 package pl.edu.praktyki.web
 
+import org.springframework.web.bind.MethodArgumentNotValidException // <- dodaj import na górze
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -27,5 +28,22 @@ class GlobalExceptionHandler {
                 message: "Wewnętrzny błąd serwera: ${ex.message}"
         )
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error)
+    }
+
+    // NOWOŚĆ: Przechwytujemy błędy z @Valid z @PostMapping z transactionController::addTransaction
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    ResponseEntity<ApiError> handleValidationException(MethodArgumentNotValidException ex) {
+
+        // Zbieramy wszystkie błędy walidacji w jeden ładny tekst (Magia Groovy: collect + join)
+        def errorsMessage = ex.bindingResult.fieldErrors
+                .collect { "${it.field}: ${it.defaultMessage}" }
+                .join(", ")
+
+        def error = new ApiError(
+                status: HttpStatus.BAD_REQUEST.value(),
+                message: "Błąd walidacji danych: " + errorsMessage
+        )
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error)
     }
 }

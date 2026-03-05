@@ -1,5 +1,6 @@
 package pl.edu.praktyki.web
 
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.server.ResponseStatusException
@@ -71,7 +72,8 @@ class TransactionController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    Transaction addTransaction(@RequestBody Transaction dto) {
+    // DODANA ADNOTACJA @Valid
+    Transaction addTransaction(@Valid @RequestBody Transaction dto) {
         def rate = currencyService.getExchangeRate(dto.currency ?: "PLN")
         dto.amountPLN = dto.amount * rate
 

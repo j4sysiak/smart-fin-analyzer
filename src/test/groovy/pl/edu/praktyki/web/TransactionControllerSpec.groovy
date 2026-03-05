@@ -109,4 +109,31 @@ class TransactionControllerSpec extends Specification {
         and: "baza danych powiększyła się o nowy rekord"
         repository.findAll().size() == 3 // 2 z metody setup() + 1 nowy
     }
+
+    def "POST /api/transactions powinien odrzucić błędne dane i zwrócić 400 Bad Request"() {
+        given: "JSON z brakującymi, wymaganymi polami (brak amount i category)"
+        def badPayload =[
+                id: "BAD-1",
+                currency: "EUR"
+                // BRAK KATEGORII!
+                // BRAK KWOTY!
+        ]
+        String jsonBody = groovy.json.JsonOutput.toJson(badPayload)
+
+        when: "wysyłamy błędne żądanie POST"
+        def response = mvc.perform(post("/api/transactions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody))
+
+        // Możesz odkomentować poniższą linię, aby zobaczyć piękny błąd w konsoli:
+         .andDo(print())
+
+        then: "odpowiedź to 400 Bad Request"
+        response.andExpect(status().isBadRequest())
+
+        and: "JSON z błędem zawiera szczegóły, czego brakuje"
+        response.andExpect(jsonPath('$.status').value(400))
+        response.andExpect(jsonPath('$.message').value(org.hamcrest.Matchers.containsString("amount: Kwota (amount) jest wymagana")))
+        response.andExpect(jsonPath('$.message').value(org.hamcrest.Matchers.containsString("category: Kategoria jest wymagana")))
+    }
 }
