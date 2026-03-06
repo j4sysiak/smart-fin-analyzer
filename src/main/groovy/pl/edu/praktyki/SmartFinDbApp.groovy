@@ -13,10 +13,12 @@ import pl.edu.praktyki.service.*
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.domain.Transaction
 import java.time.LocalDate
+import org.springframework.scheduling.annotation.EnableScheduling // DODAJ IMPORT
 
 // 1. GŁÓWNA KLASA (Teraz jest czysta, tylko startuje Springa)
 @SpringBootApplication
 @EnableCaching
+@EnableScheduling // <-- DODAJ TO
 class SmartFinDbApp {
     static void main(String[] args) {
         SpringApplication.run(SmartFinDbApp, args)

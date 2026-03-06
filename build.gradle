@@ -56,6 +56,12 @@ dependencies {
 
     // Starter do walidacji danych wejściowych REST API
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // Metryki, Healthchecki i monitoring dla produkcji
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Flyway - zarządzanie migracjami bazy danych
+    implementation 'org.flywaydb:flyway-core'
 }
 
 test {
