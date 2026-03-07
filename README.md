@@ -54,5 +54,23 @@ The application is fully tested using Spock Framework, covering Unit Tests, Inte
 2. **Traits: Utilizes Groovy Traits for composable, cross-cutting concerns (e.g., AuditLog).
 3. **DSL & Metaprogramming: Custom Object Graph Builders and closures for highly readable data manipulation.
 
+## 🔌 PluginManager
+The `PluginManager` class (`pl.edu.praktyki.utils.PluginManager`) is a lightweight, closure-based plugin system 
+that leverages Groovy's first-class support for closures.
 
+**How it works:**
+- Plugins are registered as Groovy `Closure` objects via `addPlugin(Closure)` and stored in a private list.
+- Calling `runAll(Object data)` executes every registered plugin sequentially, passing the same `data` object to each one.
 
+**Example usage:**
+```groovy
+def manager = new PluginManager()
+
+manager.addPlugin { tx -> println "Audit: ${tx.id}" }
+manager.addPlugin { tx -> if (tx.amount < 0) tx.addTag('EXPENSE') }
+
+manager.runAll(myTransaction)
+```
+
+This pattern enables a dynamic, extensible pipeline — 
+   new processing steps can be added at runtime without modifying existing code, following the **Open/Closed Principle**.
