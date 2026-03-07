@@ -130,8 +130,8 @@ To rozwiązanie jest fundamentem "Plugin Architecture" – bardzo cenionego wzor
 Czy udało Ci się dodać tag przez PluginManager?
 
 
-Rozwiazanie Finałowe Lab 27:
--------------------------
+Rozwiazanie Finałowe Lab 38:
+----------------------------
 
 Wyzwanie to pokazuje, jak łatwo w Groovym można modyfikować obiekty „w locie” za pomocą przekazywanych wtyczek. 
 Nie potrzebujemy do tego żadnych skomplikowanych wzorców (jak Strategy czy Decorator), wystarczy nam Closure i referencja do obiektu.
@@ -140,9 +140,61 @@ Nie potrzebujemy do tego żadnych skomplikowanych wzorców (jak Strategy czy Dec
    Metoda runAll w PluginManager pozostaje taka sama, ponieważ w Groovy obiekty są przekazywane przez referencję 
                       – modyfikując obiekt w Closure, modyfikujemy go „na zewnątrz”.
 
+2. Rozwiązanie Wyzwania w PluginSpec.groovy
+   Oto test, który weryfikuje, czy "Wtyczka Filtrująca" faktycznie zmieniła stan transakcji (dodała tag).
 
+```groovy
+package pl.edu.praktyki.plugin
 
+import spock.lang.Specification
+import pl.edu.praktyki.domain.Transaction
 
+class PluginSpec extends Specification {
 
+    def "Wyzwanie: Wtyczka filtrująca powinna modyfikować transakcję (dodać tag TECH)"() {
+        given: "Manager wtyczek i transakcja z kategorii IT"
+        def pm = new PluginManager()
+        def tx = new Transaction(id: "TX-100", amount: 500.0, category: "IT", description: "Monitor")
 
+        and: "Wtyczka, która sprawdza kategorię i dodaje tag"
+        pm.addPlugin { Transaction t ->
+            if (t.category == "IT") {
+                t.addTag("TECH")
+            }
+        }
 
+        when: "uruchamiamy wszystkie wtyczki"
+        pm.runAll(tx)
+
+        then: "transakcja posiada tag TECH"
+        tx.tags.contains("TECH")
+        
+        and: "transakcja z innej kategorii NIE powinna mieć tego tagu"
+        def otherTx = new Transaction(id: "TX-200", amount: 50.0, category: "Dom")
+        pm.runAll(otherTx)
+        !otherTx.tags.contains("TECH")
+    }
+}
+```
+
+Dlaczego to jest potężne?
+
+In-place Mutation: 
+Zauważ, że `pm.runAll(tx)` nie zwraca żadnego wyniku. 
+Działa na obiekcie tx bezpośrednio. 
+To jest bardzo wydajne, bo nie musimy kopiować obiektów między wtyczkami.
+
+Łatwość rozbudowy: 
+Szef przychodzi i mówi: "Dobra, teraz dopisz jeszcze tag 'BIG_BUY' dla transakcji powyżej 1000 PLN".
+Wystarczy dopisać jedną linię w teście:
+`pm.addPlugin { if (it.amount > 1000) it.addTag('BIG_BUY') }`
+I gotowe! Nie dotykasz PluginManager ani Transaction.
+
+Co zyskujesz tym rozwiązaniem?
+Zbudowałeś system typu "Open-Closed Principle":
+
+Open: 
+Kod jest otwarty na rozszerzenia (możesz dodać dowolną liczbę wtyczek).
+
+Closed: 
+Kod PluginManager jest zamknięty na modyfikacje (nie musisz go zmieniać, żeby dodać nową logikę).
