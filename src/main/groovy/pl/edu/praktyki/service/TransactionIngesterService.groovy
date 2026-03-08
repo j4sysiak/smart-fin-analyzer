@@ -4,9 +4,10 @@ import groovy.util.logging.Slf4j // Import do logowania, jeśli chcemy użyć lo
 import org.springframework.stereotype.Service
 import pl.edu.praktyki.domain.Transaction
 import groovyx.gpars.GParsPool
-import org.springframework.beans.factory.annotation.Autowired // DODANE
-import org.springframework.context.ApplicationEventPublisher // <-- Import
-import pl.edu.praktyki.event.TransactionImportedEvent // <-- Import
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
+import pl.edu.praktyki.event.TransactionImportedEvent
+import pl.edu.praktyki.monitoring.FinanceMetrics
 
 @Service
 @Slf4j // <-- Ta adnotacja wstrzykuje logger
@@ -16,7 +17,11 @@ class TransactionIngesterService {
     @Autowired
     TransactionRuleService ruleService
 
-    // DODAJ TO: Wbudowany w Springa mechanizm wysyłania zdarzeń
+    // Wstrzykujemy nasz serwis metryk
+    @Autowired
+    FinanceMetrics metrics
+
+    // Wbudowany w Springa mechanizm wysyłania zdarzeń
     @Autowired ApplicationEventPublisher eventPublisher
 
     /**
@@ -70,6 +75,9 @@ class TransactionIngesterService {
 
                     // DODAJ TO: Wysyłamy zdarzenie w eter
                     eventPublisher.publishEvent(new TransactionImportedEvent(transaction: tx))
+
+                    // Zliczamy transakcję do metryk (przykładowo sumując kwoty)
+                    metrics.recordTransaction(tx.amountPLN)
                 }
 
                 return source

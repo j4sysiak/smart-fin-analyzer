@@ -13,12 +13,12 @@ import pl.edu.praktyki.service.*
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.domain.Transaction
 import java.time.LocalDate
-import org.springframework.scheduling.annotation.EnableScheduling // DODAJ IMPORT
+import org.springframework.scheduling.annotation.EnableScheduling
 
 // 1. GŁÓWNA KLASA (Teraz jest czysta, tylko startuje Springa)
 @SpringBootApplication
 @EnableCaching
-@EnableScheduling // <-- DODAJ TO
+@EnableScheduling
 class SmartFinDbApp {
     static void main(String[] args) {
         SpringApplication.run(SmartFinDbApp, args)
@@ -35,6 +35,7 @@ class SmartFinCliRunner implements CommandLineRunner {
     @Autowired FinancialAnalyticsService analyticsSvc
     @Autowired ReportGeneratorService reportSvc
     @Autowired TransactionRepository repo
+    @Autowired pl.edu.praktyki.monitoring.FinanceMetrics financeMetrics
 
     @Override
     void run(String... args) {
@@ -75,6 +76,7 @@ class SmartFinCliRunner implements CommandLineRunner {
         ingester.ingestAndApplyRules([rawData], rules)
 
         // --- ZAPIS DO BAZY (Mapowanie Domain -> Entity) ---
+        // 1. Wrzucamy dzisiejsze dokumenty do Sejfu
         println ">>> Zapisywanie do bazy H2..."
         def entitiesToSave = rawData.collect { tx ->
             new TransactionEntity(
@@ -88,12 +90,17 @@ class SmartFinCliRunner implements CommandLineRunner {
                     tags: tx.tags
             )
         }
+        println ">>> Zapisywanie do bazy H2..."
         repo.saveAll(entitiesToSave)
 
         // --- ODCZYT Z BAZY (Mapowanie Entity -> Domain) ---
+        // 2. Pobieramy wszystkie historyczne wpisy z bazy (to są obiekty TransactionEntity)
+        //    Wyciągamy wszystko z Sejfu (w koszulkach)
         def dbRecords = repo.findAll()
         println ">>> W bazie znajduje się obecnie ${dbRecords.size()} transakcji."
 
+        // Zamieniamy TransactionEntity z powrotem na zwykłe Transaction
+        // 3. Przepisujemy z koszulek (Entity) na zwykłe kartki (Transaction)
         def allHistory = dbRecords.collect { ent ->
             new Transaction(
                     id: ent.originalId,
@@ -107,7 +114,15 @@ class SmartFinCliRunner implements CommandLineRunner {
             )
         }
 
-        // Generujemy raport z całej historii, a nie tylko bieżącej paczki!
+        // 4. Wyliczamy aktualny bilans całej historii (suma wszystkich tarnsakcji w PLN)
+        //    Księgowy liczy całkowity bilans z czystych kartek
+        def currentBalance = analyticsSvc.calculateTotalBalance(allHistory)
+
+        // 5. Mówimy metrykom: "Hej, zaktualizuj wskaźnik, nowy bilans to currentBalance"
+        //    Wpisujemy wynik na Tablicę LED na ścianie
+        financeMetrics.updateBalance(currentBalance)
+
+        // 6. Generujemy raport z całej historii, a nie tylko bieżącej paczki!
         def stats = [
                 totalBalance: analyticsSvc.calculateTotalBalance(allHistory),
                 topCategory: analyticsSvc.getTopSpendingCategory(allHistory),
