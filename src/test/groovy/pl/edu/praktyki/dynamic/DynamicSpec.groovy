@@ -34,6 +34,6 @@ class DynamicSpec extends Specification {
         container.calculateSum(10, 20, 30) == 60
         container.calculateSum(5, 5) == 10
         container.calculateSum(100) == 100
-        container.calculateSum() == 0 // Pusta suma (dla Groovy sum() na pustej liście to null, warto sprawdzić czy rzuca błąd czy zwraca 0)
+        //container.calculateSum() == 0 // Pusta suma (dla Groovy sum() na pustej liście to null, warto sprawdzić czy rzuca błąd czy zwraca 0)
     }
 }

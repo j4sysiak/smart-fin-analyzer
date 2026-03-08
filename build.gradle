@@ -62,6 +62,11 @@ dependencies {
 
     // Flyway - zarządzanie migracjami bazy danych
     implementation 'org.flywaydb:flyway-core'
+
+    // Dodaj Awaitility do testów
+    testImplementation('org.awaitility:awaitility-groovy:4.2.0') {
+        exclude group: 'org.codehaus.groovy', module: 'groovy'
+    }
 }
 
 test {
@@ -131,5 +136,15 @@ jib {
         // Wskazujemy główną klasę (tę z bazą danych)
         mainClass = 'pl.edu.praktyki.SmartFinDbApp'
         creationTime = 'USE_CURRENT_TIMESTAMP'
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        // Wymuszamy, aby każda biblioteka używała Groovy 4.0.16
+        force 'org.apache.groovy:groovy:4.0.16'
+        force 'org.apache.groovy:groovy-xml:4.0.16'
+        force 'org.apache.groovy:groovy-json:4.0.16'
+        force 'org.apache.groovy:groovy-sql:4.0.16'
     }
 }
