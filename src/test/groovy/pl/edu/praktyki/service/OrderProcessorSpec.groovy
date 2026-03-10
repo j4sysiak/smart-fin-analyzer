@@ -68,7 +68,7 @@ class OrderProcessorSpec extends Specification {
 
         then:
         def ex = thrown(IllegalArgumentException)
-        ex.message == "Brak strategii dla: UNKNOWN"
+        ex.message == "Nieznany typ zamówienia: UNKNOWN"
     }
 
     def "should throw exception when type is null and no strategy supports it"() {

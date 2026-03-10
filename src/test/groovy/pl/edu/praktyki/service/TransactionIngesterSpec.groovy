@@ -7,14 +7,22 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.test.context.ContextConfiguration // ZMIANA
 import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.monitoring.FinanceMetrics
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 
-// Konfiguracja testowa dostarczająca mock ApplicationEventPublisher
+// Konfiguracja testowa dostarczająca mock ApplicationEventPublisher i FinanceMetrics
 @Configuration
 class TransactionIngesterTestConfig {
     @Bean
     ApplicationEventPublisher eventPublisher() {
         // Prosty mock — nic nie robi przy publikowaniu zdarzeń
         return { event -> } as ApplicationEventPublisher
+    }
+
+    @Bean
+    FinanceMetrics financeMetrics() {
+        // Używamy SimpleMeterRegistry jako lekkiego zamiennika do testów
+        return new FinanceMetrics(new SimpleMeterRegistry())
     }
 }
 
