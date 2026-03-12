@@ -31,6 +31,7 @@ dependencies {
     implementation('org.apache.groovy:groovy-all:4.0.15') {
         exclude group: 'org.apache.groovy', module: 'groovy-test'
         exclude group: 'org.apache.groovy', module: 'groovy-test-junit5'
+        exclude group: 'org.apache.groovy', module: 'groovy-testng'
     }
 
     // Walidacja i narzędzia
@@ -67,6 +68,9 @@ dependencies {
     testImplementation('org.awaitility:awaitility-groovy:4.2.0') {
         exclude group: 'org.codehaus.groovy', module: 'groovy'
     }
+
+    // Lab50--AOP--Aspect-Oriented-Programming
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 }
 
 test {
