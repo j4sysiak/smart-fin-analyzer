@@ -1,9 +1,9 @@
 Lab 50
 ------
 
-AOP (Aspect Oriented Programming) to technologia, która pozwala "wstrzyknąć" kod do Twojej aplikacji z zewnątrz, 
-bez modyfikowania oryginalnych klas. 
-Dzięki temu `AuditLog` albo `PerformanceMetrics` mogą pojawić się w Twoich serwisach "magicznie".
+`AOP`  - które jest "magicznym" Proxy od Springa - to technologia, która pozwala "wstrzyknąć" kod do Twojej aplikacji z zewnątrz, 
+         bez modyfikowania oryginalnych klas.
+         Dzięki temu `AuditLog` albo `PerformanceMetrics` mogą pojawić się w Twoich serwisach "magicznie".
 
 przyklad klasy `pl.edu.praktyki.report.trait.AuditLog.groovy`:
 
