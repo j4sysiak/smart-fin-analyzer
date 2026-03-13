@@ -5,7 +5,13 @@ Lab 50
          bez modyfikowania oryginalnych klas.
          Dzięki temu `AuditLog` albo `PerformanceMetrics` mogą pojawić się w Twoich serwisach "magicznie".
 
-przyklad klasy `pl.edu.praktyki.report.trait.AuditLog.groovy`:
+przyklad klasy logujacej: `pl.edu.praktyki.report.trait.AuditLog.groovy`:
+trait `AuditLog` to po prostu "dodatek" do Twoich klas, który pozwala im mieć historię logów.
+trait to taka "mieszanka" między interfejsem a klasą abstrakcyjną. 
+Dzięki temu, każda klasa, która "miesza się" z `AuditLog`, 
+   zyskuje funkcjonalność logowania bez konieczności dziedziczenia po jakiejś konkretnej klasie bazowej.
+
+przykładowa implementacja `AuditLog`:
 
 ```groovy
 package pl.edu.praktyki.report.trait
@@ -31,7 +37,32 @@ trait AuditLog {
 }
 ```
 
-W świecie Spring Boota AOP jest fundamentem: to dzięki niemu działają `@Transactional`, `@Cacheable` czy `@Secured`.
+W świecie Spring Boota `AOP` jest fundamentem: to dzięki niemu działają `@Transactional`, `@Cacheable` czy `@Secured`.
+co masz na myśli, mówiąc "magiczne"?
+To, że możesz dodać funkcjonalność do swoich serwisów bez zmiany ich kodu. 
+Nie musisz dodawać `System.currentTimeMillis()` do każdej metody, żeby mierzyć czas. 
+Wystarczy, że napiszesz Aspekt (np. `LoggingAspect`), który "podepnie się" pod te metody i zrobi to za Ciebie.
+
+A @Transactional to też AOP?
+Dokładnie! Kiedy dodajesz `@Transactional` nad metodą, Spring tworzy Proxy, które otwiera transakcję przed wywołaniem metody i zamyka ją po jej zakończeniu. 
+Dzięki temu, Twoja metoda jest "magicznie" transakcyjna, bez konieczności pisania jakiegokolwiek kodu związanego z transakcjami w samej metodzie.
+
+A @cacheable to też AOP?
+Tak! `@Cacheable` działa na tej samej zasadzie. 
+Spring tworzy Proxy, które sprawdza, czy wynik danej metody jest już w cache'u. 
+Jeśli tak, zwraca go od razu, bez wywoływania oryginalnej metody. 
+Jeśli nie, wywołuje metodę, zapisuje wynik w cache'u i zwraca go. 
+To wszystko dzieje się "magicznie" dzięki AOP, bez konieczności dodawania kodu cache'ującego do Twoich serwisów.
+
+A @Secured to też AOP?
+Tak, `@Secured` również jest implementowane za pomocą AOP.
+Kiedy dodajesz `@Secured("ROLE_ADMIN")` nad metodą, Spring tworzy Proxy, które sprawdza, czy aktualny użytkownik ma rolę "ROLE_ADMIN" przed wywołaniem metody. 
+Jeśli użytkownik nie ma odpowiednich uprawnień, Proxy rzuca wyjątek `AccessDeniedException`, a metoda nie jest wywoływana. 
+Dzięki temu, możesz zabezpieczyć swoje metody bez dodawania kodu sprawdzającego uprawnienia w każdej metodzie, co jest ogromną zaletą AOP.
+
+Wow.
+
+
 
 Lab50--AOP--Aspect-Oriented-Programming
 ---------------------------------------
@@ -40,14 +71,13 @@ Cel:
 Stworzenie "Aspektu", który automatycznie mierzy czas wykonania każdej metody w serwisach, bez dodawania ani jednej linii kodu do tych serwisów.
 
 1. Dodanie zależności (build.gradle)
-
-AOP wymaga wsparcia dla AspectJ. Upewnij się, że masz to w dependencies:
+AOP wymaga wsparcia dla `AspectJ`. - upewnij się, że masz to w dependencies:
 
 ```groovy
 implementation 'org.springframework.boot:spring-boot-starter-aop'
 ```
 
-2. Stworzenie Aspektu (LoggingAspect.groovy)
+2. Stworzenie Aspektu - `LoggingAspect.groovy`
 
 Stwórz plik `src/main/groovy/pl/edu/praktyki/aop/LoggingAspect.groovy`. 
 Ten kod "podepnie się" pod metody innych klas.
@@ -67,7 +97,7 @@ class LoggingAspect {
     // "Around" oznacza: wykonaj to przed i po metodzie
     // @Around("execution(* pl.edu.praktyki.service.*.*(..))") 
     // ^ Wyrażenie "Pointcut": celuj we wszystkie metody w pakiecie .service
-    @Around("execution(* pl.edu.praktyki.service.*.*(..))")
+    @Around("execution(* pl.edu.praktyki.service.*.*(..))") 
     Object logExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable {
         long start = System.currentTimeMillis()
         
@@ -91,11 +121,12 @@ Twoje serwisy (`OrderProcessingService`, `CurrencyService`) nie mają pojęcia, 
 Są w 100% czyste od logiki technicznej.
 
 Globalny zasięg: 
-Jeśli jutro dodasz nowy serwis (np. `ReportGeneratorService`), Twój `LoggingAspect` automatycznie zacznie mierzyć czas jego metod, 
+Jeśli jutro dodasz nowy serwis (np. `ReportGeneratorService`), to twój `LoggingAspect` automatycznie zacznie mierzyć czas jego metod, 
 bo pasują do wyrażenia w execution(...).
 
 Cross-cutting concerns: 
-Wszelkie zagadnienia typu: `Logowanie`, `Transakcje`, `Bezpieczeństwo` (Kto może wywołać tę metodę?), `Cache` – wszystko to trzyma się w osobnych aspektach.
+Wszelkie zagadnienia typu: `Logowanie`, `Transakcje`, `Bezpieczeństwo` (Kto może wywołać tę metodę?), `Cache` 
+            – wszystko to trzyma się w osobnych aspektach.
 
 3. Testowanie Aspektu (Spock)
 
@@ -108,15 +139,74 @@ Stwórz `src/test/groovy/pl/edu/praktyki/aop/AopSpec.groovy`:
 package pl.edu.praktyki.aop
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.EnableAspectJAutoProxy
+import org.springframework.test.context.ContextConfiguration
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import pl.edu.praktyki.monitoring.FinanceMetrics
 import pl.edu.praktyki.service.TransactionIngesterService
+import pl.edu.praktyki.service.TransactionRuleService
 import pl.edu.praktyki.domain.Transaction
 import spock.lang.Specification
+import org.mockito.Mockito // Użyjemy Mockito, które jest domyślnie w spring-boot-starter-test
 
-@SpringBootTest(classes = [TransactionIngesterService, LoggingAspect])
+/**
+ * Przyczyna błędu: Test używał @SpringBootTest bez parametru classes, co powodowało próbę załadowania pełnego kontekstu aplikacji (baza danych, Flyway, Actuator itd.). Ponieważ kontekst nie mógł się poprawnie załadować, pole service pozostawało null, stąd NullPointerException.
+ Rozwiązanie: Zamiana @SpringBootTest na @ContextConfiguration z precyzyjnie podanymi klasami:
+ TransactionIngesterService — testowany serwis
+ TransactionRuleService — zależność serwisu (@Autowired ruleService)
+ LoggingAspect — testowany aspekt AOP
+ AopTestConfig — konfiguracja testowa z @EnableAspectJAutoProxy oraz stubami dla ApplicationEventPublisher i FinanceMetrics
+ Dzięki temu Spring tworzy lekki kontekst z tylko potrzebnymi beanami, bez bazy danych i innych ciężkich komponentów.
+
+
+ * Konfiguracja testowa dostarczająca brakujące zależności
+ * (ApplicationEventPublisher, FinanceMetrics) jako lekkie stuby
+ * oraz włączająca proxy AspectJ.
+ * lub możemy użyć Mockito, aby stworzyć "pusty" mock, który nie robi nic
+ * (wystarczy, że nie będzie rzucał wyjątków, bo nasz aspekt i tak nie będzie ich używał w tym teście).
+ */
+@Configuration
+
+// opis tej adnotacji: EnableAspectJAutoProxy
+// Hej Spring! Zanim wstrzykniesz mi serwis TransactionIngesterService przez @Autowired w class AopSpec,
+// sprawdź, czy napisałem dla niego jakiś Aspekt.
+// Jeśli tak, to wygeneruj w locie w pamięci RAM nową klasę (Proxy / Asystenta),
+// włóż prawdziwy serwis do jej środka,
+// owiń go moim logowaniem, i to tego Asystenta wstrzyknij do mojego testu!"
+@EnableAspectJAutoProxy // TO JEST KLUCZ: Włącza AOP dla tego testu
+class AopTestConfig {
+    @Bean
+    ApplicationEventPublisher eventPublisher() {
+        // return { event -> } as ApplicationEventPublisher
+        //  lub możemy użyć Mockito, aby stworzyć "pusty" mock, który nie robi nic
+        return Mockito.mock(ApplicationEventPublisher.class)
+    }
+
+    @Bean
+    FinanceMetrics financeMetrics() {
+        // return new FinanceMetrics(new SimpleMeterRegistry())
+        // lub, podobnie jak wyżej, możemy użyć Mockito, aby stworzyć "pusty" mock, który nie robi nic
+        return Mockito.mock(FinanceMetrics.class)
+    }
+}
+
+
+// Ładujemy tylko to, co jest nam potrzebne. To jest potęga lekkich testów Springa!
+@ContextConfiguration(classes =[
+        TransactionIngesterService,  // Testowany serwis
+        TransactionRuleService,      // Wymagany przez Ingestera (zależność serwisu (@Autowired ruleService))
+        LoggingAspect,               // Testowany aspekt AOP
+
+        AopTestConfig                // Włącza AOP i dodaje Mocki reszty zależności
+        // Konfiguracja testowa z @EnableAspectJAutoProxy oraz stubami dla ApplicationEventPublisher i FinanceMetrics
+])
 class AopSpec extends Specification {
 
-    @Autowired TransactionIngesterService service
+    @Autowired
+    TransactionIngesterService service // Teraz Spring go wstrzyknie!
 
     def "powinien uruchomić aspekt logujący przy wywołaniu metody serwisu"() {
         given: "transakcja"
@@ -132,21 +222,9 @@ class AopSpec extends Specification {
 }
 ```
 
-Twoje Wyzwanie: "Interceptor bezpieczeństwa"
 
-Dodaj drugi Aspekt SecurityAspect.groovy.
+//////////////////////////////////////  mam ERROR i poproszę o analizę i rozwiązanie problemu  /////////////////////////////////
 
-Użyj @Around.
-
-Zamiast mierzyć czas, sprawdź w joinPoint.args (argumenty metody), czy kwota transakcji nie przekracza np. 100 000 zł.
-
-Jeśli tak – rzuć SecurityException("ALERT: Nieautoryzowana wysoka kwota!").
-
-To ostatnie wyzwanie zamknie Twoją przygodę z Javą/Groovy na poziomie eksperckim. Dzięki temu będziesz rozumiał, jak działają systemy typu Spring Security ("czy użytkownik ma uprawnienia do tej metody?").
-
-Czy to ostatnie wyzwanie "weszło"? Jeśli tak – jesteś już gotowy na architektów, seniorów i trudne pytania rekrutacyjne! 🎩✨
-
-//////////////////////////////////////
 
 Przyczyna błędu: Test używał @SpringBootTest bez parametru classes, co powodowało próbę załadowania pełnego kontekstu aplikacji (baza danych, Flyway, Actuator itd.). Ponieważ kontekst nie mógł się poprawnie załadować, pole service pozostawało null, stąd NullPointerException.
 Rozwiązanie: Zamiana @SpringBootTest na @ContextConfiguration z precyzyjnie podanymi klasami:
@@ -471,3 +549,185 @@ Tworzy instancję TransactionProxy.
 TransactionProxy "owija" Twój serwis.
 
  
+
+
+===================   wyzwanie  ===================
+Twoje Wyzwanie: "Interceptor bezpieczeństwa"
+Dodaj drugi Aspekt SecurityAspect.groovy.
+Użyj `@Around`.
+Zamiast mierzyć czas, sprawdź w `joinPoint.args` (argumenty metody), 
+czy kwota transakcji nie przekracza np. 100 000 zł.
+
+Jeśli tak – rzuć `SecurityException("ALERT: Nieautoryzowana wysoka kwota!")`.
+
+To ostatnie wyzwanie zamknie Twoją przygodę z Javą/Groovy na poziomie eksperckim. 
+Dzięki temu będziesz rozumiał, jak działają systemy typu Spring Security ("czy użytkownik ma uprawnienia do tej metody?").
+
+Rozwiązanie:
+------------
+
+Implementacja własnego `Security Interceptora` to poziom "Master". 
+Pokazuje, że potrafisz nie tylko pisać kod, ale narzucać zasady (policy), których nikt nie może obejść.
+
+Oto jak wdrożyć "Strażnika Kwot" za pomocą `AOP`.
+
+1. Kod Aspektu:  `SecurityAspect.groovy`
+
+Stwórz plik `src/main/groovy/pl/edu/praktyki/aop/SecurityAspect.groovy`.
+
+```groovy
+package pl.edu.praktyki.aop
+
+import org.aspectj.lang.ProceedingJoinPoint
+import org.aspectj.lang.annotation.Around
+import org.aspectj.lang.annotation.Aspect
+import org.springframework.stereotype.Component
+import pl.edu.praktyki.domain.Transaction
+
+@Aspect
+@Component
+class SecurityAspect {
+
+    @Around("execution(* pl.edu.praktyki.service.*.ingestTransactions(..))")
+    Object checkTransactionAmount(ProceedingJoinPoint joinPoint) throws Throwable {
+        
+        // joinPoint.args zawiera argumenty przekazane do metody (tu: List<Transaction>)
+        def args = joinPoint.args
+        
+        if (args && args[0] instanceof List) {
+            List<Transaction> transactions = args[0]
+            
+            // Logika bezpieczeństwa: sprawdzamy każdą transakcję
+            transactions.each { tx ->
+                if (tx.amount > 100_000) {
+                    throw new SecurityException("ALERT: Nieautoryzowana wysoka kwota! Transakcja: ${tx.id}")
+                }
+            }
+        }
+        
+        // Jeśli wszystko OK, pozwalamy metodzie działać dalej
+        return joinPoint.proceed()
+    }
+}
+```
+
+2. Test Spock: `src/test/groovy/pl/edu/praktyki/aop/SecurityAspectSpec.groovy`
+
+Musimy sprawdzić, czy nasz "Strażnik" faktycznie blokuje wykonanie metody serwisu, 
+gdy kwota jest za wysoka.
+
+```groovy
+package pl.edu.praktyki.aop
+
+import org.mockito.Mockito
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.EnableAspectJAutoProxy
+import org.springframework.test.context.ContextConfiguration
+import pl.edu.praktyki.monitoring.FinanceMetrics
+import pl.edu.praktyki.service.TransactionIngesterService
+import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.service.TransactionRuleService
+import spock.lang.Specification
+
+
+@EnableAspectJAutoProxy // TO JEST KLUCZ: Włącza AOP dla tego testu
+class SecurityAopTestConfig {
+    @Bean
+    ApplicationEventPublisher eventPublisher() {
+        // return { event -> } as ApplicationEventPublisher
+        //  lub możemy użyć Mockito, aby stworzyć "pusty" mock, który nie robi nic
+        return Mockito.mock(ApplicationEventPublisher.class)
+    }
+
+    @Bean
+    FinanceMetrics financeMetrics() {
+        // return new FinanceMetrics(new SimpleMeterRegistry())
+        // lub, podobnie jak wyżej, możemy użyć Mockito, aby stworzyć "pusty" mock, który nie robi nic
+        return Mockito.mock(FinanceMetrics.class)
+    }
+}
+
+// Ładujemy tylko to, co jest nam potrzebne. To jest potęga lekkich testów Springa!
+@ContextConfiguration(classes =[
+        TransactionIngesterService,  // Testowany serwis
+        TransactionRuleService,      // Wymagany przez Ingestera (zależność serwisu (@Autowired ruleService))
+        SecurityAspect,              // Testowany aspekt AOP (Strażnik Kwot)
+
+        SecurityAopTestConfig        // Włącza AOP i dodaje Mocki reszty zależności
+        // Konfiguracja testowa z @EnableAspectJAutoProxy oraz stubami dla ApplicationEventPublisher i FinanceMetrics
+])
+class SecurityAspectSpec extends Specification {
+
+    @Autowired TransactionIngesterService service
+
+    def "powinien zablokować transakcję powyżej 100 000 zł"() {
+        given: "transakcja z gigantyczną kwotą"
+        def tx = new Transaction(id: "HACKER-1", amount: 999_999.0)
+
+        when: "próbujemy zaimportować taką transakcję"
+        service.ingestTransactions([tx])
+
+        then: "AOP wychwytuje to i rzuca SecurityException"
+        thrown(SecurityException)
+    }
+
+    def "powinien przepuścić transakcję bezpieczną"() {
+        given: "transakcja w limicie"
+        def tx = new Transaction(id: "OK-1", amount: 500.0)
+
+        when:
+        service.ingestTransactions([tx])
+
+        then: "brak wyjątku"
+        noExceptionThrown()
+    }
+}
+```
+
+Ten kod testu jest czysty i profesjonalny — wyciągnięcie konfiguracji testowej 
+`SecurityAopTestConfig` bezpośrednio do klasy testowej lub pliku obok to standard w projektach Spring Boot.
+
+Oto podsumowanie do Twojego pliku README.md, które wyjaśnia, dlaczego 
+Twoje podejście do AOP i bezpieczeństwa jest tak solidne:
+
+🛡️ Aspect-Oriented Security (AOP)
+
+W projekcie `Smart-Fin-Analyzer` wdrożyliśmy mechanizm AOP (Aspect Oriented Programming), 
+który działa jako "Strażnik" Twoich usług biznesowych.
+
+Co się dzieje w SecurityAspect?
+-------------------------------
+Separacja Logiki: 
+Logika biznesowa w `TransactionIngesterService` nie zawiera żadnych instrukcji if (amount > 100000). 
+Jest ona "czysta".
+
+Aspekt (Aspect): 
+`SecurityAspect` używa adnotacji `@Around("execution(...)")`, która pozwala mu „przechwycić” wywołanie metody przed jej faktycznym wykonaniem.
+
+Bezpieczeństwo: 
+Aspekt skanuje argumenty wywołania `joinPoint.args`. 
+Jeśli wykryje, że kwota transakcji przekracza ustalony limit, rzuca `SecurityException` zanim metoda biznesowa w ogóle otrzyma dane.
+
+Dlaczego to podejście jest "Pro"?
+
+Centralizacja reguł: 
+Możesz w jednym miejscu zdefiniować politykę bezpieczeństwa dla całej warstwy serwisowej.
+
+Testowalność: 
+Dzięki zastosowaniu `@ContextConfiguration` w połączeniu ze Spring Test, 
+przetestowaliśmy aspekt w izolacji od bazy danych, używając mocków (via Mockito) dla zewnętrznych zależności.
+
+Brak zaśmiecania kodu: 
+Kontrolery i serwisy skupiają się na tym, co mają robić, a nie na tym, jak sprawdzać uprawnienia czy limity – za to odpowiada warstwa aspektów.
+
+Jak działa test `SecurityAspectSpec`?
+
+Testy wykorzystują tzw. `Minimalny Kontekst Springa`:
+
+`@ContextConfiguration` ładuje tylko niezbędne komponenty (serwis, aspekt i konfigurację).
+
+`SecurityAopTestConfig` dostarcza wymagane przez serwis beany (takie jak FinanceMetrics i ApplicationEventPublisher) 
+w formie mocków, co sprawia, że testy uruchamiają się w ułamku sekundy, nie potrzebując pełnego środowiska serwerowego.
