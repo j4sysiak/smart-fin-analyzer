@@ -71,6 +71,12 @@ dependencies {
 
     // Lab50--AOP--Aspect-Oriented-Programming
     implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+    // Lab52--Wzorzec-Circuit-Breaker--Bezpieczeństwo-w-Mikrousługach
+    // Dedykowany starter Resilience4j dla Spring Boot 3
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
+    // WYMAGANE! Bez AOP adnotacja @CircuitBreaker nie zostanie wykryta przez Springa
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
 }
 
 test {
