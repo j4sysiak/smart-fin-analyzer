@@ -9,7 +9,8 @@ class OrderProcessor {
 
     // Spring wstrzyknie WSZYSTKIE implementacje!
     // <--- wrzuca tu WSZYSTKIE Beany typu OrderStrategy!
-    @Autowired List<OrderStrategy> strategies
+    @Autowired
+    List<OrderStrategy> strategies
 
     void process(String type, BigDecimal amount) {
 

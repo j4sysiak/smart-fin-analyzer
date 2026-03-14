@@ -1,8 +1,8 @@
-Lab 42
-------
+Lab 42-1
+--------
 
-Lab 29: Strategia Wyboru Implementacji (Wzorce Projektowe)
-----------------------------------------------------------
+Lab42-1--Wzorzec-Strategii-z-Spring--Plugin--Auto-detection
+-----------------------------------------------------------
 
 W Javie często mamy interfejs i 5 implementacji. 
 Wybór tej właściwej na podstawie jakiejś flagi (np. "dostawca płatności") w Springu robi się przez @Qualifier lub mapy Beanów.
