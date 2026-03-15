@@ -14,8 +14,9 @@ import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.domain.Transaction
 import java.time.LocalDate
 import org.springframework.scheduling.annotation.EnableScheduling
+import pl.edu.praktyki.facade.SmartFinFacade // <-- wzorzec Facade
 
-// 1. GŁÓWNA KLASA (Teraz jest czysta, tylko startuje Springa)
+// 1. GŁÓWNA KLASA (Tylko startuje Springa)
 @SpringBootApplication
 @EnableCaching
 @EnableScheduling
@@ -25,10 +26,88 @@ class SmartFinDbApp {
     }
 }
 
+
 // 2. KLASA URUCHOMIENIOWA CLI
 @Component
 @Profile("!test") // <-- MAGIA: Uruchomi się zawsze, CHYBA ŻE aktywny jest profil "test"
 class SmartFinCliRunner implements CommandLineRunner {
+
+    // Zamiast 6 serwisów, wstrzykujemy tylko JEDNĄ Fasadę!
+    // Na podstawie klasy SmartFinCliRunner_invalidated (linie 71–76),
+    // oto 6 serwisów, które zostały zastąpione jedną fasadą:
+    // 1. TransactionIngesterService (linia 71) – ingester do przetwarzania i tagowania transakcji
+    // 2. CurrencyService (linia 72) – pobieranie kursów walut
+    // 3. FinancialAnalyticsService (linia 73) – obliczanie bilansu, kategorii wydatków
+    // 4. ReportGeneratorService (linia 74) – generowanie raportu miesięcznego
+    // 5. FinanceMetrics (linia 76) – aktualizacja metryk monitoringu (bilans na "tablicy LED")
+    // 6. TransactionRepository (linia 75), czyli technicznie wstrzykiwano 6 zależności
+    // Wszystkie te zależności zostały ukryte za SmartFinFacade (linia 36),
+    // która eksponuje jedną metodę processAndGenerateReport().
+
+    @Autowired SmartFinFacade smartFinFacade
+    @Autowired CurrencyService currencySvc // Zostawiamy tylko do walidacji początkowej waluty
+
+    @Override
+    void run(String... args) {
+        def cli = new CliBuilder(usage: 'smart-fin-db -u <user> [-c <currency>]')
+        cli.with {
+            u longOpt: 'user', args: 1, required: true, 'Imię i nazwisko użytkownika'
+            c longOpt: 'currency', args: 1, 'Waluta bazowa (domyślnie PLN)'
+            h longOpt: 'help', 'Pokaż pomoc'
+        }
+
+        def opts = cli.parse(args)
+        if (!opts || opts.h) return
+
+        println "\n========================================="
+        println ">>> Uruchamianie wersji z BAZĄ DANYCH (H2)..."
+
+        def targetCurrency = opts.c ?: "PLN"
+        if (targetCurrency != "PLN") {
+            def rate = currencySvc.getExchangeRate(targetCurrency)
+            if (rate == null) {
+                System.err.println "BŁĄD: Waluta $targetCurrency nie jest obsługiwana."
+                return
+            }
+        }
+
+        def rawData = [
+                new Transaction(id: "1", amount: 100, currency: "EUR", category: "Jedzenie", description: "Obiad", date: LocalDate.now()),
+                new Transaction(id: "2", amount: -50, currency: "USD", category: "Rozrywka", description: "Kino", date: LocalDate.now()),
+                new Transaction(id: "3", amount: 2000, currency: "PLN", category: "Praca", description: "Bonus", date: LocalDate.now())
+        ]
+
+        rawData.each { tx ->
+            def rate = currencySvc.getExchangeRate(tx.currency)
+            tx.amountPLN = tx.amount * rate
+        }
+
+        def rules = ["if (amountPLN < -100) addTag('BIG_SPENDER')"]
+
+        // =========================================================
+        // TUTAJ DZIEJE SIĘ MAGIA FASADY
+        // Wywalamy 30 linijek kodu i zastępujemy jedną metodą!
+        // =========================================================
+        String report = smartFinFacade.processAndGenerateReport(opts.u, rawData, rules)
+
+        println "\n" + report
+        def fileName = "db_report_${opts.u.replace(' ', '_')}.txt"
+        new File(fileName).text = report
+        println ">>> Raport zapisany: $fileName"
+        println "=========================================\n"
+    }
+}
+
+//  Now invalidated this code  - poniewaz wdrożyliśmy wzorzec FASADY - smartFinFacade.groovy.
+//  Zamiast rozpraszać logikę po całej klasie CLI, przenieśliśmy ją do jednej, zgrabnej metody w fasadzie.
+//  Teraz CLI jest super czyste i skupia się tylko na interakcji z użytkownikiem,
+//  a cała złożoność przetwarzania danych jest ukryta za fasadą.
+//  Stary kod pozostawiamy zakomentowany, aby pokazać różnicę i dla porównania z wersją fasadową.
+//  ale zostawiamy ją w repozytorium jako punkt odniesienia i dla porównania z wersją fasadową.
+// 2. KLASA URUCHOMIENIOWA CLI
+@Component
+@Profile("!test") // <-- MAGIA: Uruchomi się zawsze, CHYBA ŻE aktywny jest profil "test"
+class SmartFinCliRunner_invalidated implements CommandLineRunner {
 
     @Autowired TransactionIngesterService ingester
     @Autowired CurrencyService currencySvc
