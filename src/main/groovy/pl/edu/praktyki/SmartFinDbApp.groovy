@@ -15,6 +15,8 @@ import pl.edu.praktyki.domain.Transaction
 import java.time.LocalDate
 import org.springframework.scheduling.annotation.EnableScheduling
 import pl.edu.praktyki.facade.SmartFinFacade // <-- wzorzec Facade
+import pl.edu.praktyki.parser.TransactionParser
+import pl.edu.praktyki.parser.ParserFactory
 
 // 1. GŁÓWNA KLASA (Tylko startuje Springa)
 @SpringBootApplication
@@ -27,7 +29,7 @@ class SmartFinDbApp {
 }
 
 
-// 2. KLASA URUCHOMIENIOWA CLI
+// 2. KLASA URUCHOMIENIOWA CLI  (od nowa wersja z Fasadą)
 @Component
 @Profile("!test") // <-- MAGIA: Uruchomi się zawsze, CHYBA ŻE aktywny jest profil "test"
 class SmartFinCliRunner implements CommandLineRunner {
@@ -53,6 +55,7 @@ class SmartFinCliRunner implements CommandLineRunner {
         cli.with {
             u longOpt: 'user', args: 1, required: true, 'Imię i nazwisko użytkownika'
             c longOpt: 'currency', args: 1, 'Waluta bazowa (domyślnie PLN)'
+            f longOpt: 'file', args: 1, required: true, 'Ścieżka do pliku CSV lub JSON'
             h longOpt: 'help', 'Pokaż pomoc'
         }
 
@@ -70,12 +73,25 @@ class SmartFinCliRunner implements CommandLineRunner {
                 return
             }
         }
+        def myFile = new File(opts.f as String)
+        if (!myFile.exists()) {
+            System.err.println "BŁĄD: Plik ${myFile.path} nie istnieje."
+            return
+        }
 
+        // z nazwy pliku wybieramy odpowiedni parser (CSV, JSON, XML, itp.)
+        // To jest miejsce, gdzie wzorzec FASADA naprawdę błyszczy
+        //        – zamiast rozpraszać logikę wyboru parsera po całej klasie
+        // Wzorzec Strategy + DIP: fabryka dobiera parser (CSV/JSON) na podstawie rozszerzenia
+        TransactionParser parser = ParserFactory.getParserForFile(myFile)
+
+        List<Transaction> rawData = parser.parse(myFile)
+        /*
         def rawData = [
                 new Transaction(id: "1", amount: 100, currency: "EUR", category: "Jedzenie", description: "Obiad", date: LocalDate.now()),
                 new Transaction(id: "2", amount: -50, currency: "USD", category: "Rozrywka", description: "Kino", date: LocalDate.now()),
                 new Transaction(id: "3", amount: 2000, currency: "PLN", category: "Praca", description: "Bonus", date: LocalDate.now())
-        ]
+        ] */
 
         rawData.each { tx ->
             def rate = currencySvc.getExchangeRate(tx.currency)
@@ -97,6 +113,12 @@ class SmartFinCliRunner implements CommandLineRunner {
         println "=========================================\n"
     }
 }
+
+
+
+
+
+
 
 //  Now invalidated this code  - poniewaz wdrożyliśmy wzorzec FASADY - smartFinFacade.groovy.
 //  Zamiast rozpraszać logikę po całej klasie CLI, przenieśliśmy ją do jednej, zgrabnej metody w fasadzie.

@@ -1,0 +1,4 @@
+id,amount,currency,category,description,date
+1,100,EUR,Jedzenie,Obiad,2025-07-22
+2,-50,USD,Rozrywka,Kino,2025-07-22
+3,2000,PLN,Praca,Bonus,2025-07-22

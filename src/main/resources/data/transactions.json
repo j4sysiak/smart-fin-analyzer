@@ -1,0 +1,26 @@
+[
+  {
+    "id": "1",
+    "amount": 100,
+    "currency": "EUR",
+    "category": "Jedzenie",
+    "description": "Obiad",
+    "date": "2025-07-22"
+  },
+  {
+    "id": "2",
+    "amount": -50,
+    "currency": "USD",
+    "category": "Rozrywka",
+    "description": "Kino",
+    "date": "2025-07-22"
+  },
+  {
+    "id": "3",
+    "amount": 2000,
+    "currency": "PLN",
+    "category": "Praca",
+    "description": "Bonus",
+    "date": "2025-07-22"
+  }
+]
