@@ -74,3 +74,20 @@ manager.runAll(myTransaction)
 
 This pattern enables a dynamic, extensible pipeline — 
    new processing steps can be added at runtime without modifying existing code, following the **Open/Closed Principle**.
+
+
+
+## 🧩 Architektura i Wzorce Projektowe
+System został zaprojektowany z wykorzystaniem najlepszych praktyk inżynierskich:
+* **Chain of Responsibility:** Logika walidacji transakcji (Fraud Detection) rozbita na niezależne jednostki.
+* **Strategy Pattern:** Dynamiczne wybieranie logiki procesowania (`VipOrderStrategy`, `StandardOrderStrategy`).
+* **Proxy / AOP:** Przechwytywanie wywołań metod dla celów logowania czasu i bezpieczeństwa.
+* **Facade:** Uproszczony interfejs (`SmartFinFacade`) ukrywający złożoność całego systemu.
+* **Composite:** Rekurencyjne drzewa danych (Portfele inwestycyjne) z zachowaniem zasady Liskov.
+* **Singleton (Spring Scope):** Świadome zarządzanie stanem aplikacji w środowisku wielowątkowym.
+  Czy to wyczerpuje temat?
+
+TAK. Jeśli rozumiesz te wzorce i potrafisz je zaimplementować w Groovym, to jesteś na poziomie,
+który pozwala Ci wejść do dowolnego projektu opartego na JVM i szybko połapać się w jego architekturze.
+
+
