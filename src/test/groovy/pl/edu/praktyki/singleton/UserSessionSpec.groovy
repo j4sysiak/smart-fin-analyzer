@@ -9,15 +9,15 @@ class UserSessionSpec extends Specification {
         given:
         def service = new UserSessionService()
 
-        when: "50 wątków rejestruje próby dla tego samego użytkownika"
+        when: "50000 wątków rejestruje próby dla tego samego użytkownika"
         GParsPool.withPool {
-            (1..50).collectParallel {
+            (1..50000).collectParallel {
                 service.recordAttempt("jan_kowalski")
             }
         }
 
-        then: "liczba prób wynosi dokładnie 50"
-        service.getAttempts("jan_kowalski") == 50
+        then: "liczba prób wynosi dokładnie 50000"
+        service.getAttempts("jan_kowalski") == 50000
     }
 
     def "powinien zliczać niezależnie dla różnych użytkowników"() {
@@ -26,16 +26,16 @@ class UserSessionSpec extends Specification {
 
         when:
         GParsPool.withPool {
-            (1..30).collectParallel {
+            (1..3000).collectParallel {
                 service.recordAttempt("user_A")
             }
-            (1..20).collectParallel {
+            (1..2000).collectParallel {
                 service.recordAttempt("user_B")
             }
         }
 
         then:
-        service.getAttempts("user_A") == 30
-        service.getAttempts("user_B") == 20
+        service.getAttempts("user_A") == 3000
+        service.getAttempts("user_B") == 2000
     }
 }

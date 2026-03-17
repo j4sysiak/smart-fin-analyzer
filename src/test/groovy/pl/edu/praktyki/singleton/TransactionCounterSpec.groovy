@@ -4,6 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.ContextConfiguration
+import pl.edu.praktyki.repository.Counter
+import pl.edu.praktyki.repository.CounterRepository
 import spock.lang.Specification
 import groovyx.gpars.GParsPool
 import pl.edu.praktyki.SmartFinDbApp
@@ -26,14 +28,14 @@ class TransactionCounterSpec extends Specification {
     }
 
     def "baza danych powinna bezpiecznie inkrementować licznik wielowątkowo"() {
-        when: "100 wątków inkrementuje ten sam licznik w bazie"
+        when: "10000 wątków inkrementuje ten sam licznik w bazie"
         GParsPool.withPool {
-            (1..100).collectParallel {
+            (1..10000).collectParallel {
                 counterService.increment("requests")
             }
         }
 
-        then: "wynik wynosi dokładnie 100"
-        counterService.getCounter("requests") == 100
+        then: "wynik wynosi dokładnie 10000"
+        counterService.getCounter("requests") == 10000
     }
 }

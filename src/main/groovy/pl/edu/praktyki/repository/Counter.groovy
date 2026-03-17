@@ -1,4 +1,4 @@
-package pl.edu.praktyki.singleton
+package pl.edu.praktyki.repository
 
 import jakarta.persistence.*
 
