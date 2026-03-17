@@ -11,6 +11,7 @@ plugins {
 
     // Budowanie obrazu Dockerowego aplikacji za pomocą Jib
     id 'com.google.cloud.tools.jib' version '3.4.0'
+
 }
 
 java {
@@ -77,6 +78,10 @@ dependencies {
     implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
     // WYMAGANE! Bez AOP adnotacja @CircuitBreaker nie zostanie wykryta przez Springa
     implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+    // WireMock do symulowania zewnętrznych serwerów REST API
+    // spring-cloud-contract-wiremock dostarcza własny WireMock (wiremock-jre8-standalone)
+    testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock:4.1.0'
 }
 
 test {

@@ -8,6 +8,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
+import org.springframework.beans.factory.annotation.Value // DODAJ IMPORT
 
 @Service
 @Slf4j
@@ -15,6 +16,10 @@ class CurrencyService {
 
     private final HttpClient client = HttpClient.newHttpClient()
     private final JsonSlurper slurper = new JsonSlurper()
+
+    // Zaciągamy URL z konfiguracji Springa
+    @Value('${currency.api.url:https://open.er-api.com/v6/latest/PLN}')
+    private String apiUrl
 
     /**
      * Pobiera aktualny kurs wymiany dla danej waluty względem PLN.
@@ -31,8 +36,10 @@ class CurrencyService {
         log.info(">>> [API CALL] Pobieram kurs z internetu dla: {}", fromCurrency)
 
         //try {
+            // UŻYWAMY ZMIENNEJ ZAMIAST TEKSTU NA SZTYWNO!
             def request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://open.er-api.com/v6/latest/PLN")) // API zwraca kursy względem PLN, więc zawsze pytamy o PLN jako bazę
+                    //.uri(URI.create("https://open.er-api.com/v6/latest/PLN")) // API zwraca kursy względem PLN, więc zawsze pytamy o PLN jako bazę
+                    .uri(URI.create(apiUrl))
                     .GET()
                     .build()
 
