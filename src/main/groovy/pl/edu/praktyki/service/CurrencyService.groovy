@@ -18,6 +18,15 @@ class CurrencyService {
     private final JsonSlurper slurper = new JsonSlurper()
 
     // Zaciągamy URL z konfiguracji Springa
+    /*
+    @Value: To adnotacja ze Spring Framework, która wstrzykuje wartość z konfiguracji do pola apiUrl.
+    Oto jak działa:
+    ${currency.api.url} — Spring szuka właściwości currency.api.url w plikach konfiguracyjnych (application.properties / application.yml, zmiennych środowiskowych itp.).
+    :https://open.er-api.com/v6/latest/PLN — część po dwukropku to wartość domyślna.
+    Jeśli Spring nie znajdzie `currency.api.url` w żadnej konfiguracji, użyje tego URL-a.
+    Dzięki temu URL API nie jest zahardkodowany w kodzie — można go łatwo zmienić np. w application.yml:
+    bez konieczności modyfikacji kodu źródłowego. To ułatwia też testowanie — w testach można podać mockowy URL.
+    */
     @Value('${currency.api.url:https://open.er-api.com/v6/latest/PLN}')
     private String apiUrl
 

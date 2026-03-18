@@ -5,8 +5,8 @@ Lab60--WireMock--czyli-Koniec-z-uzależnieniem-od-Internetu
 ----------------------------------------------------------
 
 
-Obecnie Twój CurrencyService łączy się z `https://open.er-api.com` - 
-              Pobiera aktualny kurs wymiany dla danej waluty względem PLN
+Obecnie Twój CurrencyService łączy się z internetem do strony: `https://open.er-api.com` - 
+              - i pobiera aktualny kurs wymiany dla danej waluty względem PLN.
 
 Problem: 
 Jeśli to API padnie, Twoje testy (`CurrencyServiceSpec`, `SmartFinIntegrationSpec`) zaczną świecić na czerwono. 
@@ -29,6 +29,7 @@ testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock:4.1
 ```
 (Odśwież Gradle - Sloń)
 
+
 Krok 2: Przygotowanie serwisu na zmianę adresu URL
 --------------------------------------------------
 
@@ -36,7 +37,8 @@ Zły kod (tzw. Hardcoded):
 Twój `CurrencyService` ma na sztywno wpisany adres https://open.er-api.com....
 
 Dobry kod (Mid-level): 
-Adres URL powinien być wczytywany z pliku `application.properties`, żeby w testach można było go podmienić na adres `WireMocka` (czyli na localhost).
+Adres URL powinien być wczytywany z pliku `application.properties`, żeby w testach można było go podmienić 
+           na adres `WireMocka` (czyli na localhost).
 
 Zmień `CurrencyService.groovy`, aby wyglądał tak:
 
