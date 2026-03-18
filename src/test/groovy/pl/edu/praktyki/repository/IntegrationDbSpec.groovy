@@ -1,0 +1,76 @@
+package pl.edu.praktyki.repository
+
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.ContextConfiguration
+import pl.edu.praktyki.SmartFinDbApp
+import spock.lang.Specification
+
+@SpringBootTest(classes = [SmartFinDbApp])
+@ContextConfiguration // Wymagane przez Spock-Spring 2.3 do aktywacji SpringExtension
+// TYMCZASOWO: "local-pg" zamiast "tc" — dane zostaną w Twoim kontenerze PostgreSQL
+@ActiveProfiles(["test", "local-pg"])
+class IntegrationDbSpec extends Specification {
+
+/*
+
+Działa pięknie! Oto podsumowanie:
+Twój PostgreSQL jest gotowy do inspekcji
+
+Parametr          Wartość
+--------------------------------
+Host              localhost:5432
+Baza              smartfin_db
+User              smartfin
+Hasło             smartfin123
+
+    3 tabele utworzone przez Hibernate:
+    transactions            — główna tabela z transakcjami (1 rekord z testu: DB-1, 500.00 zł)
+    transaction_entity_tags — tagi powiązane z transakcjami (relacja 1:N)
+    counters                — liczniki
+
+    Przydatne komendy psql:
+    -----------------------
+
+    # Wejdź do interaktywnej konsoli psql
+    docker exec -it smartfin-postgres psql -U smartfin -d smartfin_db
+
+    # Pokaż tabele:       \dt
+    # Struktura tabeli:    \d transactions
+    # Wszystkie dane:      SELECT * FROM transactions;
+    # Wyjście z psql:      \q
+
+
+    Narzędzia GUI:
+    Możesz też podłączyć się z DBeaver, pgAdmin lub IntelliJ Database Tool — po prostu wpisz powyższe dane połączenia.
+    Uwaga: Gdy skończysz inspekcję, przywróć profil tc w teście (Testcontainers) i włącz cleanup(), żeby test był powtarzalny. Kontener możesz zatrzymać przez: docker stop smartfin-postgres && docker rm smartfin-postgres
+
+*/
+
+
+    @Autowired
+    TransactionRepository repository
+
+
+    // cleanup wyłączony tymczasowo — dane zostają w bazie do inspekcji
+    // def cleanup() {
+    //     repository?.deleteAll()
+    // }
+
+    def "powinien zapisać TransactionEntity i odczytać dane z prawdziwego PostgreSQL w kontenerze"() {
+        given: "nowa encja"
+        def entity = new TransactionEntity(
+                originalId: "DB-1",
+                amount: 500.0,
+                category: "Test"
+        )
+
+        when: "zapisujemy w prawdziwej bazie"
+        repository.save(entity)
+
+        then: "dane są w bazie"
+        repository.findAll().size() == 1
+        repository.findAll()[0].originalId == "DB-1"
+    }
+}

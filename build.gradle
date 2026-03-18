@@ -82,6 +82,15 @@ dependencies {
     // WireMock do symulowania zewnętrznych serwerów REST API
     // spring-cloud-contract-wiremock dostarcza własny WireMock (wiremock-jre8-standalone)
     testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock:4.1.0'
+
+    // Testcontainers do testowania integracyjnego z prawdziwą bazą danych PostgreSQL
+    // Lab61--Testowanie-Integracyjne-z-Testcontainers--Groovy-Spock-and-Docker
+    testImplementation 'org.testcontainers:spock:1.19.3'
+    testImplementation 'org.testcontainers:postgresql:1.19.3'
+    testImplementation 'org.testcontainers:jdbc:1.19.3'
+
+    // Sterownik JDBC PostgreSQL — wymagany przez Testcontainers do połączenia z kontenerem
+    testRuntimeOnly 'org.postgresql:postgresql'
 }
 
 test {
@@ -91,6 +100,9 @@ test {
     testLogging {
         events "passed", "skipped", "failed", "standardOut", "standardError"
         showStandardStreams = true
+        exceptionFormat = 'full'
+        showCauses = true
+        showExceptions = true
     }
 }
 
