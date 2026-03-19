@@ -1,8 +1,8 @@
 Lab 61
 ------
 
-Lab61--Testcontainers-Baza-danych-w-kontenerze--Zamiast-H2
-----------------------------------------------------------
+Lab61--Testcontainers-Baza-danych-w-kontenerze--Testy-Integracyjne-naPostgresie-różne-profile-testowania
+--------------------------------------------------------------------------------------------------------
 
 Zaczynamy realizację Etapu 1: Kuloodporne Testy i Izolacja.
 
