@@ -10,10 +10,23 @@ import spock.lang.Specification
 @SpringBootTest(classes = [SmartFinDbApp])
 @ContextConfiguration // Wymagane przez Spock-Spring 2.3 do aktywacji SpringExtension
 // TYMCZASOWO: "local-pg" zamiast "tc" — dane zostaną w Twoim kontenerze PostgreSQL
-@ActiveProfiles(["test", "local-pg"])
+@ActiveProfiles(["test", "local-pg"]) //  <-- Ustaw ten profil, gdy chcesz połączyć się z lokalnym PostgreSQL (pamiętaj o cleanup()!)
+// @ActiveProfiles(["test", "tc"])       //  <-- Włącz ten profil, gdy chcesz użyć Testcontainers (pamiętaj o cleanup()!)
 class IntegrationDbSpec extends Specification {
 
 /*
+test inspekcja z prawdziwym PostgreSQL-em w kontenerze Docker — bez Testcontainers, ręcznie:
+1. Ustaw profil "local-pg" w @ActiveProfiles
+
+2. Uruchom najpierw kontener PostgreSQL:
+docker run -d --name smartfin-postgres -e POSTGRES_DB=smartfin_db -e POSTGRES_USER=smartfin -e POSTGRES_PASSWORD=smartfin123 -p 5432:5432 postgres:16-alpine
+
+3. Pamiętaj, żeby mieć wyłączony cleanup()!
+
+4. Uruchom test:
+./gradlew test --tests "pl.edu.praktyki.repository.IntegrationDbSpec" -Dtest.single=IntegrationDbSpec -Dspring.profiles.active=test,local-pg
+
+
 
 Działa pięknie! Oto podsumowanie:
 Twój PostgreSQL jest gotowy do inspekcji
@@ -48,15 +61,13 @@ Hasło             smartfin123
 
 */
 
-
     @Autowired
     TransactionRepository repository
 
-
-    // cleanup wyłączony tymczasowo — dane zostają w bazie do inspekcji
-    // def cleanup() {
-    //     repository?.deleteAll()
-    // }
+    // cleanup włączony — Testcontainers wymaga powtarzalności
+    //def cleanup() {
+    //    repository?.deleteAll()
+    //}
 
     def "powinien zapisać TransactionEntity i odczytać dane z prawdziwego PostgreSQL w kontenerze"() {
         given: "nowa encja"
