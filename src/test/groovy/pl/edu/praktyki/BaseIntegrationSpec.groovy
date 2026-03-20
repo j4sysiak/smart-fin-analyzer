@@ -15,22 +15,42 @@ import spock.lang.Specification
 abstract class BaseIntegrationSpec extends Specification {
 
     // 2. Statyczny kontener - uruchomi się TYLKO RAZ dla całego zestawu testów
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+    // Zmienna kontenera — może pozostać null gdy chcemy użyć lokalnego PostgreSQL (profil local-pg)
+    static PostgreSQLContainer<?> postgres
 
-    // Blok statyczny uruchamia się w momencie załadowania klasy przez JVM
-    static {
-        postgres.start()
-    }
+    // Nie uruchamiamy Testcontainers w static initializerze — zrobimy to leniwie
+    // w configureProperties, ponieważ wtedy mamy pewność, że system properties
+    // i profile ustawione przez Gradle/IDE są już widoczne.
 
     // 3. Dynamiczne wstrzyknięcie danych logowania do Springa
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", { postgres.getJdbcUrl() })
-        registry.add("spring.datasource.username", { postgres.getUsername() })
-        registry.add("spring.datasource.password", { postgres.getPassword() })
+        // Sprawdzamy aktywne profile z system properties lub zmiennych środowiskowych.
+        def active = System.getProperty("spring.profiles.active") ?: System.getenv("SPRING_PROFILES_ACTIVE")
+        def activeProfiles = (active == null) ? [] : active.tokenize(',').collect { it.trim() }
 
-        // Zmuszamy Hibernate do stworzenia tabel od zera w pustym Postgresie
-        registry.add("spring.jpa.hibernate.ddl-auto", { "create-drop" })
-        registry.add("spring.flyway.enabled", { "false" })
+        def useLocalEnv = System.getenv("USE_LOCAL_PG") ?: System.getProperty("useLocalPg")
+        def useLocal = false
+        if (useLocalEnv != null) {
+            useLocal = ['true', '1', 'yes'].contains(useLocalEnv.toLowerCase())
+        }
+
+        if (!useLocal && !activeProfiles.contains('local-pg')) {
+            // Uruchamiamy Testcontainers tylko wtedy gdy nie proszono o lokalny Postgres
+            if (postgres == null) {
+                postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+                postgres.start()
+            }
+
+            registry.add("spring.datasource.url", { postgres.getJdbcUrl() })
+            registry.add("spring.datasource.username", { postgres.getUsername() })
+            registry.add("spring.datasource.password", { postgres.getPassword() })
+
+            // Zmuszamy Hibernate do stworzenia tabel od zera w pustym Postgresie
+            registry.add("spring.jpa.hibernate.ddl-auto", { "create-drop" })
+            registry.add("spring.flyway.enabled", { "false" })
+        } else {
+            // Pozwól konfiguracji (np. application-local-pg.properties) sterować połączeniem
+        }
     }
 }

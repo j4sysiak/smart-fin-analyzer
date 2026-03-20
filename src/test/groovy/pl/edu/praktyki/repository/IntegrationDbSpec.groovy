@@ -12,7 +12,8 @@ import spock.lang.Specification
 // @ActiveProfiles(["test", "local-pg"]) //  <-- Ustaw ten profil, gdy chcesz połączyć się z lokalnym PostgreSQL (pamiętaj o cleanup()!)
 
 @AutoConfigureMockMvc
-@ActiveProfiles(value = ["tc"], inheritProfiles = false)       //  <-- Ustawiamy tylko 'tc' żeby uniknać konfliktu z H2 (profil 'test')
+// @ActiveProfiles(value = ["tc"], inheritProfiles = false)       //  <-- Ustawiamy tylko 'tc' żeby uniknać konfliktu z H2 (profil 'test')
+@ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
 class IntegrationDbSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
 /*
