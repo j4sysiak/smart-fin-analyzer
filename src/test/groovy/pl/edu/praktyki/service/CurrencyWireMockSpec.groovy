@@ -3,21 +3,25 @@ package pl.edu.praktyki.service
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import pl.edu.praktyki.SmartFinDbApp
+import pl.edu.praktyki.BaseIntegrationSpec
+import pl.edu.praktyki.repository.TransactionRepository
 import spock.lang.Shared
-import spock.lang.Specification
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 
-@SpringBootTest(classes = [SmartFinDbApp])
-@ContextConfiguration
-@ActiveProfiles("test")
-class CurrencyWireMockSpec extends Specification {
+// @SpringBootTest(classes = [SmartFinDbApp])
+// @ContextConfiguration
+// @ActiveProfiles("test")
+
+// @AutoConfigureMockMvc
+@AutoConfigureWireMock(port = 0) // To zostawiamy, bo to dotyczy tylko tego testu!
+@ActiveProfiles(value = "tc", inheritProfiles = false)
+class CurrencyWireMockSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
     // WireMock uruchamiany programowo — w pełni kontrolujemy cykl życia serwera
     @Shared
@@ -28,6 +32,9 @@ class CurrencyWireMockSpec extends Specification {
     @Autowired
     CurrencyService currencyService
 
+    @Autowired
+    TransactionRepository repository
+
     // Dynamiczne ustawianie URL w konfiguracji Springa na adres WireMock-a
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -36,6 +43,9 @@ class CurrencyWireMockSpec extends Specification {
     }
 
     def setup() {
+        // Przed każdym testem czyścimy bazę i dodajemy świeże dane
+        repository.deleteAll()
+
         // Czyszczenie stubów przed każdym testem
         wireMockServer.resetAll()
     }

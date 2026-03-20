@@ -1,5 +1,8 @@
 package pl.edu.praktyki.service
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import pl.edu.praktyki.BaseIntegrationSpec
+import pl.edu.praktyki.repository.TransactionRepository
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -7,13 +10,24 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.ContextConfiguration
 import pl.edu.praktyki.SmartFinDbApp
 
-@ActiveProfiles("test")
-@SpringBootTest(classes = [SmartFinDbApp])
-@ContextConfiguration
-class CurrencyServiceSpec extends Specification {
+// @ActiveProfiles("test")
+// @SpringBootTest(classes = [SmartFinDbApp])
+// @ContextConfiguration
+
+@AutoConfigureMockMvc
+@ActiveProfiles(value = "tc", inheritProfiles = false)
+class CurrencyServiceSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
+
+    @Autowired
+    TransactionRepository repository
 
     @Autowired
     CurrencyService currencyService
+
+    def setup() {
+        // Przed każdym testem czyścimy bazę i dodajemy świeże dane
+        repository.deleteAll()
+    }
 
     def "powinien pobrać kurs wymiany dla EUR"() {
         when: "pytamy o kurs EUR"

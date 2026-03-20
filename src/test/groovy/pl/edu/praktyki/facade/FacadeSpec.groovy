@@ -1,26 +1,40 @@
 package pl.edu.praktyki.facade
 
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.ContextConfiguration
+import pl.edu.praktyki.BaseIntegrationSpec
+import pl.edu.praktyki.repository.TransactionRepository
 import spock.lang.Specification
 import pl.edu.praktyki.SmartFinDbApp
 import pl.edu.praktyki.domain.Transaction
 import java.time.LocalDate
 
 // 1. Wskazujemy główną klasę aplikacji, żeby Spring wiedział, co załadować
-@SpringBootTest(classes = [SmartFinDbApp])   // pełny kontekst Spring Boot
+// @SpringBootTest(classes = [SmartFinDbApp])   // pełny kontekst Spring Boot
 
 // 2. Włączamy profil "test", żeby nie odpalał się CLI Runner z parametrami
-@ActiveProfiles("test")                      // profil testowy (bez CLI)
+// @ActiveProfiles("test")                      // profil testowy (bez CLI)
+// @ContextConfiguration                        // trigger dla Spock-Spring 2.3
 
-@ContextConfiguration                        // trigger dla Spock-Spring 2.3
-class FacadeSpec extends Specification {
+@AutoConfigureMockMvc
+@ActiveProfiles(value = "tc", inheritProfiles = false)
+class FacadeSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
     // Wstrzykujemy TYLKO Fasadę - nie interesują nas poszczególne serwisy
     @Autowired
     SmartFinFacade facade
+
+    @Autowired
+    TransactionRepository repository
+
+
+    def setup() {
+        // Przed każdym testem czyścimy bazę i dodajemy świeże dane
+        repository.deleteAll()
+    }
 
     def "powinien przetworzyć cały proces biznesowy przez jeden punkt dostępu (Fasada)"() {
         given: "dane wejściowe od użytkownika (np. z CLI lub z REST Controller)"

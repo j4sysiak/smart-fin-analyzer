@@ -1,18 +1,19 @@
 package pl.edu.praktyki.repository
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.ContextConfiguration
-import pl.edu.praktyki.SmartFinDbApp
+import pl.edu.praktyki.BaseIntegrationSpec
 import spock.lang.Specification
 
-@SpringBootTest(classes = [SmartFinDbApp])
-@ContextConfiguration // Wymagane przez Spock-Spring 2.3 do aktywacji SpringExtension
+// Dziedziczymy konfigurację testową (SpringBootTest, ContextConfiguration, Testcontainers)
+// z BaseIntegrationSpec
 // TYMCZASOWO: "local-pg" zamiast "tc" — dane zostaną w Twoim kontenerze PostgreSQL
-@ActiveProfiles(["test", "local-pg"]) //  <-- Ustaw ten profil, gdy chcesz połączyć się z lokalnym PostgreSQL (pamiętaj o cleanup()!)
-// @ActiveProfiles(["test", "tc"])       //  <-- Włącz ten profil, gdy chcesz użyć Testcontainers (pamiętaj o cleanup()!)
-class IntegrationDbSpec extends Specification {
+// @ActiveProfiles(["test", "local-pg"]) //  <-- Ustaw ten profil, gdy chcesz połączyć się z lokalnym PostgreSQL (pamiętaj o cleanup()!)
+
+@AutoConfigureMockMvc
+@ActiveProfiles(value = ["tc"], inheritProfiles = false)       //  <-- Ustawiamy tylko 'tc' żeby uniknać konfliktu z H2 (profil 'test')
+class IntegrationDbSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
 /*
 test inspekcja z prawdziwym PostgreSQL-em w kontenerze Docker — bez Testcontainers, ręcznie:
@@ -64,10 +65,10 @@ Hasło             smartfin123
     @Autowired
     TransactionRepository repository
 
-    // cleanup włączony — Testcontainers wymaga powtarzalności
-    //def cleanup() {
-    //    repository?.deleteAll()
-    //}
+    def setup() {
+        // Przed każdym testem czyścimy bazę i dodajemy świeże dane
+        repository.deleteAll()
+    }
 
     def "powinien zapisać TransactionEntity i odczytać dane z prawdziwego PostgreSQL w kontenerze"() {
         given: "nowa encja"

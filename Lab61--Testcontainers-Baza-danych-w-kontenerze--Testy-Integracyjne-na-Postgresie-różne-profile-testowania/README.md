@@ -1,8 +1,8 @@
 Lab 61
 ------
 
-Lab61--Testcontainers-Baza-danych-w-kontenerze--Testy-Integracyjne-naPostgresie-różne-profile-testowania
---------------------------------------------------------------------------------------------------------
+Lab61--Testcontainers-Baza-danych-w-kontenerze--Testy-Integracyjne-na-Postgresie-różne-profile-testowania
+---------------------------------------------------------------------------------------------------------
 
 Zaczynamy realizację Etapu 1: Kuloodporne Testy i Izolacja.
 
@@ -101,7 +101,7 @@ Tworzymy 3 profile:
     Główna konfiguracja do testów integracyjnych - dane w bazie są tworzone i usuwane automatycznie.
     Idealna do testów CI/CD.
     Uruchomienie: `./gradlew test --tests "pl.edu.praktyki.repository.IntegrationDbSpec" -Dspring.profiles.active=tc`
-    UWAGA: w teście IntegrationDbSpec ustawiamy profil `tc` 
+    UWAGA: w teście `pl.edu.praktyki.repository.IntegrationDbSpec` ustawiamy profil `tc` 
            i tymczasowo wyłączamy cleanup() - komentujemy, żeby dane zostały w bazie do inspekcji, 
            ale pamiętaj, żeby po inspekcji przywrócić cleanup() do testu, żeby test był powtarzalny.
 

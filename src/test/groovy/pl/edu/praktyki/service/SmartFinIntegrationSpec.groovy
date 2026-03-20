@@ -1,5 +1,9 @@
 package pl.edu.praktyki.service
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.test.context.ActiveProfiles
+import pl.edu.praktyki.BaseIntegrationSpec
+import pl.edu.praktyki.repository.TransactionRepository
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ContextConfiguration
@@ -10,11 +14,23 @@ import java.time.LocalDate
 // ContextConfiguration: Mówimy Springowi:
 // "Stwórz obiekty klas TransactionIngesterService oraz TransactionRuleService
 // i powiąż je ze sobą (wstrzyknij jeden w drugi)".
-@ContextConfiguration(classes = [TransactionIngesterService, TransactionRuleService, TransactionIngesterTestConfig])
-class SmartFinIntegrationSpec extends Specification {
+// @ContextConfiguration(classes = [TransactionIngesterService, TransactionRuleService, TransactionIngesterTestConfig])
+
+@AutoConfigureMockMvc
+@ActiveProfiles(value = "tc", inheritProfiles = false)
+class SmartFinIntegrationSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
     @Autowired
     TransactionIngesterService pipelineService
+
+    @Autowired
+    TransactionRepository repository
+
+
+    def setup() {
+        // Przed każdym testem czyścimy bazę i dodajemy świeże dane
+        repository.deleteAll()
+    }
 
     def "powinien zaimportować transakcje wielowątkowo i natychmiast oznaczyć je dynamicznymi tagami"() {
         given: "dwie paczki transakcji (np. z dwóch różnych banków)"

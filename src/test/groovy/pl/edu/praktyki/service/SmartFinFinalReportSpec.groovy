@@ -1,5 +1,9 @@
 package pl.edu.praktyki.service
 
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.test.context.ActiveProfiles
+import pl.edu.praktyki.BaseIntegrationSpec
+import pl.edu.praktyki.repository.TransactionRepository
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ContextConfiguration
@@ -7,14 +11,26 @@ import pl.edu.praktyki.domain.Transaction
 import java.time.LocalDate
 
 // Ładujemy oba serwisy do jednego kontekstu
-@ContextConfiguration(classes = [FinancialAnalyticsService, ReportGeneratorService])
-class SmartFinFinalReportSpec extends Specification {
+// @ContextConfiguration(classes = [FinancialAnalyticsService, ReportGeneratorService])
+
+@AutoConfigureMockMvc
+@ActiveProfiles(value = "tc", inheritProfiles = false)
+class SmartFinFinalReportSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
     @Autowired
     FinancialAnalyticsService analyticsService
 
     @Autowired
     ReportGeneratorService reportGeneratorService
+
+    @Autowired
+    TransactionRepository repository
+
+
+    def setup() {
+        // Przed każdym testem czyścimy bazę i dodajemy świeże dane
+        repository.deleteAll()
+    }
 
     def "powinien przeprowadzić pełny proces: od surowych danych do gotowego raportu"() {
         given: "1. Lista surowych transakcji (już po przeliczeniu na PLN)"

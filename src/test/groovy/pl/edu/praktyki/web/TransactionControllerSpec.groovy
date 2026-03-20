@@ -1,5 +1,7 @@
 package pl.edu.praktyki.web
 
+import pl.edu.praktyki.BaseIntegrationSpec
+
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
 import org.springframework.test.context.ActiveProfiles // <-- Dodaj to
 import org.springframework.beans.factory.annotation.Autowired
@@ -22,16 +24,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 
-@ActiveProfiles("test")
+// @ActiveProfiles("test")
+
 // Spock-Spring 2.3 nie wykrywa @SpringBootTest jako triggera dla integracji Spring.
 // Dodajemy @ContextConfiguration, aby Spock aktywował SpringExtension.
 // @SpringBootTest zapewnia pełny kontekst Spring Boot z MockMvc.
 // Zastosujmy "podwójny trigger": @SpringBootTest (dla Springa) i @ContextConfiguration (dla Spocka),
 // żeby mieć 100% pewności, że kontekst wstanie.
-@SpringBootTest(classes = [SmartFinDbApp])
-@ContextConfiguration
+
+
+// USUŃ @SpringBootTest, @ActiveProfiles, @ContextConfiguration
+// Zostaw tylko @AutoConfigureMockMvc (bo jest specyficzne dla tego testu)
+// @SpringBootTest(classes = [SmartFinDbApp])
+// @ContextConfiguration
+// @AutoConfigureMockMvc
+
 @AutoConfigureMockMvc
-class TransactionControllerSpec extends Specification {
+@ActiveProfiles(value = "tc", inheritProfiles = false)
+class TransactionControllerSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
     @Autowired
     MockMvc mvc
