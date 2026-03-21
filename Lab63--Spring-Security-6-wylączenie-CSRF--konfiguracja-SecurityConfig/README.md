@@ -165,5 +165,13 @@ Twoje zadanie na dzisiaj:
    zgłaszając 401 Unauthorized zamiast 200 OK lub 404 Not Found.
 4. Uruchom nowy test SecurityControllerSpec, żeby potwierdzić, że blokada działa prawidłowo.
 
- 
+
+
+Podsumowując, w tym labie:
+--------------------------
+1. Założyliśmy na naszą aplikację Kłódkę
+2. Wyłączyliśmy sesje (aplikacja jest bezstanowa)
+3. Wyłączyliśmy CSRF (bo nie używamy ciasteczek)
+4. Skonfigurowaliśmy SecurityConfig tak, by odrzucał każde zapytanie (403 Forbidden) do /api/transactions, jeśli klient nie ma "biletu wstępu".
+
 
