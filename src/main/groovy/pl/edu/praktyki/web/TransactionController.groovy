@@ -11,7 +11,6 @@ import pl.edu.praktyki.service.FinancialAnalyticsService
 import pl.edu.praktyki.domain.Transaction
 import pl.edu.praktyki.service.TransactionRuleService
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 
 @RestController
 @RequestMapping("/api/transactions")

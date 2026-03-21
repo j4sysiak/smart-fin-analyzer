@@ -18,7 +18,7 @@ import pl.edu.praktyki.facade.SmartFinFacade // <-- wzorzec Facade
 import pl.edu.praktyki.parser.TransactionParser
 import pl.edu.praktyki.parser.ParserFactory
 
-// 1. GŁÓWNA KLASA (Tylko startuje Springa)
+// 1. GŁÓWNA KLASA (Tylko startuje Spring Boota, nic więcej)
 @SpringBootApplication
 @EnableCaching
 @EnableScheduling
@@ -120,7 +120,7 @@ class SmartFinCliRunner implements CommandLineRunner {
 
 
 
-//  Now invalidated this code  - poniewaz wdrożyliśmy wzorzec FASADY - smartFinFacade.groovy.
+//  Now invalidated this code  - ponieważ wdrożyliśmy wzorzec FASADY - smartFinFacade.groovy.
 //  Zamiast rozpraszać logikę po całej klasie CLI, przenieśliśmy ją do jednej, zgrabnej metody w fasadzie.
 //  Teraz CLI jest super czyste i skupia się tylko na interakcji z użytkownikiem,
 //  a cała złożoność przetwarzania danych jest ukryta za fasadą.

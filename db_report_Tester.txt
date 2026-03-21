@@ -2,16 +2,16 @@
     =========================================
     RAPORT FINANSOWY DLA: TESTER
     =========================================
-    Data wygenerowania: 2026-02-24
+    Data wygenerowania: 2026-03-21
 
     PODSUMOWANIE:
     -----------------------------------------
-    Bilans ca³kowity:  15701.55 PLN
+    Bilans ca³kowity:  2242.66 PLN
     G³ówny wydatek:    Rozrywka
 
     WYDATKI WG KATEGORII:
     
-    - Rozrywka        : 1254.32 PLN
+    - Rozrywka        : 184.79 PLN
     
     -----------------------------------------
     Status: NA PLUSIE

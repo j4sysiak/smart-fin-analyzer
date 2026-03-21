@@ -23,7 +23,7 @@ runtimeOnly 'com.h2database:h2'
 ```
 
 Krok 9.2: Stwórz nową klasę dla Bazy Danych (TransactionEntity)
--------------------------------------------------------
+---------------------------------------------------------------
 Rozdzielmy Model Domenowy (dla logiki i starej aplikacji) od Modelu Bazy Danych (Encji).
 Stwórz nowy plik `src/main/groovy/pl/edu/praktyki/repository/TransactionEntity.groovy`. 
 To jest obiekt, który służy tylko i wyłącznie do zapisu w tabeli.
@@ -79,7 +79,6 @@ interface TransactionRepository extends JpaRepository<TransactionEntity, Long> {
 
 Krok 9.4: Konfiguracja bazy w pliku (application.properties)
 ------------------------------------------------------------
-
 Chcemy, aby dane nie znikały. Stwórz plik src/main/resources/application.properties:
 
 ```text
@@ -97,7 +96,6 @@ spring.jpa.show-sql=false
 
 Krok 9.5: Integracja w SmartFinDbApp.groovy
 -------------------------------------------
-
 Teraz połączymy wszystko. 
 Aplikacja po przetworzeniu danych zapisze je do bazy, a na końcu wyświetli sumę wszystkich historycznych transakcji.
 
@@ -202,7 +200,6 @@ class SmartFinDbApp implements CommandLineRunner {
 
 Krok 9.6: Nowy task w `build.gradle`
 -------------------------------------------
-
 Dodaj nowe zadanie uruchomieniowe do `build.gradle` (możesz je wkleić zaraz pod runSmartFin).
 
 ```groovy
@@ -267,9 +264,6 @@ Zobaczysz: "W bazie znajduje się obecnie 6 transakcji".
 To dowód, że persystencja działa! Dane przetrwały między uruchomieniami.
 
 Zadanie dla Ciebie:
-
 Wdroż zmiany w build.gradle, modelu, repozytorium i aplikacji.
-
 Wyzwanie: Zmień logikę generowania raportu tak, aby totalBalance był liczony nie z rawData (bieżący import), ale z allHistory (cała historia z bazy).
-
 Daj znać, czy baza danych "wstała" i czy widzisz rosnącą liczbę transakcji w logach! 🗄️📈

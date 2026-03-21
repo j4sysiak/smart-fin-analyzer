@@ -49,6 +49,9 @@ abstract class BaseIntegrationSpec extends Specification {
             // Zmuszamy Hibernate do stworzenia tabel od zera w pustym Postgresie
             registry.add("spring.jpa.hibernate.ddl-auto", { "create-drop" })
             registry.add("spring.flyway.enabled", { "false" })
+
+            // NOWOŚĆ: Wyłączamy schedulery na czas testów!
+            registry.add("app.scheduling.enabled", { "false" })
         } else {
             // Pozwól konfiguracji (np. application-local-pg.properties) sterować połączeniem
         }

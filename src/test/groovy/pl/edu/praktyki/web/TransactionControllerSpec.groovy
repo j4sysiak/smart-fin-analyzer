@@ -1,28 +1,21 @@
 package pl.edu.praktyki.web
 
-import pl.edu.praktyki.BaseIntegrationSpec
-
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
-import org.springframework.test.context.ActiveProfiles // <-- Dodaj to
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.SpringBootTestContextBootstrapper
-import org.springframework.test.context.BootstrapWith
-import org.springframework.test.context.ContextConfiguration
 import org.springframework.http.MediaType
+import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
-import spock.lang.Specification
-import pl.edu.praktyki.repository.TransactionRepository
+import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.repository.TransactionEntity
-import pl.edu.praktyki.SmartFinDbApp
-import groovy.json.JsonOutput
+import pl.edu.praktyki.repository.TransactionRepository
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-
 
 // @ActiveProfiles("test")
 
@@ -39,9 +32,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // @ContextConfiguration
 // @AutoConfigureMockMvc
 
+// ZMIANA TUTAJ: Dodajemy @WithMockUser na całą klasę!
+@WithMockUser(username = "test-admin", roles = ["ADMIN"])
 @AutoConfigureMockMvc
 @ActiveProfiles(value = "tc", inheritProfiles = false)
-class TransactionControllerSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
+class TransactionControllerSpec extends BaseIntegrationSpec {
 
     @Autowired
     MockMvc mvc

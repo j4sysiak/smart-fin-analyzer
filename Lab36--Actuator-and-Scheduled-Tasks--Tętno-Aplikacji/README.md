@@ -50,7 +50,6 @@ class SmartFinDbApp {
 
 Krok 36.3: Stworzenie "Nocnego" Raportera (DailyReportScheduler.groovy)
 -----------------------------------------------------------------------
-
 Stworzymy serwis, który uruchamia się sam, bez klikania w przeglądarce i bez wpisywania komend.
 Stwórz plik `src/main/groovy/pl/edu/praktyki/service/DailyReportScheduler.groovy`:
 

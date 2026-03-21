@@ -90,4 +90,11 @@ System został zaprojektowany z wykorzystaniem najlepszych praktyk inżynierskic
 TAK. Jeśli rozumiesz te wzorce i potrafisz je zaimplementować w Groovym, to jesteś na poziomie,
 który pozwala Ci wejść do dowolnego projektu opartego na JVM i szybko połapać się w jego architekturze.
 
+## 🧪 Zaawansowana Architektura Testów (Dual-Profile)
+Projekt wykorzystuje profesjonalne podejście do testów integracyjnych, oddzielając środowisko CI/CD 
+od środowiska deweloperskiego za pomocą profili Spring:
+* **Profil domyślny (`Testcontainers`):** Automatycznie podnosi ulotny kontener PostgreSQL w Dockerze. 
+* Gwarantuje to 100% zgodności z produkcją i bezobsługowe działanie na serwerach CI (Jenkins/GitLab CI).
+* **Profil `local-pg`:** Przeznaczony do głębokiego debugowania. Łączy się z lokalną instancją PostgreSQL, 
+* co pozwala na inspekcję danych "na żywo" przy użyciu narzędzi takich jak DBeaver w trakcie wstrzymania (breakpoint) testu.
 

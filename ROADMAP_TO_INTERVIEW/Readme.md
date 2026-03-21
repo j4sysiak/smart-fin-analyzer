@@ -21,7 +21,8 @@ WireMock:
 Zamockujemy zewnętrzne API walutowe, żeby testy przechodziły nawet w samolocie bez WiFi.
 
 Testcontainers: 
-Wyrzucimy bazę H2 z testów integracyjnych i odpalimy prawdziwego PostgreSQL'a w kontenerze Dockerowym z poziomu testu w Spocku.
+Wyrzucimy bazę H2 z testów integracyjnych i odpalimy prawdziwego PostgreSQL'a w kontenerze Dockerowym 
+z poziomu testu w Spocku.
 
 🔒 Etap 2: Spring Security i JWT (Wymóg rynkowy nr 1)
 -----------------------------------------------------
