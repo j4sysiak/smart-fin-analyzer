@@ -1,20 +1,20 @@
 package pl.edu.praktyki.service
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.repository.TransactionRepository
-import spock.lang.Specification
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.test.context.ContextConfiguration
 import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.repository.TransactionRepository
+
 import java.time.LocalDate
 
-// Ładujemy oba serwisy do jednego kontekstu
-// @ContextConfiguration(classes = [FinancialAnalyticsService, ReportGeneratorService])
-
 @AutoConfigureMockMvc
-@ActiveProfiles(value = "tc", inheritProfiles = false)
+@ActiveProfiles(value = ["tc"], inheritProfiles = false)
+
+// Wymusi użycie application-local-pg.properties ale musisz mieć wlączony lokalny Postgresa!
+// (nie działa z H2, bo H2 nie obsługuje funkcji SQL, których używamy w repozytorium)
+// @ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
 class SmartFinFinalReportSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
     @Autowired

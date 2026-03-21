@@ -2,14 +2,11 @@ package pl.edu.praktyki.facade
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.ContextConfiguration
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.repository.TransactionRepository
-import spock.lang.Specification
-import pl.edu.praktyki.SmartFinDbApp
 import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.repository.TransactionRepository
+
 import java.time.LocalDate
 
 // 1. Wskazujemy główną klasę aplikacji, żeby Spring wiedział, co załadować
@@ -21,6 +18,10 @@ import java.time.LocalDate
 
 @AutoConfigureMockMvc
 @ActiveProfiles(value = "tc", inheritProfiles = false)
+
+// Wymusi użycie application-local-pg.properties ale musisz mieć wlączony lokalny Postgresa!
+// (nie działa z H2, bo H2 nie obsługuje funkcji SQL, których używamy w repozytorium)
+// @ActiveProfiles("local-pg")
 class FacadeSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
     // Wstrzykujemy TYLKO Fasadę - nie interesują nas poszczególne serwisy

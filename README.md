@@ -98,3 +98,5 @@ od środowiska deweloperskiego za pomocą profili Spring:
 * **Profil `local-pg`:** Przeznaczony do głębokiego debugowania. Łączy się z lokalną instancją PostgreSQL, 
 * co pozwala na inspekcję danych "na żywo" przy użyciu narzędzi takich jak DBeaver w trakcie wstrzymania (breakpoint) testu.
 
+
+

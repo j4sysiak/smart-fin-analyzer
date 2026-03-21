@@ -4,17 +4,15 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
-import spock.lang.Specification
 
-// Dziedziczymy konfigurację testową (SpringBootTest, ContextConfiguration, Testcontainers)
-// z BaseIntegrationSpec
-// TYMCZASOWO: "local-pg" zamiast "tc" — dane zostaną w Twoim kontenerze PostgreSQL
-// @ActiveProfiles(["test", "local-pg"]) //  <-- Ustaw ten profil, gdy chcesz połączyć się z lokalnym PostgreSQL (pamiętaj o cleanup()!)
 
 @AutoConfigureMockMvc
-// @ActiveProfiles(value = ["tc"], inheritProfiles = false)       //  <-- Ustawiamy tylko 'tc' żeby uniknać konfliktu z H2 (profil 'test')
-@ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
-class IntegrationDbSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
+@ActiveProfiles(value = ["tc"], inheritProfiles = false)
+
+// Wymusi użycie application-local-pg.properties ale musisz mieć wlączony lokalny Postgresa!
+// (nie działa z H2, bo H2 nie obsługuje funkcji SQL, których używamy w repozytorium)
+// @ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
+class IntegrationDbSpec extends BaseIntegrationSpec {
 
 /*
 test inspekcja z prawdziwym PostgreSQL-em w kontenerze Docker — bez Testcontainers, ręcznie:

@@ -1,23 +1,19 @@
 package pl.edu.praktyki.singleton
 
+import groovyx.gpars.GParsPool
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.ContextConfiguration
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.repository.Counter
 import pl.edu.praktyki.repository.CounterRepository
-import spock.lang.Specification
-import groovyx.gpars.GParsPool
-import pl.edu.praktyki.SmartFinDbApp
-
-// @SpringBootTest(classes = [SmartFinDbApp])
-// @ActiveProfiles("test")
-// @ContextConfiguration
 
 @AutoConfigureMockMvc
-@ActiveProfiles(value = "tc", inheritProfiles = false)
+@ActiveProfiles(value = ["tc"], inheritProfiles = false)
+
+// Wymusi użycie application-local-pg.properties ale musisz mieć wlączony lokalny Postgresa!
+// (nie działa z H2, bo H2 nie obsługuje funkcji SQL, których używamy w repozytorium)
+// @ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
 class TransactionCounterSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
     @Autowired

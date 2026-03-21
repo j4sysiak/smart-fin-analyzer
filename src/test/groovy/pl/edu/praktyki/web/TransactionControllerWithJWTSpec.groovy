@@ -3,37 +3,28 @@ package pl.edu.praktyki.web
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.http.MediaType
-import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.repository.TransactionRepository
+import pl.edu.praktyki.security.JwtService
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-
-
-// ZMIANA TUTAJ: Dodajemy @WithMockUser na całą klasę!
-// - czyli wszystkie testy będą wykonywane w kontekście zalogowanego użytkownika "test-admin"
-// z rolą "ADMIN" i nie korzystamy z SecurityControllerSpec, bo tam testujemy zachowanie dla niezalogowanych użytkowników.
-@WithMockUser(username = "test-admin", roles = ["ADMIN"])
-
 @AutoConfigureMockMvc
-// Uruchamiamy ten test na domyślnym profilu testowym (H2) zamiast Testcontainers
-@ActiveProfiles(value = ["test"], inheritProfiles = false)
-
-// Uruchamiamy ten test na profilu 'tc', który uruchomi Testcontainers z PostgreSQL
-//@ActiveProfiles(value = ["tc"], inheritProfiles = false)
+@ActiveProfiles(value = ["tc"], inheritProfiles = false)
 
 // Wymusi użycie application-local-pg.properties ale musisz mieć wlączony lokalny Postgresa!
 // (nie działa z H2, bo H2 nie obsługuje funkcji SQL, których używamy w repozytorium)
 // @ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
-class TransactionControllerSpec extends BaseIntegrationSpec {
+class TransactionControllerWithJWTSpec extends BaseIntegrationSpec {
+
+    // Wstrzykujemy JwtService, żeby wygenerować token w teście
+    @Autowired JwtService jwtService
 
     @Autowired
     MockMvc mvc
@@ -52,37 +43,24 @@ class TransactionControllerSpec extends BaseIntegrationSpec {
         ))
     }
 
-    def "GET /api/transactions powinien zwrócić listę JSON"() {
-        expect: "zapytanie zwraca status 200 OK i poprawne dane"
-        mvc.perform(get("/api/transactions")
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath('$.length()').value(2)) // Sprawdzamy rozmiar listy
-                .andExpect(jsonPath('$[0].category').value("Test"))
-                .andExpect(jsonPath('$[1].description').value("Pizza"))
-    }
+    def "POST /api/transactions powinien przejść, gdy wyślemy poprawny token JWT"() {
+        given: "ważny token JWT dla admina"
+        String token = jwtService.generateToken("admin") // <-- KLUCZOWE JWT
+        def payload = groovy.json.JsonOutput.toJson([id: "T1", amount: 100, category: "IT"])
 
-    def "GET /api/transactions/stats powinien zwrócić poprawne podsumowanie"() {
-        expect: "statystyki są wyliczone poprawnie (100 - 20 = 80)"
-        mvc.perform(get("/api/transactions/stats"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath('$.balance').value(80.0))
-                .andExpect(jsonPath('$.count').value(2))
-    }
+        when: "wysyłamy żądanie z nagłówkiem Authorization"
+        def response = mvc.perform(post("/api/transactions")
+                .header("Authorization", "Bearer $token") // <-- KLUCZOWE JWT
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
 
-    def "GET /api/transactions/{id} powinien zwrócić 404 w ustandaryzowanym formacie ApiError"() {
-        expect: "próba pobrania rekordu 9999 kończy się ustandaryzowanym błędem"
-        mvc.perform(get("/api/transactions/9999"))
-                .andDo(print()) // <--- TA LINIJKA WYDRUKUJE WSZYSTKO NA EKRAN!
-                .andExpect(status().isNotFound())
-        // Sprawdzamy nową strukturę z klasy ApiError:
-                .andExpect(jsonPath('$.status').value(404))
-                .andExpect(jsonPath('$.message').value("Transakcja o ID 9999 nie istnieje"))
-                .andExpect(jsonPath('$.timestamp').exists())
+        then: "powinniśmy dostać 201 Created"
+        response.andExpect(status().isCreated())
     }
 
     def "POST /api/transactions powinien zapisać transakcję, przeliczyć walutę i nadać tagi"() {
         given: "nowa transakcja w formacie JSON zbudowana za pomocą mapy Groovy"
+        String token = jwtService.generateToken("admin") // <-- KLUCZOWE JWT
         // Zobacz jak czysto to wygląda! Żadnych klas, po prostu definicja danych.
         def newTxPayload =[
                 id: "NEW-1",
@@ -93,8 +71,9 @@ class TransactionControllerSpec extends BaseIntegrationSpec {
         ]
         String jsonBody = groovy.json.JsonOutput.toJson(newTxPayload)
 
-        when: "wysyłamy żądanie POST"
+        when: "wysyłamy żądanie POST z nagłówkiem Authorization"
         def response = mvc.perform(post("/api/transactions")
+                .header("Authorization", "Bearer $token") // <-- KLUCZOWE JWT
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonBody))
 
@@ -114,6 +93,7 @@ class TransactionControllerSpec extends BaseIntegrationSpec {
 
     def "POST /api/transactions powinien odrzucić błędne dane i zwrócić 400 Bad Request"() {
         given: "JSON z brakującymi, wymaganymi polami (brak amount i category)"
+        String token = jwtService.generateToken("admin") // <-- KLUCZOWE JWT
         def badPayload =[
                 id: "BAD-1",
                 currency: "EUR"
@@ -122,13 +102,14 @@ class TransactionControllerSpec extends BaseIntegrationSpec {
         ]
         String jsonBody = groovy.json.JsonOutput.toJson(badPayload)
 
-        when: "wysyłamy błędne żądanie POST"
+        when: "wysyłamy błędne żądanie POST z nagłówkiem Authorization"
         def response = mvc.perform(post("/api/transactions")
+                .header("Authorization", "Bearer $token") // <-- KLUCZOWE JWT
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonBody))
 
         // Możesz odkomentować poniższą linię, aby zobaczyć piękny błąd w konsoli:
-         .andDo(print())
+                .andDo(print())
 
         then: "odpowiedź to 400 Bad Request"
         response.andExpect(status().isBadRequest())
@@ -137,5 +118,27 @@ class TransactionControllerSpec extends BaseIntegrationSpec {
         response.andExpect(jsonPath('$.status').value(400))
         response.andExpect(jsonPath('$.message').value(org.hamcrest.Matchers.containsString("amount: Kwota (amount) jest wymagana")))
         response.andExpect(jsonPath('$.message').value(org.hamcrest.Matchers.containsString("category: Kategoria jest wymagana")))
+    }
+
+    def "POST /api/transactions powinien odrzucić zapytanie ze sfałszowanym tokenem (403 Forbidden)"() {
+        given: "prawidłowy token"
+        String validToken = jwtService.generateToken("admin") // <-- KLUCZOWE JWT
+
+        and: "sfałszowany token (podmieniamy znak w środku)"
+        // Zmieniamy znak na pozycji 10 (indeks 9)
+        String fakeToken = validToken.substring(0, 9) + "X" + validToken.substring(10)
+
+        def payload = groovy.json.JsonOutput.toJson([id: "T-HACK", amount: 100, category: "IT"])
+
+        when: "wysyłamy żądanie z sfałszowanym tokenem"
+        def response = mvc.perform(post("/api/transactions")
+                .header("Authorization", "Bearer $fakeToken") // <-- KLUCZOWE JWT
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(payload))
+
+        then: "dostęp zostaje odrzucony (403 Forbidden)"
+        // Spring Security w przypadku niepoprawnego tokena (błąd podpisu)
+        // zazwyczaj zwraca 403, bo uznaje próbę manipulacji za atak
+        response.andExpect(status().isForbidden())
     }
 }

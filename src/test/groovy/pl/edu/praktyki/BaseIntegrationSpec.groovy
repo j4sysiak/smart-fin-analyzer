@@ -35,8 +35,9 @@ abstract class BaseIntegrationSpec extends Specification {
             useLocal = ['true', '1', 'yes'].contains(useLocalEnv.toLowerCase())
         }
 
-        if (!useLocal && !activeProfiles.contains('local-pg')) {
-            // Uruchamiamy Testcontainers tylko wtedy gdy nie proszono o lokalny Postgres
+        // Uruchamiamy Testcontainers tylko, gdy jawnie ustawiono profil 'tc'
+        // lub gdy nie używamy lokalnego PG i jawnie chcemy Testcontainers.
+        if (!useLocal && activeProfiles.contains('tc')) {
             if (postgres == null) {
                 postgres = new PostgreSQLContainer<>("postgres:16-alpine")
                 postgres.start()
@@ -50,10 +51,10 @@ abstract class BaseIntegrationSpec extends Specification {
             registry.add("spring.jpa.hibernate.ddl-auto", { "create-drop" })
             registry.add("spring.flyway.enabled", { "false" })
 
-            // NOWOŚĆ: Wyłączamy schedulery na czas testów!
+            // Wyłączamy schedulery na czas testów
             registry.add("app.scheduling.enabled", { "false" })
         } else {
-            // Pozwól konfiguracji (np. application-local-pg.properties) sterować połączeniem
+            // Pozwól konfiguracji (np. application-local-pg.properties lub default test H2) sterować połączeniem
         }
     }
 }

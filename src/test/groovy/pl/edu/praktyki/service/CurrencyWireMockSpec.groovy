@@ -4,7 +4,6 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -14,13 +13,12 @@ import spock.lang.Shared
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 
-// @SpringBootTest(classes = [SmartFinDbApp])
-// @ContextConfiguration
-// @ActiveProfiles("test")
+@AutoConfigureMockMvc
+@ActiveProfiles(value = ["tc"], inheritProfiles = false)
 
-// @AutoConfigureMockMvc
-@AutoConfigureWireMock(port = 0) // To zostawiamy, bo to dotyczy tylko tego testu!
-@ActiveProfiles(value = "tc", inheritProfiles = false)
+// Wymusi użycie application-local-pg.properties ale musisz mieć wlączony lokalny Postgresa!
+// (nie działa z H2, bo H2 nie obsługuje funkcji SQL, których używamy w repozytorium)
+// @ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
 class CurrencyWireMockSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
 
     // WireMock uruchamiany programowo — w pełni kontrolujemy cykl życia serwera

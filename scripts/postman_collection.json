@@ -1,0 +1,108 @@
+{
+  "info": {
+    "_postman_id": "b1d2c3e4-f5a6-7890-abcd-ef0123456789",
+    "name": "smart-fin-analyzer",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection for local smart-fin-analyzer: get JWT, add transaction, list transactions"
+  },
+  "variable": [
+    { "key": "host", "value": "http://localhost:8080" },
+    { "key": "user", "value": "dev" },
+    { "key": "jwt", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Get JWT Token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{host}}/auth/token?user={{user}}",
+          "host": ["{{host}}"],
+          "path": ["auth","token"],
+          "query": [ { "key": "user", "value": "{{user}}" } ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res && res.token) {",
+              "  pm.environment.set('jwt', res.token);",
+              "  console.log('Saved jwt to environment var: jwt');",
+              "} else {",
+              "  console.warn('Token not found in response');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Add Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{jwt}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"TX-001\",\n  \"date\": \"2026-03-21\",\n  \"amount\": 150.00,\n  \"currency\": \"PLN\",\n  \"category\": \"Jedzenie\",\n  \"description\": \"Obiad testowy\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/api/transactions",
+          "host": ["{{host}}"],
+          "path": ["api","transactions"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Transactions",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ],
+        "url": {
+          "raw": "{{host}}/api/transactions",
+          "host": ["{{host}}"],
+          "path": ["api","transactions"]
+        }
+      },
+      "response": []
+    }
+    ,
+    {
+      "name": "Get Transactions Stats",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ],
+        "url": {
+          "raw": "{{host}}/api/transactions/stats",
+          "host": ["{{host}}"],
+          "path": ["api","transactions","stats"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Transaction By DB Id",
+      "request": {
+        "method": "GET",
+        "header": [ { "key": "Authorization", "value": "Bearer {{jwt}}" } ],
+        "url": {
+          "raw": "{{host}}/api/transactions/:dbId",
+          "host": ["{{host}}"],
+          "path": ["api","transactions",":dbId"],
+          "variable": [ { "key": "dbId", "value": "1" } ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
+
