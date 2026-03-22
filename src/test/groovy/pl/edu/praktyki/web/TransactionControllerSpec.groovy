@@ -24,11 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WithMockUser(username = "test-admin", roles = ["ADMIN"])
 
 @AutoConfigureMockMvc
-// Uruchamiamy ten test na domyślnym profilu testowym (H2) zamiast Testcontainers
-@ActiveProfiles(value = ["test"], inheritProfiles = false)
-
-// Uruchamiamy ten test na profilu 'tc', który uruchomi Testcontainers z PostgreSQL
-//@ActiveProfiles(value = ["tc"], inheritProfiles = false)
+@ActiveProfiles(value = ["tc"], inheritProfiles = false)
 
 // Wymusi użycie application-local-pg.properties ale musisz mieć wlączony lokalny Postgresa!
 // (nie działa z H2, bo H2 nie obsługuje funkcji SQL, których używamy w repozytorium)

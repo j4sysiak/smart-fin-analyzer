@@ -11,7 +11,7 @@ uruchomienie aplikacji (PowerShell):
 
 Jak uruchomić u Ciebie (prosto)
 Upewnij się, że aplikacja działa:
-Jeśli masz problem z plikową bazą H2 (blokada), uruchom bootRun z in-memory H2:
+uruchom bootRun z in-memory H2:
 
 $env:SPRING_DATASOURCE_URL='jdbc:h2:mem:devdb'; $env:SPRING_H2_CONSOLE_ENABLED='true'; .\gradlew.bat bootRun
 
@@ -23,7 +23,7 @@ Remove-Item -Path .\db\smartfin_file.trace.db -Force -ErrorAction SilentlyContin
 
 
 
-4.
+4a.
 jak uruchomić ten skrypt (dodanie transakcji do bazy):
 POST na http://localhost:8080/api/transactions
 
@@ -32,3 +32,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\add-sample-tra
 sprawdzenie:
 http://localhost:8080/h2-console/
 
+jdbc:h2:mem:devdb;
+user: sa
+password: 
+
+
+4b.
+postman
+
+https://web.postman.co/workspace/My-Workspace~f2aa92ac-63c8-420c-80c0-23d0d71ea517/collection/5972111-1831650e-83dc-4776-a5f8-4780294b7091?action=share&source=copy-link&creator=5972111

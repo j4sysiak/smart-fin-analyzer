@@ -12,7 +12,7 @@ import spock.lang.Specification
 @SpringBootTest(classes = [SmartFinDbApp])
 @ContextConfiguration // Wymagane przez Spock-Spring 2.3 do aktywacji SpringExtension
 @ActiveProfiles("test")
-abstract class BaseIntegrationSpec extends Specification {
+abstract class BaseIntegrationSpec_ORG extends Specification {
 
     // 2. Statyczny kontener - uruchomi się TYLKO RAZ dla całego zestawu testów
     // Zmienna kontenera — może pozostać null gdy chcemy użyć lokalnego PostgreSQL (profil local-pg)
@@ -35,9 +35,8 @@ abstract class BaseIntegrationSpec extends Specification {
             useLocal = ['true', '1', 'yes'].contains(useLocalEnv.toLowerCase())
         }
 
-        // Uruchamiamy Testcontainers tylko, gdy jawnie ustawiono profil 'tc'
-        // lub gdy nie używamy lokalnego PG i jawnie chcemy Testcontainers.
-        if (!useLocal && activeProfiles.contains('tc')) {
+        if (!useLocal && !activeProfiles.contains('local-pg')) {
+            // Uruchamiamy Testcontainers tylko wtedy gdy nie proszono o lokalny Postgres
             if (postgres == null) {
                 postgres = new PostgreSQLContainer<>("postgres:16-alpine")
                 postgres.start()
@@ -54,7 +53,7 @@ abstract class BaseIntegrationSpec extends Specification {
             // NOWOŚĆ: Wyłączamy schedulery na czas testów!
             registry.add("app.scheduling.enabled", { "false" })
         } else {
-            // Pozwól konfiguracji (np. application-local-pg.properties lub default test H2) sterować połączeniem
+            // Pozwól konfiguracji (np. application-local-pg.properties) sterować połączeniem
         }
     }
 }
