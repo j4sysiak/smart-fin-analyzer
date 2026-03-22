@@ -11,7 +11,7 @@ import spock.lang.Specification
 // 1. Główne adnotacje Spring Boota - definiujemy raz!
 @SpringBootTest(classes = [SmartFinDbApp])
 @ContextConfiguration // Wymagane przez Spock-Spring 2.3 do aktywacji SpringExtension
-@ActiveProfiles("test")
+@ActiveProfiles("tc")
 abstract class BaseIntegrationSpec extends Specification {
 
     // 2. Statyczny kontener - uruchomi się TYLKO RAZ dla całego zestawu testów
@@ -38,6 +38,7 @@ abstract class BaseIntegrationSpec extends Specification {
         // Uruchamiamy Testcontainers tylko, gdy jawnie ustawiono profil 'tc'
         // lub gdy nie używamy lokalnego PG i jawnie chcemy Testcontainers.
         if (!useLocal && activeProfiles.contains('tc')) {
+        // if (1==1) {   // odkomentuj, żeby zawsze używać Testcontainers, profil 'tc' musi być wlączony w @ActiveProfiles
             if (postgres == null) {
                 postgres = new PostgreSQLContainer<>("postgres:16-alpine")
                 postgres.start()
