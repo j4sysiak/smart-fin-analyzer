@@ -7,7 +7,6 @@ import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.domain.Transaction
 import groovy.util.logging.Slf4j
-import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Slf4j
