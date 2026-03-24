@@ -89,7 +89,28 @@ try {
     Write-Host "Transaction posted successfully. Response object:" -ForegroundColor Green
     $postResp | ConvertTo-Json -Depth 5 | Write-Host
 } catch {
-    Write-ErrAndExit "Failed to POST transaction: $($_.Exception.Response.StatusCode.Value__ 2>$null) - $($_.Exception.Message)"
+    # Try to extract response body for better debugging
+    $status = $null
+    $bodyText = $null
+    try {
+        if ($_.Exception.Response -ne $null) {
+            $status = $_.Exception.Response.StatusCode.Value__ 2>$null
+            $stream = $_.Exception.Response.GetResponseStream()
+            $reader = New-Object System.IO.StreamReader($stream)
+            $bodyText = $reader.ReadToEnd()
+            $reader.Close()
+        }
+    } catch {
+        # ignore
+    }
+    if ($bodyText) {
+        Write-Host "Server returned status: $status" -ForegroundColor Red
+        Write-Host "Response body:" -ForegroundColor Red
+        Write-Host $bodyText
+        Write-ErrAndExit "Failed to POST transaction: $status - $($_.Exception.Message)"
+    } else {
+        Write-ErrAndExit "Failed to POST transaction: $($_.Exception.Response.StatusCode.Value__ 2>$null) - $($_.Exception.Message)"
+    }
 }
 
 # Fetch list

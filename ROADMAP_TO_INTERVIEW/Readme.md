@@ -24,6 +24,18 @@ Testcontainers:
 Wyrzucimy bazę H2 z testów integracyjnych i odpalimy prawdziwego PostgreSQL'a w kontenerze Dockerowym 
 z poziomu testu w Spocku.
 
+--------- app: SmartFinDbApp
+1. uruchomienie aplikacji - OK
+2. baza H2 tylko dla aplikacji (nie testów) - OK
+3. REST - OK
+4. Swagger - OK
+3. Postman - OK
+4. H2 konsola - OK
+   --------  testy Spec
+2. ./gradlew clean test - OK
+5. testy dla Postgres profil: local-pg - OK
+5. testy dla Postgres profil: tc - OK
+
 🔒 Etap 2: Spring Security i JWT (Wymóg rynkowy nr 1)
 -----------------------------------------------------
 

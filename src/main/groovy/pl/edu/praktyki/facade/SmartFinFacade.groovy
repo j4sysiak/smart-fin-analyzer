@@ -7,6 +7,7 @@ import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.domain.Transaction
 import groovy.util.logging.Slf4j
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Slf4j
@@ -18,11 +19,12 @@ class SmartFinFacade {
     @Autowired FinancialAnalyticsService analyticsSvc
     @Autowired ReportGeneratorService reportSvc
     @Autowired TransactionRepository repo
+    @Autowired TransactionBulkSaver bulkSaver
 
     /**
      * To jest JEDYNA metoda, o której musi wiedzieć świat zewnętrzny będzie ją wolal: (CLI, REST, GUI).
      */
-    String processAndGenerateReport(String userName, List<Transaction> rawTransactions, List<String> rules) {
+    String saveTransactionsAndGenerateReport(String userName, List<Transaction> rawTransactions, List<String> rules) {
         log.info(">>> [FASADA] Rozpoczynam kompleksowe przetwarzanie dla użytkownika: {}", userName)
 
         // 1. Przeliczanie walut
@@ -32,22 +34,35 @@ class SmartFinFacade {
         }
 
         // 2. Reguły i Import
-        ingester.ingestAndApplyRules([rawTransactions], rules)
+        List<Transaction> flatListOfTransactions = ingester.ingestAndApplyRules([rawTransactions], rules)
 
         // 3. Zapis do bazy (Mapowanie)
-        def entities = rawTransactions.collect { tx ->
+        def entities = flatListOfTransactions.collect { tx ->
             new TransactionEntity(
-                    originalId: tx.id, date: tx.date, amount: tx.amount, currency: tx.currency,
-                    amountPLN: tx.amountPLN, category: tx.category, description: tx.description, tags: tx.tags
+                    originalId: tx.id,
+                    date: tx.date,
+                    amount: tx.amount,
+                    currency: tx.currency,
+                    amountPLN: tx.amountPLN,
+                    category: tx.category,
+                    description: tx.description,
+                    tags: tx.tags
             )
         }
-        repo.saveAll(entities)
+        // Delegate to a separate transactional bean so Spring AOP proxy applies
+        bulkSaver.saveAllInTransaction(entities)
 
         // 4. Odczyt historii
         def allHistory = repo.findAll().collect { ent ->
             new Transaction(
-                    id: ent.originalId, date: ent.date, amount: ent.amount, currency: ent.currency,
-                    amountPLN: ent.amountPLN, category: ent.category, description: ent.description, tags: ent.tags
+                    id: ent.originalId,
+                    date: ent.date,
+                    amount: ent.amount,
+                    currency: ent.currency,
+                    amountPLN: ent.amountPLN,
+                    category: ent.category,
+                    description: ent.description,
+                    tags: ent.tags
             )
         }
 
@@ -62,4 +77,6 @@ class SmartFinFacade {
         log.info(">>> [FASADA] Przetwarzanie zakończone. Generuję raport.")
         return reportSvc.generateMonthlyReport(userName, stats)
     }
+
+    // ...existing code... (saveBulk moved to TransactionBulkSaver)
 }

@@ -33,13 +33,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 
 //KNOW HOW!  (ActiveProfiles = 'tc')
-// To nie dziala, żeby użyć Testcontainers - profil 'tc', to BaseIntegrationSpec ustaw warunek na if (1==1)
+// To nie dziala, żeby użyć Testcontainers - profil 'tc', to BaseIntegrationSpec ustaw warunek na if (1==1) linia 40
 // wtedy zawsze będzie używał Testcontainers.
 // Wtedy ten test będzie działał bez konieczności uruchamiania ręcznie Postgresa na Docker.
 // wtedy postgres będzie uruchamiany automatycznie w kontenerze Docker przez Testcontainers,
 // a po zakończeniu testów będzie automatycznie zatrzymywany i usuwany.
 
 //@ActiveProfiles(value = ["tc"], inheritProfiles = false)
+
 
 
 //KNOW HOW!  (ActiveProfiles = 'local-pg')

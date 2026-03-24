@@ -104,7 +104,7 @@ class SmartFinCliRunner implements CommandLineRunner {
         // TUTAJ DZIEJE SIĘ MAGIA FASADY
         // Wywalamy 30 linijek kodu i zastępujemy jedną metodą!
         // =========================================================
-        String report = smartFinFacade.processAndGenerateReport(opts.u, rawData, rules)
+        String report = smartFinFacade.saveTransactionsAndGenerateReport(opts.u, rawData, rules)
 
         println "\n" + report
         def fileName = "db_report_${opts.u.replace(' ', '_')}.txt"
@@ -116,10 +116,7 @@ class SmartFinCliRunner implements CommandLineRunner {
 
 
 
-
-
-
-
+/*
 //  Now invalidated this code  - ponieważ wdrożyliśmy wzorzec FASADY - smartFinFacade.groovy.
 //  Zamiast rozpraszać logikę po całej klasie CLI, przenieśliśmy ją do jednej, zgrabnej metody w fasadzie.
 //  Teraz CLI jest super czyste i skupia się tylko na interakcji z użytkownikiem,
@@ -239,4 +236,4 @@ class SmartFinCliRunner_invalidated implements CommandLineRunner {
         println "=========================================\n"
     }
 
-}
+}*/

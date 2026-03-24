@@ -52,19 +52,25 @@ class CurrencyService {
                     .GET()
                     .build()
 
-            def response = client.send(request, HttpResponse.BodyHandlers.ofString())
-            def json = slurper.parseText(response.body())
+            try {
+                def response = client.send(request, HttpResponse.BodyHandlers.ofString())
+                def json = slurper.parseText(response.body())
 
-            // API zwraca kursy względem bazy (PLN).
-            // np. jeśli 1 PLN = 0.23 EUR, to kurs EUR -> PLN to 1 / 0.23
-            def rateToPln = json.rates[fromCurrency]
+                // API zwraca kursy względem bazy (PLN).
+                // np. jeśli 1 PLN = 0.23 EUR, to kurs EUR -> PLN to 1 / 0.23
+                def rateToPln = json.rates[fromCurrency]
 
-            // Zamiast return null, rzucamy wyjątek, żeby obudzić Circuit Breakera!
-            if (rateToPln == null) {
-                throw new IllegalArgumentException("Nieznana waluta: $fromCurrency")
+                // Zamiast return null, rzucamy wyjątek, żeby obudzić Circuit Breakera!
+                if (rateToPln == null) {
+                    throw new IllegalArgumentException("Nieznana waluta: $fromCurrency")
+                }
+
+                return rateToPln ? (1.0 / rateToPln).toBigDecimal() : 1.0
+            } catch (Exception e) {
+                // Jeśli cokolwiek pójdzie nie tak (błąd sieci, parsing), zwracamy bezpieczny fallback
+                log.warn('>>> [CURRENCY] Błąd pobierania kursu dla {}: {}. Zwracam fallback.', fromCurrency, e.message)
+                return fallbackRate(fromCurrency, e)
             }
-
-            return rateToPln ? (1.0 / rateToPln).toBigDecimal() : 1.0
 
         //} catch (Exception e) {
         //    // Logowanie błędu ze stacktracem

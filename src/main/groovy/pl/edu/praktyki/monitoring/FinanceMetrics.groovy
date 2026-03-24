@@ -35,6 +35,14 @@ class FinanceMetrics {
         transactionCounter.increment()
     }
 
+    /**
+     * Increment transaction counter by n (fast path for bulk operations).
+     */
+    void recordTransactions(int n) {
+        if (n <= 0) return
+        transactionCounter.increment((double) n)
+    }
+
     void updateBalance(BigDecimal newBalance) {
         totalBalanceGauge.set(newBalance)
     }

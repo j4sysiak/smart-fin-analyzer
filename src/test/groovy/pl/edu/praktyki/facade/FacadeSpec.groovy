@@ -48,7 +48,7 @@ class FacadeSpec extends BaseIntegrationSpec { // <-- DZIEDZICZYMY!
         when: "wywołujemy GŁÓWNĄ metodę Fasady"
         // Klient (nasz test) nie wie o istnieniu repozytoriów, walut ani reguł.
         // Wywołuje tylko jedną metodę, a Fasada orkiestruje resztę.
-        String generatedReport = facade.processAndGenerateReport(userName, data, rules)
+        String generatedReport = facade.saveTransactionsAndGenerateReport(userName, data, rules)
 
         then: "cały proces zakończył się sukcesem, zwracając gotowy raport"
         generatedReport != null

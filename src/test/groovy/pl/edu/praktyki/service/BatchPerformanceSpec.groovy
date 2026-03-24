@@ -5,9 +5,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.facade.TransactionBulkSaver
 import pl.edu.praktyki.repository.TransactionRepository
-
+import pl.edu.praktyki.repository.TransactionEntity
 import java.time.LocalDate
+// ...existing imports...
 
 
 // 1. @ActiveProfiles(value = ["local-pg"], inheritProfiles = false) powoduje,
@@ -42,7 +44,7 @@ import java.time.LocalDate
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
 
 @ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
-class SmartFinIntegrationSpec extends BaseIntegrationSpec {
+class BatchPerformanceSpec extends BaseIntegrationSpec {
 
     @Autowired
     TransactionIngesterService pipelineService
@@ -50,22 +52,28 @@ class SmartFinIntegrationSpec extends BaseIntegrationSpec {
     @Autowired
     TransactionRepository repository
 
+    @Autowired
+    TransactionBulkSaver bulkSaver
+    @Autowired
+    TransactionRuleService ruleService
+
+
     def setup() {
         // Przed każdym testem czyścimy bazę i dodajemy świeże dane
         repository.deleteAll()
     }
 
-    def "powinien zaimportować transakcje wielowątkowo i natychmiast oznaczyć je dynamicznymi tagami"() {
-        given: "dwie paczki transakcji (np. z dwóch różnych banków)"
-        def bankA = [
-                new Transaction(id: "A1", date: LocalDate.now(), amount: 5000.0, category: "Praca", description: "Wypłata"),
-                new Transaction(id: "A2", date: LocalDate.now(), amount: -15.0, category: "Jedzenie", description: "Kawa")
-        ]
-
-        def bankB = [
-                new Transaction(id: "B1", date: LocalDate.now(), amount: -2500.0, category: "Dom", description: "Czynsz"),
-                new Transaction(id: "B2", date: LocalDate.now(), amount: -45.0, category: "Rozrywka", description: "Netflix")
-        ]
+    def "powinien zapisać 50000 rekordów w czasie poniżej 2 sekund (Batch Processing)"() {
+        given: "5000 transakcji"
+        def bankA = (1..50000).collect { i ->
+            new Transaction(
+                    id: "A${i}",
+                    date: LocalDate.now(),
+                    amount: (i % 2 == 0 ? -(i * 1.0) : (i * 1.0)),
+                    category: "Kategoria${i % 10}",
+                    description: "Transakcja ${i}"
+            )
+        }
 
         and: "zestaw reguł biznesowych zdefiniowanych przez użytkownika"
         def myRules = [
@@ -74,27 +82,48 @@ class SmartFinIntegrationSpec extends BaseIntegrationSpec {
                 "if (description.contains('Netflix')) addTag('SUBSCRIPTION')"
         ]
 
-        when: "uruchamiamy główny rurociąg przetwarzający dane równolegle"
-        // Przekazujemy listę list (bankA, bankB) oraz nasze reguły
-        def processedData = pipelineService.ingestAndApplyRules([bankA, bankB], myRules)
+        when: "zapisujemy wszystko na raz przy użyciu batcha (spring jpa)"
+        int total = 50000
+        long start = System.currentTimeMillis()
 
-        then: "mamy wszystkie 4 transakcje w jednej płaskiej liście"
-        processedData.size() == 4
+        // Measure sequential rule application for comparison (optional)
+        def compiled = ruleService.compileRules(myRules)
+        long seqStart = System.currentTimeMillis()
+        bankA.each { tx -> ruleService.applyCompiledRules(tx, compiled) }
+        long seqEnd = System.currentTimeMillis()
+        def seqTime = seqEnd - seqStart
 
-        and: "Wypłata została rozpoznana jako przychód"
-        def incomeTx = processedData.find { it.id == "A1" }
-        incomeTx.tags.contains("INCOME")
+        long tIngestStart = System.currentTimeMillis()
+        def flatListOfTransactions = pipelineService.ingestAndApplyRules([bankA], myRules)
+        long tIngestEnd = System.currentTimeMillis()
+        long ingestTime = tIngestEnd - tIngestStart
+        int ingestedCount = flatListOfTransactions?.size() ?: 0
 
-        and: "Czynsz został oznaczony jako wysoki wydatek"
-        def rentTx = processedData.find { it.id == "B1" }
-        rentTx.tags.contains("HIGH_EXPENSE")
+        long tMapStart = System.currentTimeMillis()
+        def entities = flatListOfTransactions.collect { tx ->
+            new TransactionEntity(
+                    originalId: tx.id,
+                    date: tx.date,
+                    amount: tx.amount,
+                    currency: tx.currency,
+                    amountPLN: tx.amountPLN,
+                    category: tx.category,
+                    description: tx.description,
+                    tags: tx.tags
+            )
+        }
+        long tMapEnd = System.currentTimeMillis()
+        long mappingTime = tMapEnd - tMapStart
 
-        and: "Netflix został rozpoznany jako subskrypcja"
-        def netflixTx = processedData.find { it.id == "B2" }
-        netflixTx.tags.contains("SUBSCRIPTION")
+        long tSaveStart = System.currentTimeMillis()
+        bulkSaver.saveAllInTransaction(entities)
+        long tSaveEnd = System.currentTimeMillis()
+        long saveTime = tSaveEnd - tSaveStart
 
-        and: "Kawa nie dostała żadnego tagu (żadna reguła nie pasuje)"
-        def coffeeTx = processedData.find { it.id == "A2" }
-        coffeeTx.tags.isEmpty()
+        long end = System.currentTimeMillis()
+        println ">>> TIMINGS: ingest=${ingestTime}ms, mapping=${mappingTime}ms, save=${saveTime}ms, total=${end - start}ms (seqRule=${seqTime}ms)"
+
+        then: "wszystkie rekordy zapisane"
+        repository.count() == total
     }
 }

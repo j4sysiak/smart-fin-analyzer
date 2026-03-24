@@ -89,8 +89,8 @@ dependencies {
     testImplementation 'org.testcontainers:postgresql:1.19.3'
     testImplementation 'org.testcontainers:jdbc:1.19.3'
 
-    // Sterownik JDBC PostgreSQL — wymagany przez Testcontainers do połączenia z kontenerem
-    testRuntimeOnly 'org.postgresql:postgresql'
+    // Sterownik JDBC PostgreSQL — wymagany przez Testcontainers i do pracy z Postgresa
+    implementation 'org.postgresql:postgresql'
 
     // Lab63--Projekt-Minibank--Spring-Security-6-i-JWT
     // --- SECURITY & JWT ---

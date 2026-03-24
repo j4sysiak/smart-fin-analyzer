@@ -1,8 +1,8 @@
 Aplikacja:
 C:\dev\smart-fin-analyzer\src\main\groovy\pl\edu\praktyki\SmartFinDbApp.groovy
 --------------------------------------------------------------------------------
-Baza danych: H2 (w pamięci)
-Do testów, Postgres (Docker) - do testów i rozwoju
+Baza danych aplikacji (SmartFinDbApp): H2 (w pamięci)
+Do testów i rozwoju - baza Postgres (Docker)
 ----------------------------------------------------------------------------
 
 

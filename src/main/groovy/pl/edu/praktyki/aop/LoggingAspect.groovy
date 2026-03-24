@@ -54,8 +54,7 @@ To główna zaleta AOP: dodajesz funkcjonalność przekrojową (logowanie, bezpi
 
         long executionTime = System.currentTimeMillis() - start
 
-        println ">>> [AOP PROFILER] Metoda ${joinPoint.signature.name} " +
-                "wykonała się w ${executionTime}ms"
+        // println ">>> [AOP PROFILER] Metoda ${joinPoint.signature.name} " +  "wykonała się w ${executionTime}ms"
 
         return proceed
     }
