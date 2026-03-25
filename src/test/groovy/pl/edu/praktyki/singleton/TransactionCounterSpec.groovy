@@ -40,7 +40,7 @@ import pl.edu.praktyki.repository.CounterRepository
 // tutaj info jak uruchomić lokalnego postgresa na dokerze dla profilu: local-pg:
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
 
-@ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
+@ActiveProfiles(value = ["local-pg"], inheritProfiles = false) // pamietaj, że musisz mieć lokalnego Postgresa uruchomionego, żeby ten test działał!
 class TransactionCounterSpec extends BaseIntegrationSpec {
 
     @Autowired

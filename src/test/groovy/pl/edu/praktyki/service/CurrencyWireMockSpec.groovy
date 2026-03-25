@@ -45,7 +45,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*
 // tutaj info jak uruchomić lokalnego postgresa na dokerze dla profilu: local-pg:
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
 
-@ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
+@ActiveProfiles(value = ["local-pg"], inheritProfiles = false) // pamietaj, że musisz mieć lokalnego Postgresa uruchomionego, żeby ten test działał!
 class CurrencyWireMockSpec extends BaseIntegrationSpec {
 
     // WireMock uruchamiany programowo — w pełni kontrolujemy cykl życia serwera

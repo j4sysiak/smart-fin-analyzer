@@ -1,16 +1,20 @@
 package pl.edu.praktyki.web
 
 import jakarta.validation.Valid
-import org.springframework.web.bind.annotation.*
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.server.ResponseStatusException
 import pl.edu.praktyki.repository.TransactionEntity
-import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.service.CurrencyService
 import pl.edu.praktyki.service.FinancialAnalyticsService
-import pl.edu.praktyki.domain.Transaction
 import pl.edu.praktyki.service.TransactionRuleService
 import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.*
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
+import pl.edu.praktyki.repository.TransactionRepository
+import pl.edu.praktyki.domain.Transaction
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -21,6 +25,8 @@ class TransactionController {
     @Autowired CurrencyService currencyService
     @Autowired TransactionRuleService ruleService
 
+    /* zmieniamy na paginację, żeby nie zwracać całej historii naraz,
+           ale tylko pierwszą stronę (np. 20 rekordów)
     @GetMapping
     List<Transaction> getAll() {
         // Mapujemy Encje z bazy na domenę Transaction
@@ -33,17 +39,51 @@ class TransactionController {
                     date: it.date
             )
         }
+    } */
+
+    // NOWOŚĆ: Bezpieczny endpoint dla Big Data
+    @GetMapping
+    Page<Transaction> getAll(
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "sortBy", defaultValue = "date") String sortBy,
+            @RequestParam(name = "direction", defaultValue = "DESC") String direction) {
+
+        // 1. Zabezpieczenie przed atakiem (klient prosi o 1 milion rekordów na stronie)
+        int safeSize = Math.min(size, 100)
+
+        // 2. Budujemy obiekt Pageable
+        Sort.Direction sortDir = Sort.Direction.fromString(direction.toUpperCase())
+        Pageable pageable = PageRequest.of(page, safeSize, Sort.by(sortDir, sortBy))
+
+        // 3. Pobieramy stronę encji z bazy (Hibernate wygeneruje SQL z LIMIT i OFFSET)
+        def entityPage = repo.findAll(pageable)
+
+        // 4. Magia Spring Data: Metoda .map() na obiekcie Page konwertuje elementy,
+        // ZACHOWUJĄC wszystkie metadane (totalPages, totalElements, itp.)
+        return entityPage.map { entity ->
+            new Transaction(
+                    id: entity.originalId,
+                    date: entity.date,
+                    amount: entity.amount,
+                    currency: entity.currency,
+                    amountPLN: entity.amountPLN,
+                    category: entity.category,
+                    description: entity.description,
+                    tags: entity.tags
+            )
+        }
     }
 
     @GetMapping("/stats")
     Map<String, Object> getStats() {
-        // Wykorzystujemy metodę getAll(), żeby nie duplikować mapowania
-        def all = getAll()
+        // Wywołanie paginowanej wersji getAll z domyślnymi parametrami
+        def page = getAll(0, 20, "date", "DESC")
 
         return [
-                balance: analyticsService.calculateTotalBalance(all),
-                topCategory: analyticsService.getTopSpendingCategory(all),
-                count: all.size()
+                balance: analyticsService.calculateTotalBalance(page.content),
+                topCategory: analyticsService.getTopSpendingCategory(page.content),
+                count: page.totalElements
         ]
     }
 
@@ -69,6 +109,10 @@ class TransactionController {
         )
     }
 
+
+    // DODANY ENDPOINT POST /api/transactions
+    // tutaj trafiają endpointy z formularza, CLI, importu CSV itp.
+    // To jest miejsce, gdzie następuje cały magiczny processing: waluty, reguły, zapis do bazy.
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     // DODANA ADNOTACJA @Valid

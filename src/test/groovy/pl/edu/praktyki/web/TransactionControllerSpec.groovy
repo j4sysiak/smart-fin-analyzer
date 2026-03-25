@@ -58,7 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // tutaj info jak uruchomić lokalnego postgresa na dokerze dla profilu: local-pg:
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
 
-@ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
+@ActiveProfiles(value = ["local-pg"], inheritProfiles = false) // pamietaj, że musisz mieć lokalnego Postgresa uruchomionego, żeby ten test działał!
 class TransactionControllerSpec extends BaseIntegrationSpec {
 
     @Autowired
@@ -120,7 +120,7 @@ class TransactionControllerSpec extends BaseIntegrationSpec {
         String jsonBody = groovy.json.JsonOutput.toJson(newTxPayload)
 
         when: "wysyłamy żądanie POST"
-        def response = mvc.perform(post("/api/transactions")
+        def response = mvc.perform(post("/api/transactions") // to trafi do TransactionController.addTransaction()
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonBody))
 
@@ -149,7 +149,7 @@ class TransactionControllerSpec extends BaseIntegrationSpec {
         String jsonBody = groovy.json.JsonOutput.toJson(badPayload)
 
         when: "wysyłamy błędne żądanie POST"
-        def response = mvc.perform(post("/api/transactions")
+        def response = mvc.perform(post("/api/transactions")  // to trafi do TransactionController.addTransaction()
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonBody))
 

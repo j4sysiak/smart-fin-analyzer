@@ -14,6 +14,17 @@ class DatabaseSequenceInitializer {
     @Autowired
     JdbcTemplate jdbc
 
+
+// Metoda oznaczona @EventListener(ApplicationReadyEvent) zostanie wywołana,
+// gdy Spring Boot opublikuje zdarzenie ApplicationReadyEvent — czyli po:
+//  1. odświeżeniu kontekstu,
+//  2. po uruchomieniu wbudowanego serwera (dla aplikacji web)
+//  3. po wykonaniu wszystkich ApplicationRunner / CommandLineRunner
+
+// Dzieje się to raz na kontekst aplikacji
+// (plik src/main/groovy/pl/edu/praktyki/config/DatabaseSequenceInitializer.groovy).
+
+
     @EventListener(ApplicationReadyEvent)
     void onReady() {
         try {

@@ -12,15 +12,17 @@ Oto Twój 3-miesięczny Master-Plan (Roadmapa na Mida).
 🗺️ Mapa Drogowa: "Droga do Mida" (Smart-Fin-Analyzer)
 
 
-🛡️ Etap 1: Kuloodporne Testy i Izolacja (Tu jesteśmy teraz)  - Lab59
+🛡️ Etap 1: Kuloodporne Testy i Izolacja - Lab59
 --------------------------------------------------------------------
 
 Prawdziwy system nie może polegać na zewnętrznym internecie w testach.
 
-WireMock: 
+WireMock:  (symulacja odleglego servera www)
+--------------------------------------------
 Zamockujemy zewnętrzne API walutowe, żeby testy przechodziły nawet w samolocie bez WiFi.
 
 Testcontainers: 
+----------------
 Wyrzucimy bazę H2 z testów integracyjnych i odpalimy prawdziwego PostgreSQL'a w kontenerze Dockerowym 
 z poziomu testu w Spocku.
 
@@ -55,9 +57,9 @@ Twój system działa dla 10 transakcji. Co, jeśli wgramy plik z 1,000,000 trans
 
 Problem OutOfMemoryError i jak go unikać.
 
-Batch processing w Hibernate (zapisywanie po 500 rekordów naraz, a nie po jednym).
+Batch processing w Hibernate (zapisywanie po 50000 rekordów naraz, a nie po jednym).
 
-Paginacja (Stronicowanie) w REST API.
+Paginacja (Stronicowanie) w REST API
 
 
 🔄 Etap 4: Zaawansowana Asynchroniczność i Eventy

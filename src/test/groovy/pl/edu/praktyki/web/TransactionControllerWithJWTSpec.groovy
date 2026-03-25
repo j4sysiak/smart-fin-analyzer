@@ -49,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // tutaj info jak uruchomić lokalnego postgresa na dokerze dla profilu: local-pg:
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
 
-@ActiveProfiles(value = ["local-pg"], inheritProfiles = false)
+@ActiveProfiles(value = ["local-pg"], inheritProfiles = false) // pamietaj, że musisz mieć lokalnego Postgresa uruchomionego, żeby ten test działał!
 class TransactionControllerWithJWTSpec extends BaseIntegrationSpec {
 
     // Wstrzykujemy JwtService, żeby wygenerować token w teście
@@ -78,7 +78,7 @@ class TransactionControllerWithJWTSpec extends BaseIntegrationSpec {
         def payload = groovy.json.JsonOutput.toJson([id: "T1", amount: 100, category: "IT"])
 
         when: "wysyłamy żądanie z nagłówkiem Authorization"
-        def response = mvc.perform(post("/api/transactions")
+        def response = mvc.perform(post("/api/transactions")  // to trafi do TransactionController.addTransaction()
                 .header("Authorization", "Bearer $token") // <-- KLUCZOWE JWT
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload))
@@ -101,7 +101,7 @@ class TransactionControllerWithJWTSpec extends BaseIntegrationSpec {
         String jsonBody = groovy.json.JsonOutput.toJson(newTxPayload)
 
         when: "wysyłamy żądanie POST z nagłówkiem Authorization"
-        def response = mvc.perform(post("/api/transactions")
+        def response = mvc.perform(post("/api/transactions")  // to trafi do TransactionController.addTransaction()
                 .header("Authorization", "Bearer $token") // <-- KLUCZOWE JWT
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonBody))
@@ -160,7 +160,7 @@ class TransactionControllerWithJWTSpec extends BaseIntegrationSpec {
         def payload = groovy.json.JsonOutput.toJson([id: "T-HACK", amount: 100, category: "IT"])
 
         when: "wysyłamy żądanie z sfałszowanym tokenem"
-        def response = mvc.perform(post("/api/transactions")
+        def response = mvc.perform(post("/api/transactions")  // to trafi do TransactionController.addTransaction()
                 .header("Authorization", "Bearer $fakeToken") // <-- KLUCZOWE JWT
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload))

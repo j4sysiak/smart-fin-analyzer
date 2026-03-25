@@ -1,11 +1,42 @@
 # Smart-Fin-Analyzer 📊🚀
 
 
-uruchamianie:
--------------
+uruchamianie aplikacji:
+-----------------------
 patrz tutaj: C:\dev\smart-fin-analyzer\scripts\to-moje-jest-ok-Readme.txt
 lub tutaj: C:\dev\smart-fin-analyzer\scripts\README.md    (to jest wygenerowane przez AI)
 -----------------------------------------------------------------------------------------
+
+
+
+uruchamianie testów:
+--------------------
+Uwaga: Projekt jest skonfigurowany do uruchamiania testów w dwóch profilach:
+1. **Testcontainers (domyślny):** Automatycznie uruchamia kontener PostgreSQL w Dockerze, idealny do CI/CD.
+Aby uruchomić testy w domyślnym profilu (Testcontainers) - Postgres się uruchomi automatycznie i zatrzyma po zakończeniu testów:
+Znajdz we wszystkich testach adnotację `@ActiveProfiles(value = ["tc"], inheritProfiles = false)` i uruchom testy normalnie i odkomentuj tę adnotację, aby użyć profilu domyślnego:
+potem to:
+```bash
+./gradlew clean test
+```
+... lub zielona strzałka w IntelliJ.
+
+
+2. **local-pg:** Łączy się z lokalną instancją PostgreSQL, umożliwiając debugowanie testów z użyciem narzędzi takich jak DBeaver.
+Aby uruchomić testy w profilu `local-pg`:
+Znajdz w testach adnotację `@ActiveProfiles(value = ["local-pg"], inheritProfiles = false)` i odkomentuj ją, aby użyć profilu `local-pg`, a następnie uruchom testy:
+```bash
+./gradlew clean test
+```
+... lub zielona strzałka w IntelliJ.
+
+ale najpierw upewnij się, że masz uruchomioną lokalną instancję PostgreSQL i odpowiednio skonfigurowany `application-local-pg.properties` z danymi połączenia.
+instrukcja jak uruchomić lokalną bazę PostgreSQL:
+tu: `C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties`
+
+
+
+
 
 OPIS PROJEKTU:
 --------------

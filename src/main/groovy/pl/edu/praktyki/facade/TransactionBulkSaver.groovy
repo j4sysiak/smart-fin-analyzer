@@ -27,6 +27,16 @@ class TransactionBulkSaver {
     @Autowired(required = false) JdbcTemplate jdbcTemplate
     @Autowired(required = false) DataSource dataSource
 
+
+    // standardowym Spring Data JPA, użycie repository.saveAll() przy strategii klucza głównego GenerationType.IDENTITY
+    // całkowicie wyłącza JDBC Batching.
+    // Hibernate musi wysłać osobnego INSERTa i odczekać na wygenerowane ID dla każdego rekordu, co przy milionie wierszy zabija aplikację.
+    // To rozwiązanie – czyli ominięcie ORM-a, zrzucenie maski i uderzenie bezpośrednio
+    // w natywne API PostgreSQL (CopyManager / COPY FROM STDIN),
+    // a jako fallback użycie JdbcTemplate.batchUpdate – to absolutnie najszybszy znany ludzkości sposób ładowania
+    // danych do bazy relacyjnej w środowisku JVM.
+
+
     /**
      * Save all entities inside a single transaction. This will be executed in a
      * transactional proxy so batch inserts / single-transaction behaviour will apply.
