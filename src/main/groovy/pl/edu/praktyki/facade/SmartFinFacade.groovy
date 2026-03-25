@@ -7,6 +7,7 @@ import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.domain.Transaction
 import groovy.util.logging.Slf4j
+import org.springframework.scheduling.annotation.Async
 
 @Service
 @Slf4j
@@ -20,11 +21,30 @@ class SmartFinFacade {
     @Autowired TransactionRepository repo
     @Autowired TransactionBulkSaver bulkSaver
 
+
+    /**
+     * NOWOŚĆ: Asynchroniczne procesowanie.
+     * Metoda kończy się natychmiast, a praca leci w tle na wątku z puli 'bulkTaskExecutor'.
+     */
+    @Async("bulkTaskExecutor")
+    void processInBackgroundTask(String userName, List<Transaction> rawTransactions, List<String> rules) {
+        log.info(">>> [ASYNC] Rozpoczynam ciężką pracę w tle dla: {}", userName)
+
+        // Wywołujemy Twoją potężną logikę zapisu
+        // (Tu wywołaj logikę, którą miałeś w Facade - przeliczanie, reguły i na końcu Twój BulkSaver)
+        def report = saveTransactionsAndGenerateReport(userName, rawTransactions, rules)
+        log.info(">>> [FASADA] Przetwarzanie zakończone.) Generuję raport. " + report)
+        log.info(">>> [ASYNC] Praca w tle zakończona pomyślnie.")
+    }
+
     /**
      * To jest JEDYNA metoda, o której musi wiedzieć świat zewnętrzny będzie ją wolal: (CLI, REST, GUI).
      */
+    @Async("bulkTaskExecutor")  //  Asynchroniczne procesowanie.
+                                //  Metoda kończy się natychmiast, a praca leci w tle na wątku z puli 'bulkTaskExecutor'
     String saveTransactionsAndGenerateReport(String userName, List<Transaction> rawTransactions, List<String> rules) {
         log.info(">>> [FASADA] Rozpoczynam kompleksowe przetwarzanie dla użytkownika: {}", userName)
+        log.info(">>> [ASYNC] Rozpoczynam ciężką pracę w tle dla: {}", userName)
 
         // 1. Przeliczanie walut
         rawTransactions.each { tx ->
@@ -73,9 +93,8 @@ class SmartFinFacade {
         ]
 
         // 6. Generowanie Raportu
+        log.info(">>> [ASYNC] Praca w tle zakończona pomyślnie.")
         log.info(">>> [FASADA] Przetwarzanie zakończone. Generuję raport.")
         return reportSvc.generateMonthlyReport(userName, stats)
     }
-
-    // ...existing code... (saveBulk moved to TransactionBulkSaver)
 }

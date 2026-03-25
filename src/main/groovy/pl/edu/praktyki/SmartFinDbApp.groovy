@@ -105,6 +105,9 @@ class SmartFinCliRunner implements CommandLineRunner {
         // TUTAJ DZIEJE SIĘ MAGIA FASADY
         // Wywalamy 30 linijek kodu i zastępujemy jedną metodą!
         // =========================================================
+
+        // Klient (nasz test) nie wie o istnieniu repozytoriów, walut ani reguł.
+        // Wywołuje tylko jedną metodę, a Fasada orkiestruje resztę.
         String report = smartFinFacade.saveTransactionsAndGenerateReport(opts.u, rawData, rules)
 
         println "\n" + report

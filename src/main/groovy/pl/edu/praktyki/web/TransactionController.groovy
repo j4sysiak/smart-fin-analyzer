@@ -1,7 +1,9 @@
 package pl.edu.praktyki.web
 
+import groovy.util.logging.Slf4j
 import jakarta.validation.Valid
 import org.springframework.web.server.ResponseStatusException
+import pl.edu.praktyki.facade.SmartFinFacade
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.service.CurrencyService
 import pl.edu.praktyki.service.FinancialAnalyticsService
@@ -16,6 +18,7 @@ import org.springframework.data.domain.Sort
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.domain.Transaction
 
+@Slf4j
 @RestController
 @RequestMapping("/api/transactions")
 class TransactionController {
@@ -24,6 +27,7 @@ class TransactionController {
     @Autowired FinancialAnalyticsService analyticsService
     @Autowired CurrencyService currencyService
     @Autowired TransactionRuleService ruleService
+    @Autowired SmartFinFacade facade
 
     /* zmieniamy na paginację, żeby nie zwracać całej historii naraz,
            ale tylko pierwszą stronę (np. 20 rekordów)
@@ -147,5 +151,14 @@ class TransactionController {
         repo.save(entity)
 
         return dto
+    }
+
+    @PostMapping("/bulk")
+    @ResponseStatus(HttpStatus.ACCEPTED) // Zwraca kod 202 - "Przyjąłem, zrobię później"
+    void addBulkTransactions(@RequestBody List<Transaction> transactions) {
+        log.info(">>> Otrzymano paczkę {} transakcji do przetworzenia asynchronicznego", transactions.size())
+
+        // Nie czekamy na wynik! Odpalamy i zapominamy (Fire and forget)
+        facade.processInBackgroundTask("SystemUser", transactions, [])
     }
 }
