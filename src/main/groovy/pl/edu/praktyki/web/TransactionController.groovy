@@ -50,6 +50,17 @@ class TransactionController {
             @RequestParam(name = "direction", defaultValue = "DESC") String direction) {
 
         // 1. Zabezpieczenie przed atakiem (klient prosi o 1 milion rekordów na stronie)
+        // tu jest nasz bezpiecznik, który obcina rozmiar strony do 100, nawet jeśli klient zażąda więcej
+
+        // Ograniczenie dotyczy tylko rozmiaru strony (liczby rekordów na stronę), a nie liczby stron.
+        // safeSize = Math.min(size, 100) oznacza: maksymalnie 100 rekordów na jedną stronę.
+        // Liczba stron (totalPages) wyliczana jest jako ceil(totalElements / safeSize).
+        // Jeśli masz np. 10 100 rekordów i safeSize = 100, to dostaniesz 102 strony (indeksy 0..101)
+        //   — ostatnia nadal będzie dostępna przez page=101.
+        // Jeśli klient zażąda strony poza zakresem, Spring Data zwróci pustą stronę
+        // z metadanymi (totalPages, totalElements).
+        // Jeśli chcesz dodatkowo ograniczyć maksymalny numer strony,
+        // trzeba to jawnie sprawdzić i np. odrzucić żądanie lub „przyciąć” parametr page na podstawie repo.count().
         int safeSize = Math.min(size, 100)
 
         // 2. Budujemy obiekt Pageable

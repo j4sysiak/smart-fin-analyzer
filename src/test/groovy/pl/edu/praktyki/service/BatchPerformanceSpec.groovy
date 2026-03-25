@@ -54,6 +54,7 @@ class BatchPerformanceSpec extends BaseIntegrationSpec {
 
     @Autowired
     TransactionBulkSaver bulkSaver
+
     @Autowired
     TransactionRuleService ruleService
 

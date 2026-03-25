@@ -59,7 +59,7 @@ Problem OutOfMemoryError i jak go unikać.
 
 Batch processing w Hibernate (zapisywanie po 50000 rekordów naraz, a nie po jednym).
 
-Paginacja (Stronicowanie) w REST API
+Paginacja (Stronicowanie) w `REST API` – jak zwracać dane partiami, żeby nie zabić serwera.
 
 
 🔄 Etap 4: Zaawansowana Asynchroniczność i Eventy
