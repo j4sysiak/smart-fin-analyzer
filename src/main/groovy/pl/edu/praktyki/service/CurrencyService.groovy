@@ -8,7 +8,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
-import org.springframework.beans.factory.annotation.Value // DODAJ IMPORT
+import org.springframework.beans.factory.annotation.Value
 
 @Service
 @Slf4j

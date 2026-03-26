@@ -29,25 +29,9 @@ class TransactionController {
     @Autowired TransactionRuleService ruleService
     @Autowired SmartFinFacade facade
 
-    /* zmieniamy na paginację, żeby nie zwracać całej historii naraz,
-           ale tylko pierwszą stronę (np. 20 rekordów)
-    @GetMapping
-    List<Transaction> getAll() {
-        // Mapujemy Encje z bazy na domenę Transaction
-        return repo.findAll().collect {
-            new Transaction(
-                    id: it.originalId,
-                    amountPLN: it.amountPLN,
-                    category: it.category,
-                    description: it.description,
-                    date: it.date
-            )
-        }
-    } */
 
-    // NOWOŚĆ: Bezpieczny endpoint dla Big Data
-    //     - paginacja, żeby nie zwracać całej historii naraz
-    //         sortowanie i zabezpieczenie przed atakiem (klient prosi np. o 1 milion rekordów na stronie)
+    // Bezpieczny endpoint dla Big Data - paginacja, żeby nie zwracać całej historii naraz
+    // sortowanie i zabezpieczenie przed atakiem (klient prosi np. o 1 milion rekordów na stronie)
     @GetMapping
     Page<Transaction> getAll(
             @RequestParam(name = "page", defaultValue = "0") int page,
