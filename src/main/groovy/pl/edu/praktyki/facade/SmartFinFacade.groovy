@@ -40,8 +40,10 @@ class SmartFinFacade {
     /**
      * To jest JEDYNA metoda, o której musi wiedzieć świat zewnętrzny będzie ją wolal: (CLI, REST, GUI).
      */
-    @Async("bulkTaskExecutor")  //  Asynchroniczne procesowanie.
-                                //  Metoda kończy się natychmiast, a praca leci w tle na wątku z puli 'bulkTaskExecutor'
+    // Metoda wykonuje synchronizowane przetworzenie i zwraca raport.
+    // UWAGA: nie oznaczamy jej jako @Async, ponieważ zwraca String (asynchroniczne metody
+    // powinny zwracać void lub Future/CompletableFuture). Asynchroniczne uruchamianie
+    // odbywa się przez metodę processInBackgroundTask, która wywołuje tę metodę wewnętrznie.
     String saveTransactionsAndGenerateReport(String userName, List<Transaction> rawTransactions, List<String> rules) {
         log.info(">>> [FASADA] Rozpoczynam kompleksowe przetwarzanie dla użytkownika: {}", userName)
         log.info(">>> [ASYNC] Rozpoczynam ciężką pracę w tle dla: {}", userName)

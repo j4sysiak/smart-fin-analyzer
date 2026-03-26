@@ -142,14 +142,19 @@ class AsyncBulkSpec extends BaseIntegrationSpec {
 
 Dlaczego to zamyka Etap 3 i otwiera Etap 4?
 
-Odporność na Timeouty: Twoje API nigdy się nie "zawiesi" przy wielkim imporcie.
+Odporność na Timeouty: 
+Twoje API nigdy się nie "zawiesi" przy wielkim imporcie.
 
-Zarządzanie zasobami: Dzięki maxPoolSize = 5 masz gwarancję, że nawet jeśli 100 użytkowników wyśle dane naraz, serwer nie odpali 100 wątków (co zabiłoby procesor), tylko grzecznie ustawi zadania w kolejce.
+Zarządzanie zasobami: 
+Dzięki maxPoolSize = 5 masz gwarancję, że nawet jeśli 100 użytkowników wyśle dane naraz, 
+serwer nie odpali 100 wątków (co zabiłoby procesor), tylko grzecznie ustawi zadania w kolejce.
 
-User Experience: Klient dostaje odpowiedź w 50ms, a ciężka praca dzieje się tam, gdzie jej miejsce – na zapleczu.
+User Experience: 
+Klient dostaje odpowiedź w 50ms, a ciężka praca dzieje się tam, gdzie jej miejsce – na zapleczu.
 
-Wdróż te zmiany! Jeśli to zadziała, będziemy gotowi na Etap 4: Spring Events, gdzie zamiast wołać metody bezpośrednio, zaczniemy rozsyłać komunikaty po całym systemie.
+Wdróż te zmiany! Jeśli to zadziała, będziemy gotowi na Etap 4: Spring Events, 
+gdzie zamiast wołać metody bezpośrednio, zaczniemy rozsyłać komunikaty po całym systemie.
 
-Daj znać, jak poszło z @Async i konfiguracją puli wątków! 🚀🏎️
+ 
 
 

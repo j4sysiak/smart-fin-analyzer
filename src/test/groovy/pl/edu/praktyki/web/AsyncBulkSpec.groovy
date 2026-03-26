@@ -83,7 +83,7 @@ class AsyncBulkSpec extends BaseIntegrationSpec {
         repository.count() < 1000
 
         then: "po krótkiej chwili Awaitility potwierdza, że dane wpadły do bazy"
-        await().atMost(15, TimeUnit.SECONDS).until {
+        await().atMost(5, TimeUnit.SECONDS).until {
             repository.count() == 1000
         }
     }

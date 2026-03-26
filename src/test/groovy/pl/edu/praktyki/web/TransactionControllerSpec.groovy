@@ -78,14 +78,16 @@ class TransactionControllerSpec extends BaseIntegrationSpec {
         ))
     }
 
-    def "GET /api/transactions powinien zwrócić listę JSON"() {
-        expect: "zapytanie zwraca status 200 OK i poprawne dane"
+    def "GET /api/transactions powinien zwrócić Page<Transaction> w formacie JSON"() {
+        expect: "zapytanie zwraca status 200 OK i Page z polem content zawierającym listę"
         mvc.perform(get("/api/transactions")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath('$.length()').value(2)) // Sprawdzamy rozmiar listy
-                .andExpect(jsonPath('$[0].category').value("Test"))
-                .andExpect(jsonPath('$[1].description').value("Pizza"))
+        // Kontroler zwraca Page<Transaction> - lista jest w polu `content`
+                .andExpect(jsonPath('$.content.length()').value(2)) // Sprawdzamy rozmiar listy
+                .andExpect(jsonPath('$.content[0].category').value("Test"))
+                .andExpect(jsonPath('$.content[1].description').value("Pizza"))
+                .andExpect(jsonPath('$.pageable').exists())
     }
 
     def "GET /api/transactions/stats powinien zwrócić poprawne podsumowanie"() {

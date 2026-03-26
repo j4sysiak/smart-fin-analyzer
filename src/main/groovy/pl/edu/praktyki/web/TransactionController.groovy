@@ -46,6 +46,8 @@ class TransactionController {
     } */
 
     // NOWOŚĆ: Bezpieczny endpoint dla Big Data
+    //     - paginacja, żeby nie zwracać całej historii naraz
+    //         sortowanie i zabezpieczenie przed atakiem (klient prosi np. o 1 milion rekordów na stronie)
     @GetMapping
     Page<Transaction> getAll(
             @RequestParam(name = "page", defaultValue = "0") int page,

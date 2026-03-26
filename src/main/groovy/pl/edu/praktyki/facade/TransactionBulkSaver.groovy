@@ -105,7 +105,17 @@ class TransactionBulkSaver {
                     void setValues(PreparedStatement ps, int i) throws SQLException {
                         TransactionEntity e = batch.get(i)
                         ps.setString(1, e.originalId)
-                        ps.setDate(2, java.sql.Date.valueOf(e.date))
+
+                        // e.date may be null. Avoid ambiguous overload of java.sql.Date.valueOf(null).
+                        if (e.date == null) {
+                            ps.setNull(2, java.sql.Types.DATE)
+                        } else if (e.date instanceof java.time.LocalDate) {
+                            ps.setDate(2, java.sql.Date.valueOf((java.time.LocalDate) e.date))
+                        } else {
+                            // fallback: convert to string and parse
+                            ps.setDate(2, java.sql.Date.valueOf(e.date.toString()))
+                        }
+
                         ps.setBigDecimal(3, e.amount)
                         ps.setString(4, e.currency)
                         ps.setBigDecimal(5, e.amountPLN)

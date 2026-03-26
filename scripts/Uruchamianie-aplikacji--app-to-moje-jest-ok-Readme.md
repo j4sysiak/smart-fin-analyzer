@@ -20,6 +20,7 @@ Stop-Process -Id <PID> -Force
 2.
 uruchomienie aplikacji:
 (PowerShell)
+cd C:\dev\smart-fin-analyzer
 $env:SPRING_DATASOURCE_URL='jdbc:h2:mem:devdb'; $env:SPRING_H2_CONSOLE_ENABLED='true'; .\gradlew.bat bootRun
 
 Opcjonalnie:
@@ -31,6 +32,10 @@ Remove-Item -Path .\db\smartfin_file.mv.db -Force -ErrorAction SilentlyContinue
 Remove-Item -Path .\db\smartfin_file.trace.db -Force -ErrorAction SilentlyContinue
 
 
+
+-----------------------------------------------------------------------
+-----------------   sprawdzenie działania aplikacji   -----------------
+-----------------------------------------------------------------------
 
 4a.
 dodanie transakcji do bazy - tylko H2  (Postgres na Doker tylko do testów ./gradlew clean test):
@@ -45,10 +50,16 @@ jdbc:h2:mem:devdb;
 user: sa
 password: 
 
-
 4b.
-Postman info:
-C:\dev\smart-fin-analyzer\scripts\Readme-z-Postmana.txt
+Swagger UI:
+-----------
+http://localhost:8080/swagger-ui/index.html
 
-tu jest mój Postman:
+
+4c.
+Postman:
+--------
+HOWTO: `C:\dev\smart-fin-analyzer\scripts\Readme-z-Postmana.md`
+
+tu jest mój Postman (web):
 https://web.postman.co/workspace/My-Workspace~f2aa92ac-63c8-420c-80c0-23d0d71ea517/collection/5972111-1831650e-83dc-4776-a5f8-4780294b7091?action=share&source=copy-link&creator=5972111
