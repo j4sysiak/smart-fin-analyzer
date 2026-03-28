@@ -6,7 +6,7 @@ import pl.edu.praktyki.domain.Transaction
 import groovyx.gpars.GParsPool
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
-import pl.edu.praktyki.event.TransactionImportedEvent
+import pl.edu.praktyki.event.TransactionImportedBatchEvent
 import pl.edu.praktyki.monitoring.FinanceMetrics
 
 @Service
@@ -116,7 +116,7 @@ class TransactionIngesterService {
                 ruleService.applyRulesToList(source, rules)
             }
             metrics.recordTransactions(source.size())
-            eventPublisher.publishEvent(new pl.edu.praktyki.event.TransactionImportedBatchEvent(transactions: source))
+            eventPublisher.publishEvent(new TransactionImportedBatchEvent(transactions: source))
             return source as List<Transaction>
         }
 
@@ -128,7 +128,7 @@ class TransactionIngesterService {
                 // Apply rules in a vectorized manner to whole source
                 ruleService.applyRulesToList(source, rules)
                 metrics.recordTransactions(source.size())
-                eventPublisher.publishEvent(new pl.edu.praktyki.event.TransactionImportedBatchEvent(transactions: source))
+                eventPublisher.publishEvent(new TransactionImportedBatchEvent(transactions: source))
                 return source
             }
             return parallelResults.flatten()

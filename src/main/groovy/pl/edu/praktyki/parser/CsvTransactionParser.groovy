@@ -5,6 +5,7 @@ import java.time.LocalDate
 
 // Prawdziwa implementacja
 class CsvTransactionParser implements TransactionParser {
+
     @Override
     List<Transaction> parse(File file) {
         println ">>> [CSV PARSER] Czytam plik: ${file.name}"

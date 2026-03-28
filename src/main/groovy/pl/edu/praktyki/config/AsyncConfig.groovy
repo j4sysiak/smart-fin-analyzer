@@ -8,7 +8,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.Executor
 
 @Configuration
-@EnableAsync // Włącza obsługę adnotacji @Async
+// Włącza obsługę adnotacji @Async.
+// Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
+@EnableAsync
 class AsyncConfig {
 
     @Bean(name = "bulkTaskExecutor")

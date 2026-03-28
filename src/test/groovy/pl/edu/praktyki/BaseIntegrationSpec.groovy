@@ -10,7 +10,8 @@ import spock.lang.Specification
 
 // 1. Główne adnotacje Spring Boota - definiujemy raz!
 @SpringBootTest(classes = [SmartFinDbApp])
-@ContextConfiguration // Wymagane przez Spock-Spring 2.3 do aktywacji SpringExtension
+// @ContextConfiguration // Wymagane przez Spock-Spring 2.3 do aktywacji SpringExtension
+@ContextConfiguration(classes = [SmartFinDbApp])
 @ActiveProfiles("tc")
 abstract class BaseIntegrationSpec extends Specification {
 

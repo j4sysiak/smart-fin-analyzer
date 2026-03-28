@@ -14,6 +14,7 @@ class TransactionCounterService {
         this.counterRepository = counterRepository
     }
 
+    // Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
     @Transactional
     void increment(String name) {
         counterRepository.incrementByName(name)

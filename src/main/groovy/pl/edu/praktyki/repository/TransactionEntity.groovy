@@ -8,9 +8,12 @@ import java.time.LocalDate
 class TransactionEntity {
 
     @Id
-    // Use SEQUENCE instead of IDENTITY so Hibernate can batch inserts.
-    @SequenceGenerator(name = "tx_seq", sequenceName = "tx_seq", allocationSize = 50)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "tx_seq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "tx_generator")
+    @SequenceGenerator(
+            name = "tx_generator",
+            sequenceName = "tx_seq",
+            allocationSize = 50 // <--- MUSI SIĘ ZGADZAĆ Z INCREMENT BY W SQL
+    )
     Long dbId
 
     String originalId // Zamiast 'id', żeby nie myliło się z kluczem w bazie

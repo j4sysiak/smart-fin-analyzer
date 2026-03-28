@@ -1,13 +1,16 @@
-package pl.edu.praktyki.facade
+package pl.edu.praktyki.event
 
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
+import pl.edu.praktyki.facade.SmartFinFacade
 import pl.edu.praktyki.domain.Transaction
-import pl.edu.praktyki.repository.TransactionRepository
-
+import pl.edu.praktyki.service.AsyncNotificationService
+import org.springframework.beans.factory.annotation.Autowired
+import static org.awaitility.Awaitility.await
+import java.util.concurrent.TimeUnit
 import java.time.LocalDate
+
 
 // 1. @ActiveProfiles(value = ["local-pg"], inheritProfiles = false) powoduje,
 //    że kontekst testowy ładuje profil local-pg i w efekcie użyje ustawień z pliku application-local-pg.properties
@@ -25,13 +28,14 @@ import java.time.LocalDate
 @AutoConfigureMockMvc
 
 //KNOW HOW!  (ActiveProfiles = 'tc')
-// To nie dziala, żeby użyć Testcontainers - profil 'tc', to BaseIntegrationSpec ustaw warunek na if (1==1)
+// To nie dziala, żeby użyć Testcontainers - profil 'tc', to BaseIntegrationSpec ustaw warunek na if (1==1) linia 40
 // wtedy zawsze będzie używał Testcontainers.
 // Wtedy ten test będzie działał bez konieczności uruchamiania ręcznie Postgresa na Docker.
 // wtedy postgres będzie uruchamiany automatycznie w kontenerze Docker przez Testcontainers,
 // a po zakończeniu testów będzie automatycznie zatrzymywany i usuwany.
 
 //@ActiveProfiles(value = ["tc"], inheritProfiles = false)
+
 
 
 //KNOW HOW!  (ActiveProfiles = 'local-pg')
@@ -41,42 +45,33 @@ import java.time.LocalDate
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
 
 @ActiveProfiles(value = ["local-pg"], inheritProfiles = false) // pamietaj, że musisz mieć lokalnego Postgresa uruchomionego, żeby ten test działał!
-class FacadeSpec extends BaseIntegrationSpec {
+class EventDecouplingSpec extends BaseIntegrationSpec {
 
-    // Wstrzykujemy TYLKO Fasadę
-    //   - nie interesują nas poszczególne serwisy, repozytoria, ani szczegóły implementacji.
-    @Autowired SmartFinFacade smartFinFacade
+    @Autowired SmartFinFacade facade
+    @Autowired AsyncNotificationService notificationService
 
-    @Autowired
-    TransactionRepository repository
+    def "powinien zwrócić raport synchronicznie i wysłać powiadomienie asynchronicznie"() {
+        given: "transakcja testowa"
+        def data = [new Transaction(id: "ASYNC-TEST-1", amount: 500, currency: "PLN", category: "Test", date: LocalDate.now())]
 
+        // Resetujemy licznik przez metodę
+        notificationService.reset()
 
-    def setup() {
-        // Przed każdym testem czyścimy bazę i dodajemy świeże dane
-        repository.deleteAll()
-    }
+        when: "wywołujemy fasadę"
+        String report = facade.processAndGenerateReport("Użytkownik Testowy", data, [])
 
-    def "powinien przetworzyć cały proces biznesowy przez jeden punkt dostępu (Fasada)"() {
-        given: "dane wejściowe od użytkownika (np. z CLI lub z REST Controller)"
-        def userName = "Testowy Użytkownik"
-        def data =[
-                new Transaction(id: "F1", amount: 100.0, currency: "PLN", category: "Test", date: LocalDate.now())
-        ]
-        def rules =["if (amountPLN < -100) addTag('BIG_SPENDER')"]
+        then: "1. Raport otrzymujemy natychmiast (synchronicznie)"
+        report != null
+        report.contains("UŻYTKOWNIK TESTOWY")
+        report.contains("500.00 PLN")
 
-        when: "wywołujemy GŁÓWNĄ metodę Fasady"
-        // Klient (nasz test) nie wie o istnieniu repozytoriów, walut ani reguł.
-        // Wywołuje tylko jedną metodę, a Fasada orkiestruje resztę.
-        def generatedReport = smartFinFacade.processAndGenerateReport(userName, data, rules)
+        // ZMIANA: Używamy getProcessedCount() zamiast pola
+        then: "2. Czekamy, aż asynchroniczny listener skończy pracę"
+        await().atMost(10, TimeUnit.SECONDS).until {
+            notificationService.getProcessedCount() == 1
+        }
 
-        then: "cały proces zakończył się sukcesem, zwracając gotowy raport"
-        generatedReport != null
-        generatedReport.contains("RAPORT FINANSOWY DLA: TESTOWY UŻYTKOWNIK")
-
-        and: "raport zawiera przetworzone dane (np. 100 PLN na plusie)"
-        generatedReport.contains("Status: NA PLUSIE")
-
-        // Opcjonalnie: Wydrukuj raport na konsolę, aby zobaczyć efekt pracy Fasady
-        println ">>> RAPORT Z FASADY:\n$generatedReport"
+        expect: "Wynik końcowy jest poprawny"
+        notificationService.getProcessedCount() == 1
     }
 }

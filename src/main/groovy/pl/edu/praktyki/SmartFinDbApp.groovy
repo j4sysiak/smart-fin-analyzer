@@ -46,6 +46,10 @@ class SmartFinCliRunner implements CommandLineRunner {
     // 6. TransactionRepository (linia 75), czyli technicznie wstrzykiwano 6 zależności
     // Wszystkie te zależności zostały ukryte za SmartFinFacade (linia 36),
     // która eksponuje jedną metodę processAndGenerateReport().
+
+    // jak chcesz zaczytać prawdziway plik:  ./gradlew runSmartFinDb -PappArgs="-u Jacek -f transakcje.csv"
+
+
     @Autowired SmartFinFacade smartFinFacade
 
     @Autowired CurrencyService currencySvc // Zostawiamy tylko do walidacji początkowej waluty
@@ -87,6 +91,7 @@ class SmartFinCliRunner implements CommandLineRunner {
         TransactionParser parser = ParserFactory.getParserForFile(myFile)
 
         List<Transaction> rawData = parser.parse(myFile)
+        println ">>> Zaimportowano ${rawData.size()} transakcji z pliku."
         /*
         def rawData = [
                 new Transaction(id: "1", amount: 100, currency: "EUR", category: "Jedzenie", description: "Obiad", date: LocalDate.now()),
@@ -108,7 +113,7 @@ class SmartFinCliRunner implements CommandLineRunner {
 
         // Klient (nasz test) nie wie o istnieniu repozytoriów, walut ani reguł.
         // Wywołuje tylko jedną metodę, a Fasada orkiestruje resztę.
-        String report = smartFinFacade.saveTransactionsAndGenerateReport(opts.u, rawData, rules)
+        String report = smartFinFacade.processAndGenerateReport(opts.u, rawData, rules)
 
         println "\n" + report
         def fileName = "db_report_${opts.u.replace(' ', '_')}.txt"

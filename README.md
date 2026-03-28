@@ -3,7 +3,7 @@
 
 uruchamianie aplikacji:
 -----------------------
-patrz tutaj: C:\dev\smart-fin-analyzer\scripts\to-moje-jest-ok-Readme.txt
+patrz tutaj: C:\dev\smart-fin-analyzer\scripts\Readme--uruchamianie-aplikacji-i-testów.md
 lub tutaj: C:\dev\smart-fin-analyzer\scripts\README.md    (to jest wygenerowane przez AI)
 -----------------------------------------------------------------------------------------
 

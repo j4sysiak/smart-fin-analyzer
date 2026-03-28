@@ -30,7 +30,7 @@ class DatabaseSequenceInitializer {
         try {
             log.info('>>> [DB INIT] Ensuring sequence tx_seq exists')
             // CREATE SEQUENCE IF NOT EXISTS works on Postgres and H2 (modern versions)
-            jdbc.execute("CREATE SEQUENCE IF NOT EXISTS tx_seq START WITH 1 INCREMENT BY 1")
+            jdbc.execute("CREATE SEQUENCE IF NOT EXISTS tx_seq START WITH 1 INCREMENT BY 50")
             log.info('>>> [DB INIT] Sequence tx_seq is present (or created)')
         } catch (Exception e) {
             log.warn('>>> [DB INIT] Could not ensure sequence tx_seq: {}', e.message)

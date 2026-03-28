@@ -8,6 +8,8 @@ import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.domain.Transaction
 import groovy.util.logging.Slf4j
 import org.springframework.scheduling.annotation.Async
+import org.springframework.context.ApplicationEventPublisher // DODAJ IMPORT
+import pl.edu.praktyki.event.TransactionBatchProcessedEvent // DODAJ IMPORT
 
 @Service
 @Slf4j
@@ -20,33 +22,46 @@ class SmartFinFacade {
     @Autowired ReportGeneratorService reportSvc
     @Autowired TransactionRepository repo
     @Autowired TransactionBulkSaver bulkSaver
+    @Autowired ApplicationEventPublisher eventPublisher // Publikator zdarzeń Springa
+
+
+
+
 
 
     /**
      * NOWOŚĆ: Asynchroniczne procesowanie.
      * Metoda kończy się natychmiast, a praca leci w tle na wątku z puli 'bulkTaskExecutor'.
+     * zawsze musi byc na zwrotce void, bo @Async nie obsługuje zwracania wartości (Future/CompletableFuture to inna historia).
      */
+    // Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
     @Async("bulkTaskExecutor")
     void processInBackgroundTask(String userName, List<Transaction> rawTransactions, List<String> rules) {
         log.info(">>> [ASYNC] Rozpoczynam ciężką pracę w tle dla: {}", userName)
 
         // Wywołujemy Twoją potężną logikę zapisu
         // (Tu wywołaj logikę, którą miałeś w Facade - przeliczanie, reguły i na końcu Twój BulkSaver)
-        def report = saveTransactionsAndGenerateReport(userName, rawTransactions, rules)
+        def report = processAndGenerateReport(userName, rawTransactions, rules)
         log.info(">>> [FASADA] Przetwarzanie zakończone.) Generuję raport. " + report)
         log.info(">>> [ASYNC] Praca w tle zakończona pomyślnie.")
     }
 
-    /**
+
+
+
+
+
+
+    /**   F A S A D A   - ukrywa złożoność, oferuje prosty interfejs do świata zewnętrznego.
      * To jest JEDYNA metoda, o której musi wiedzieć świat zewnętrzny będzie ją wolal: (CLI, REST, GUI).
      */
     // Metoda wykonuje synchronizowane przetworzenie i zwraca raport.
     // UWAGA: nie oznaczamy jej jako @Async, ponieważ zwraca String (asynchroniczne metody
     // powinny zwracać void lub Future/CompletableFuture). Asynchroniczne uruchamianie
     // odbywa się przez metodę processInBackgroundTask, która wywołuje tę metodę wewnętrznie.
-    String saveTransactionsAndGenerateReport(String userName, List<Transaction> rawTransactions, List<String> rules) {
+    String processAndGenerateReport(String userName, List<Transaction> rawTransactions, List<String> rules) {
         log.info(">>> [FASADA] Rozpoczynam kompleksowe przetwarzanie dla użytkownika: {}", userName)
-        log.info(">>> [ASYNC] Rozpoczynam ciężką pracę w tle dla: {}", userName)
+        log.info(">>> [ASYNC] Rozpoczynam (dotyczy testu EventDecouplingSpec) ciężką pracę w tle dla: {}", userName)
 
         // 1. Przeliczanie walut
         rawTransactions.each { tx ->
@@ -54,8 +69,10 @@ class SmartFinFacade {
             tx.amountPLN = tx.amount * rate
         }
 
+
         // 2. Reguły i Import
         List<Transaction> flatListOfTransactions = ingester.ingestAndApplyRules([rawTransactions], rules)
+
 
         // 3. Zapis do bazy (Mapowanie)
         def entities = flatListOfTransactions.collect { tx ->
@@ -70,8 +87,9 @@ class SmartFinFacade {
                     tags: tx.tags
             )
         }
-        // Delegate to a separate transactional bean so Spring AOP proxy applies
+        // ... and Delegate to a separate transactional bean so Spring AOP proxy applies
         bulkSaver.saveAllInTransaction(entities)
+
 
         // 4. Odczyt historii
         def allHistory = repo.findAll().collect { ent ->
@@ -87,6 +105,7 @@ class SmartFinFacade {
             )
         }
 
+
         // 5. Analityka
         def stats =[
                 totalBalance: analyticsSvc.calculateTotalBalance(allHistory),
@@ -94,9 +113,21 @@ class SmartFinFacade {
                 spendingMap: analyticsSvc.getSpendingByCategory(allHistory)
         ]
 
+
         // 6. Generowanie Raportu
-        log.info(">>> [ASYNC] Praca w tle zakończona pomyślnie.")
-        log.info(">>> [FASADA] Przetwarzanie zakończone. Generuję raport.")
-        return reportSvc.generateMonthlyReport(userName, stats)
+        String finalReport = reportSvc.generateMonthlyReport(userName, stats)
+
+        // ========================================================================
+        // NOWOŚĆ: ASYNCHRONICZNE POWIADOMIENIE (Side Effect)
+        // Wysyłamy informację o sukcesie, nie czekając na to, co zrobią słuchacze.
+        // ========================================================================
+        eventPublisher.publishEvent(new TransactionBatchProcessedEvent(
+                userName: userName,
+                totalBalance: stats.totalBalance,
+                generatedReport: finalReport
+        ))
+
+        log.info(">>> [FASADA] Przetwarzanie zakończone. Zwracam raport do klienta.")
+        return finalReport
     }
 }

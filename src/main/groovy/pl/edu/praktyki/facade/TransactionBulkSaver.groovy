@@ -41,6 +41,7 @@ class TransactionBulkSaver {
      * Save all entities inside a single transaction. This will be executed in a
      * transactional proxy so batch inserts / single-transaction behaviour will apply.
      */
+    // Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
     @Transactional
     void saveAllInTransaction(List<TransactionEntity> entities) {
         if (!entities) return
