@@ -35,12 +35,31 @@ jeśli znajdziesz proces(y) powiązane z Twoją aplikacją, zatrzymaj je (wstaw 
 `Stop-Process -Id <PID> -Force`
 
 
+przyklad:
+---------
+```text
+PS C:\dev\smart-fin-analyzer> Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,StartTime
+
+Id ProcessName StartTime
+   -- ----------- ---------
+33532 java        28.03.2026 11:34:38
+39800 java        28.03.2026 11:11:06
+
+
+PS C:\dev\smart-fin-analyzer> Stop-Process -Id 33532 -Force
+PS C:\dev\smart-fin-analyzer> Stop-Process -Id 39800 -Force
+PS C:\dev\smart-fin-analyzer> Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,StartTime
+Id ProcessName StartTime
+   -- ----------- ---------
+```
+
+
 Uruchomienie aplikacji:
 (PowerShell)
 cd C:\dev\smart-fin-analyzer
 `$env:SPRING_DATASOURCE_URL='jdbc:h2:mem:devdb'; $env:SPRING_H2_CONSOLE_ENABLED='true'; .\gradlew.bat bootRun`
 
-Opcjonalnie:
+!Opcjonalnie!:
 Jeśli pojawi się błąd o zablokowanym pliku — zatrzymaj wszystkie instancje Javy (Get-Process -Name java) i spróbuj ponownie. Jeżeli chcesz usunąć plik DB (czysty start):
 Opcjonialnie - ale UWAGA wywalisz zawartość bazy i wszystkie dane oczywiście znikną (H2 w pamięci):
 
