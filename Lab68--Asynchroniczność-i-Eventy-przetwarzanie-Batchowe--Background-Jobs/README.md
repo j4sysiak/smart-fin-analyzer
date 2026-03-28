@@ -1,8 +1,8 @@
 Lab68
 -----
 
-Lab68--Asynchroniczne-przetwarzanie-Batchowe--Background-Jobs
--------------------------------------------------------------
+Lab68--Asynchroniczność-i-Eventy-przetwarzanie-Batchowe--Background-Jobs
+------------------------------------------------------------------------
 
 Skoro Twój projekt potrafi już błyskawicznie zapisywać dane i bezpiecznie je odczytywać, to z perspektywy Etapu 3 jesteś w 95% gotowy.
 Jednak jako Mid-level Developer, musisz wiedzieć, że samo "szybkie zapisywanie" to połowa sukcesu. 

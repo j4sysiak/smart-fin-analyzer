@@ -1,8 +1,8 @@
 Lab69
 -----
 
-Lab69--Asynchroniczne-przetwarzanie-Rozbicie-monolitu-przez-Spring-Events--Architektura-Pub-Sub
------------------------------------------------------------------------------------------------
+Lab69--Asynchroniczność-i-Eventy-Rozbicie-monolitu-przez-Spring-Events--Architektura-Pub-Sub
+--------------------------------------------------------------------------------------------
 
 Wchodzimy w serce Etapu 4.
 To tutaj projekt "Smart-Fin-Analyzer" przestaje być "sznurkiem instrukcji", a staje się ekosystemem.
