@@ -66,7 +66,8 @@ class SecurityConfig {
                     // Pozwalamy wszystkim na dostęp do Swaggera (dokumentacji)
                             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs", "/swagger-ui.html").permitAll()
                     // Pozwalamy na dostęp do Actuatora (Healthcheck)
-                            .requestMatchers("/actuator/health").permitAll()
+                            //.requestMatchers("/actuator/health").permitAll()
+                            .requestMatchers("/actuator/**").permitAll()
                     // Pozwalamy na dostęp do H2 Web Console (tylko w trybie lokalnym / testowym)
                             .requestMatchers("/h2-console", "/h2-console/**").permitAll()
                     // Allow unauthenticated access to dev auth token endpoint

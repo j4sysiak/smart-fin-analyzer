@@ -13,15 +13,17 @@ Krok-1: Produkcja: odpalenie aplikacji SmartFinDbApp z H2 w pamięci (domyślnie
 
 1 sposób: (wprost z Gradle z parametrami):
 ------------------------------------------
-`./gradlew runSmartFinDb -PappArgs="-u Jacek -f transakcje.csv"`
+`  ./gradlew runSmartFinDb -PappArgs="-u Jacek -f transakcje.csv"  `  - full wypas
+`  ./gradlew runSmartFinDb -PappArgs="-u Jacek"  `    - bez zaczytywania 10000 transakcji w tle, tylko start aplikacji z H2 w pamięci
 
 informacje o postępie uruchamiania aplikacji (logi Gradle):
 powinnieneś zobaczyć logi podobne do poniższych, co oznacza, że aplikacja uruchamia się z H2 w pamięci:
 80% EXECUTING [39s] - jest to info, że app już się uruchomila.
 
-<==========---> 80% EXECUTING [39s]
-> :runSmartFinDb
-
+```text
+    <==========---> 80% EXECUTING [39s]
+    > :runSmartFinDb
+```
 
 
 2 sposób: (ręcznie ustawiając zmienne środowiskowe i uruchamiając bootRun):

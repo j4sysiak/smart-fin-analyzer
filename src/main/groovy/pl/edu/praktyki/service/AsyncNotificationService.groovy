@@ -5,17 +5,18 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import groovy.util.logging.Slf4j
 import pl.edu.praktyki.event.TransactionBatchProcessedEvent
-import java.util.concurrent.atomic.AtomicInteger // DODAJ TO
+import java.util.concurrent.atomic.AtomicInteger
 
 @Service
 @Slf4j
 class AsyncNotificationService {
 
-    // HACZYK: Licznik do celów testowych (AtomicInteger jest bezpieczny dla wielu wątków)
+    // DODAJEMY TAKI HACZYK: tj. Licznik do celów testowych (AtomicInteger jest bezpieczny dla wielu wątków)
     // Dodamy licznik, który pozwoli nam sprawdzić, ile razy serwis został wywołany.
     // Musimy dodać do serwisu mały "haczyk" (licznik lub flagę), a w teście użyć Awaitility,
     // aby poczekać, aż asynchroniczna magia się wydarzy.
-    // Zmieniamy na private
+    // Zmieniamy na private, żeby można bylo użyć gettera: `getProcessedCount()` do odczytu w teście,
+    // ale nie pozwalamy na bezpośrednią modyfikację z zewnątrz.
     private final AtomicInteger processedEventsCount = new AtomicInteger(0)
 
     // Dodajemy metodę - dzięki niej Proxy będzie wiedziało, skąd wziąć wartość
@@ -23,16 +24,57 @@ class AsyncNotificationService {
         return processedEventsCount.get()
     }
 
-    // Aadnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
-    @Async("bulkTaskExecutor") // Używamy Twojej puli wątków z Lab 68
+// Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
+// Chodzi o klasę będącą beanem Springa — czyli klasę zarządzaną przez kontener
+// (np. oznaczoną @Component, @Service, @Repository, @Configuration albo zdefiniowaną jako @Bean).
+// Adnotacje takie jak @Async czy @Transactional działają przez utworzenie proxy wokół tego beana
+// i przechwytywanie wywołań metod przychodzących z zewnątrz.
+
+    // Włącza obsługę adnotacji @Async.
+    // Dzięki temu możesz oznaczać metody (tak jak tutaj ta metoda) jako asynchroniczne, a Spring będzie je wykonywał w osobnych wątkach.
+
+    //Adnotacja @Async("bulkTaskExecutor") mówi Springowi,
+    // żeby uruchomić metodę asynchronicznie używając beana o tej nazwie
+    // (zazwyczaj ThreadPoolTaskExecutor skonfigurowanego w src/main/groovy/pl/edu/praktyki/config/AsyncConfig.groovy).
+    // Jeśli nie zdefiniujesz beana o tej nazwie, musisz go dodać albo użyć domyślnego executora (albo usunąć nazwę z @Async`).
+
+    // `bulkTaskExecutor`  w tej adnotacji to nazwa beana typu `Executor / TaskExecutor` zarejestrowanego w kontenerze Spring.
+    // W @Async("bulkTaskExecutor") wskazujesz, że ta metoda ma być uruchomiona asynchronicznie w wątkach tej konkretnej puli
+    // — to nie służy do synchronizacji, tylko do wyboru puli wątków.
+
+    // Przykład konfiguracji takiego beana typu `Executor / TaskExecutor`:
+    // u mnie: C:\dev\smart-fin-analyzer\src\main\groovy\pl\edu\praktyki\config\AsyncConfig.groovy
+    /*
+    @Configuration
+    @EnableAsync
+    public class AsyncConfig {
+
+        @Bean(name = "bulkTaskExecutor")
+        public Executor bulkTaskExecutor() {
+            ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+            exec.setCorePoolSize(5);
+            exec.setMaxPoolSize(10);
+            exec.setQueueCapacity(100);
+            exec.setThreadNamePrefix("bulk-");
+            exec.initialize();
+            return exec;
+        }
+    }*/
+
+    // Uwaga: jeśli nie zdefiniujesz beana o takiej nazwie,
+    // Spring nie będzie miał wskazanej puli i trzeba albo dodać beana,
+    // albo użyć domyślnego executor`a (albo usunąć nazwę z @Async).
+
+    @Async("bulkTaskExecutor") // Używamy puli wątków: `bulkTaskExecutor` to nazwa beana typu Executor/TaskExecutor (czyli puli wątków).
     @EventListener
     void handleBatchEvent(TransactionBatchProcessedEvent event) {
-        log.info(">>> [ASYNC-EVENT] Rozpoczynam wysyłkę raportu do systemu zewnętrznego dla: {}", event.userName)
+
+        log.info(">>> [ASYNCHRONICZNY-EVENT] Rozpoczynam wysyłkę raportu do systemu zewnętrznego dla: {}", event.userName)
 
         // Symulujemy ciężką pracę (np. generowanie PDF i wysyłka maila)
-        sleep(2000)
+        sleep(6000)
 
-        log.info(">>> [ASYNC-EVENT] Raport o bilansie {} PLN został pomyślnie przetworzony w tle.", event.totalBalance)
+        log.info(">>> [ASYNCHRONICZNY-EVENT] Raport o bilansie {} PLN został pomyślnie przetworzony w tle.", event.totalBalance)
 
         processedEventsCount.incrementAndGet()
     }

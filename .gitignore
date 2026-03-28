@@ -20,3 +20,9 @@ system-info.txt
 /gradle/wrapper/gradle-wrapper.properties
 /gradlew
 /gradlew.bat
+
+transakcje.csv
+
+db/
+db/smartfin_file.mv.db
+db/smartfin_file.trace.db

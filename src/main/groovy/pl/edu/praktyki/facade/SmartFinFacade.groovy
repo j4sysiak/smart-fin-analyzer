@@ -34,7 +34,14 @@ class SmartFinFacade {
      * Metoda kończy się natychmiast, a praca leci w tle na wątku z puli 'bulkTaskExecutor'.
      * zawsze musi byc na zwrotce void, bo @Async nie obsługuje zwracania wartości (Future/CompletableFuture to inna historia).
      */
-    // Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
+// Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
+// Chodzi o klasę będącą beanem Springa — czyli klasę zarządzaną przez kontener
+// (np. oznaczoną @Component, @Service, @Repository, @Configuration albo zdefiniowaną jako @Bean).
+// Adnotacje takie jak @Async czy @Transactional działają przez utworzenie proxy wokół tego beana
+// i przechwytywanie wywołań metod przychodzących z zewnątrz.
+
+// Włącza obsługę adnotacji @Async.
+// Dzięki temu możesz oznaczać metody jako asynchroniczne, a Spring będzie je wykonywał w osobnych wątkach.
     @Async("bulkTaskExecutor")
     void processInBackgroundTask(String userName, List<Transaction> rawTransactions, List<String> rules) {
         log.info(">>> [ASYNC] Rozpoczynam ciężką pracę w tle dla: {}", userName)

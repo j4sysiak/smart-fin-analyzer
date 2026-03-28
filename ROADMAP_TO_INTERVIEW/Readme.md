@@ -72,3 +72,12 @@ Spring @Async vs GPars.
 Pule wątków (Thread Pools) – jak je konfigurować, żeby nie zabić serwera.
 
 Architektura Event-Driven (CQRS na wesoło) – rzucanie asynchronicznych zdarzeń w Springu.
+
+
+
+Etap 5: API Documentation & Contracts (Swagger, JSON Schemas)
+-------------------------------------------------------------
+
+
+Etap 6: Konteneryzacja i Docker Compose, żeby Twój Postgres i aplikacja startowały jednym kliknięciem
+-----------------------------------------------------------------------------------------------------

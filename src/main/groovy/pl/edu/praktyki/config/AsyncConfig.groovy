@@ -4,22 +4,50 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.Executor
 
 @Configuration
-// Włącza obsługę adnotacji @Async.
+
+
 // Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
+// Chodzi o klasę będącą beanem Springa — czyli klasę zarządzaną przez kontener
+// (np. oznaczoną @Component, @Service, @Repository, @Configuration albo zdefiniowaną jako @Bean).
+// Adnotacje takie jak @Async czy @Transactional działają przez utworzenie proxy wokół tego beana
+// i przechwytywanie wywołań metod przychodzących z zewnątrz.
+
+// Włącza obsługę adnotacji @Async.
+// Dzięki temu możesz oznaczać metody jako asynchroniczne, a Spring będzie je wykonywał w osobnych wątkach.
 @EnableAsync
 class AsyncConfig {
 
     @Bean(name = "bulkTaskExecutor")
     Executor bulkTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor()
-        executor.corePoolSize = 2       // Ile wątków zawsze czeka
-        executor.maxPoolSize = 5        // Maksymalnie ile wątków może powstać
-        executor.queueCapacity = 500    // Ile zadań może czekać w kolejce
-        executor.setThreadNamePrefix("BulkExecutor-")
+
+        // Konfiguracja sprzętowa
+        executor.corePoolSize = 2
+        executor.maxPoolSize = 4
+        executor.queueCapacity = 50 // Mała kolejka, żeby łatwo było przetestować limity
+
+        executor.setThreadNamePrefix("BulkAsync-")
+
+        // MAGIA MIDA: Co zrobić, gdy maxPoolSize i queueCapacity są pełne?
+        // CallerRunsPolicy: Wątek, który wysłał zadanie (np. HTTP thread),
+        // sam musi je wykonać. To naturalny hamulec dla systemu!
+
+        // Ustawiając CallerRunsPolicy, implementujemy mechanizm, który automatycznie spowalnia przyjmowanie nowych danych,
+        // gdy serwer nie wyrabia.
+
+        // To znaczy, że gdy puli wątków i kolejka będą pełne, zadanie nie zostanie odrzucone ani wrzucone do innej kolejki
+        // — wątek, który wysłał zadanie (np. wątek obsługi żądania HTTP), sam wykona to zadanie.
+        // To działa jako naturalny mechanizm throttlingu: spowalnia przyjmowanie nowych pracy zamiast odrzucać zadania.
+        // Plus: unikasz odrzuceń i nagłego wzrostu pamięci;
+        // Minus: wątek wywołujący może się blokować i zwiększyć latencję.
+        // Linia ustawia tę politykę dla executora.
+
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy())
+
         executor.initialize()
         return executor
     }
