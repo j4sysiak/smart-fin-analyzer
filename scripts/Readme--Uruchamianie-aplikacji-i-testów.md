@@ -30,11 +30,11 @@ powinnieneś zobaczyć logi podobne do poniższych, co oznacza, że aplikacja ur
 ---------------------------------------------------------------------------
 Ubicie wszystkich procesów Javy (jeśli są uruchomione)
 (PowerShell)
-`Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,StartTime`
+`  Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,StartTime `
 
 jeśli znajdziesz proces(y) powiązane z Twoją aplikacją, zatrzymaj je (wstaw właściwe PID)
 (PowerShell)
-`Stop-Process -Id <PID> -Force`
+`  Stop-Process -Id <PID> -Force  `
 
 
 przyklad:
@@ -77,8 +77,8 @@ krok-2. Testy dodanie transakcji do bazy - H2:
 (Postgres na Docker tylko do testów ./gradlew clean test) - tu nie używamy Postgresa, tylko H2 w pamięci, więc nie ma problemu z plikową bazą danych.
  
 (PowerShell)
-`cd C:\dev\smart-fin-analyzer`
-`powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\add-sample-transaction.ps1`
+`  cd C:\dev\smart-fin-analyzer  `
+`  powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\add-sample-transaction.ps1  `
 
 ```text
  []: # Przykładowy output z uruchomienia skryptu PowerShell, który dodaje transakcję do bazy H2 i pobiera listę transakcji:

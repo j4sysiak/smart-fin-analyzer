@@ -68,7 +68,7 @@ Chcemy widzieć w metrykach, ile wątków jest zajętych.
 Spring Boot robi to automatycznie, jeśli poprawnie nazwiemy Beana, ale my dodamy coś ekstra.
 
 Uruchom aplikację:
-`./gradlew runSmartFinDb -PappArgs="-u Jacek -f transakcje.csv"`
+`  ./gradlew runSmartFinDb -PappArgs="-u Jacek -f transakcje.csv"  `
 
 
 I gdy aplikacja "wisi" - czyli jest gotowa:
