@@ -68,7 +68,7 @@ class SmartFinCliRunner implements CommandLineRunner {
         if (!opts || opts.h) return
 
         println "\n========================================="
-        println ">>> Uruchamianie wersji z BAZĄ DANYCH (H2)..."
+        println ">>> Uruchamianie wersji z BAZĄ DANYCH (PostgreSQL)..."
 
         def targetCurrency = opts.c ?: "PLN"
         if (targetCurrency != "PLN") {

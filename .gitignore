@@ -26,3 +26,6 @@ transakcje.csv
 db/
 db/smartfin_file.mv.db
 db/smartfin_file.trace.db
+
+# Dane PostgreSQL (wolumen docker-compose)
+postgres_data/

@@ -53,7 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // tutaj info jak uruchomić lokalnego postgresa na dokerze dla profilu: local-pg:
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
 
-@ActiveProfiles(value = ["local-pg"], inheritProfiles = false)  // pamietaj, że musisz mieć lokalnego Postgresa uruchomionego, żeby ten test działał!
+@ActiveProfiles("tc") // use Testcontainers for tests (start PostgreSQL container automatically)
 class TransactionPaginationSpec extends BaseIntegrationSpec {
 
     @Autowired MockMvc mvc

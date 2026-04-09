@@ -1,6 +1,9 @@
--- Tworzenie głównej tabeli transakcji
+-- 1. Tworzymy sekwencję z krokiem 50 (zoptymalizowana pod Twojego BulkSavera i Hibernate)
+CREATE SEQUENCE tx_seq START WITH 1 INCREMENT BY 50;
+
+-- 2. Tworzenie głównej tabeli transakcji
 CREATE TABLE transactions (
-                              db_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                              db_id BIGINT PRIMARY KEY, -- ID będziemy brać z sekwencji tx_seq
                               original_id VARCHAR(255),
                               date DATE,
                               amount DECIMAL(19, 2),
@@ -10,9 +13,9 @@ CREATE TABLE transactions (
                               description VARCHAR(255)
 );
 
--- Tworzenie tabeli powiązanej dla tagów (1 transakcja -> wiele tagów)
+-- 3. Tworzenie tabeli dla tagów
 CREATE TABLE transaction_entity_tags (
                                          transaction_entity_db_id BIGINT NOT NULL,
                                          tags VARCHAR(255),
-                                         FOREIGN KEY (transaction_entity_db_id) REFERENCES transactions(db_id)
+                                         CONSTRAINT fk_transaction FOREIGN KEY (transaction_entity_db_id) REFERENCES transactions(db_id)
 );

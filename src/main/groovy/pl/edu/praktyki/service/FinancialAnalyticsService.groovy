@@ -10,8 +10,14 @@ class FinancialAnalyticsService {
      * Oblicza całkowity bilans (Wpływy - Wydatki) w PLN.
      */
     BigDecimal calculateTotalBalance(List<Transaction> transactions) {
-        // Magia Groovy: suma pola amountPLN ze wszystkich obiektów
-        return transactions*.amountPLN.sum() ?: 0.0
+        // Bezpiecznie obsługujemy null/empty i konwertujemy wynik na BigDecimal
+        if (!transactions) {
+            return 0.0G
+        }
+
+        // Zbieramy wartości amountPLN (domyślnie 0.0 jeśli null) i sumujemy
+        def total = transactions.collect { it?.amountPLN ?: 0.0G }.sum()
+        return (total instanceof BigDecimal) ? total : new BigDecimal(total.toString())
     }
 
     /**

@@ -1,5 +1,7 @@
 package pl.edu.praktyki.web
 
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirements
 import org.springframework.web.bind.annotation.*
 import org.springframework.beans.factory.annotation.Autowired
 import pl.edu.praktyki.security.JwtService
@@ -19,6 +21,10 @@ class AuthController {
      * Returns a JSON object with a Bearer token for the requested username.
      */
     @GetMapping("/token")
+    @Operation(summary = "Pobierz token JWT (publiczny endpoint)",
+               description = "Zwraca token JWT dla podanego użytkownika. Nie wymaga autoryzacji. " +
+                       "Skopiuj wartość 'token' z odpowiedzi, kliknij 🔒 Authorize i wklej ją tam.")
+    @SecurityRequirements  // <-- pusty = oznacza Swaggerowi, że TEN endpoint NIE wymaga tokena
     Map<String,String> token(@RequestParam(name = "user", required = false, defaultValue = "dev") String user) {
         String token = jwtService.generateToken(user)
         return [ token: token ]

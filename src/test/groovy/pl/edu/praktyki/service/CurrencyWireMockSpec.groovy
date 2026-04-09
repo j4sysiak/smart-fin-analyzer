@@ -45,7 +45,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*
 // tutaj info jak uruchomić lokalnego postgresa na dokerze dla profilu: local-pg:
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
 
-@ActiveProfiles(value = ["local-pg"], inheritProfiles = false) // pamietaj, że musisz mieć lokalnego Postgresa uruchomionego, żeby ten test działał!
+@ActiveProfiles("tc") // use Testcontainers for tests (start PostgreSQL container automatically)
 class CurrencyWireMockSpec extends BaseIntegrationSpec {
 
     // WireMock uruchamiany programowo — w pełni kontrolujemy cykl życia serwera
@@ -61,8 +61,10 @@ class CurrencyWireMockSpec extends BaseIntegrationSpec {
     TransactionRepository repository
 
     // Dynamiczne ustawianie URL w konfiguracji Springa na adres WireMock-a
+    // UWAGA: nazwa metody MUSI być inna niż w BaseIntegrationSpec (configureTestcontainers),
+    // aby oba @DynamicPropertySource były wykrywane przez Spring.
     @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
+    static void configureWireMock(DynamicPropertyRegistry registry) {
         wireMockServer.start()
         registry.add("currency.api.url", { -> "http://localhost:${wireMockServer.port()}/latest/PLN" })
     }

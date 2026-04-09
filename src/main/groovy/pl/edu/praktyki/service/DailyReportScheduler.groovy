@@ -29,7 +29,8 @@ class DailyReportScheduler {
 
         // Pobieramy transakcje z bazy i robimy szybką statystykę
         def allTx = repo.findAll()
-        def totalPln = allTx*.amountPLN.sum()
+        def amounts = allTx*.amountPLN.findAll { it != null }
+        def totalPln = amounts ? amounts.sum() : BigDecimal.ZERO
 
         log.info("Obecny stan systemu: {} zapisanych transakcji.", count)
         log.info("Całkowity bilans użytkowników: {} PLN", totalPln)
