@@ -30,7 +30,8 @@ class CqrsSpec extends BaseIntegrationSpec {
         def localPg = Boolean.getBoolean('local.pg')
         def timeoutSeconds = localPg ? 60 : 30
         await().atMost(timeoutSeconds, TimeUnit.SECONDS).until {
-            def current = summaryRepo.findById("GLOBAL").orElse(null)
+            def current = summaryRepo.findById("GLOBAL")
+                    .orElse(null)
             if (current == null) return false
             // totalBalance to BigDecimal — porównujemy precyzyjnie (>= oczekiwanej wartości)
             def expected = initialBalance?.add(new BigDecimal("1000.0")) ?: new BigDecimal("1000.0")
