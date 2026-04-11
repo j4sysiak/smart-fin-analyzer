@@ -107,6 +107,8 @@ test {
     // Przekazuje -Dlocal.pg=true z CLI do testu JVM
     // Użycie: ./gradlew test --tests "..." -Dlocal.pg=true
     systemProperty 'local.pg', System.getProperty('local.pg')
+    // Przekazujemy również -Denable.flyway=true aby można było tymczasowo włączyć Flyway w testach
+    systemProperty 'enable.flyway', System.getProperty('enable.flyway')
 
     // To każe Gradle wypisywać wszystko na ekran
     testLogging {

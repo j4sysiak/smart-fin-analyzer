@@ -1,7 +1,7 @@
 package pl.edu.praktyki
 
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
+// Active profile is set dynamically at class initialization based on -Dlocal.pg or existing -Dspring.profiles.active
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -23,11 +23,12 @@ import spock.lang.Specification
  */
 @SpringBootTest(classes = [SmartFinDbApp])
 @ContextConfiguration(classes = [SmartFinDbApp])
-@ActiveProfiles("tc")
 abstract class BaseIntegrationSpec extends Specification {
 
     /** Czy uruchomiono z flagą -Dlocal.pg=true (ręczna inspekcja bazy) */
     static final boolean LOCAL_PG = Boolean.getBoolean("local.pg")
+    // Pozwala włączyć Flyway dla testów przez -Denable.flyway=true (domyślnie false)
+    static final boolean ENABLE_FLYWAY = Boolean.getBoolean("enable.flyway")
 
     // --- Konfiguracja automatycznego kontenera (tryb 'tc') ---
     static final String CONTAINER_NAME = "smartfin-test-pg"
@@ -43,8 +44,26 @@ abstract class BaseIntegrationSpec extends Specification {
     static final String LOCAL_PG_PASS = "finpass"
 
     static {
+        // Jeśli użytkownik jawnie podał -Dspring.profiles.active=... zachowujemy jego wartość.
+        // W przeciwnym razie: jeśli -Dlocal.pg=true ustawiamy profil "local-pg", w przeciwnym razie "tc".
+        def explicitProfile = System.getProperty('spring.profiles.active')
+        if (explicitProfile == null || explicitProfile.trim().isEmpty()) {
+            def chosen = LOCAL_PG ? 'local-pg' : 'tc'
+            System.setProperty('spring.profiles.active', chosen)
+            System.out.println(">>> [BaseIntegrationSpec] Ustawiam spring.profiles.active=${chosen} (LOCAL_PG=${LOCAL_PG})")
+        } else {
+            System.out.println(">>> [BaseIntegrationSpec] spring.profiles.active explicite = ${explicitProfile}")
+        }
+
         if (LOCAL_PG) {
             System.out.println(">>> [BaseIntegrationSpec] TRYB LOCAL-PG: łączę się z localhost:${LOCAL_PG_PORT}/${LOCAL_PG_DB}")
+            // Przy uruchamianiu w trybie local-pg spróbujmy automatycznie wyczyścić testową bazę
+            // aby testy były deterministyczne przy kolejnych uruchomieniach.
+            try {
+                cleanupLocalDatabase()
+            } catch (Exception e) {
+                System.err.println(">>> [BaseIntegrationSpec] Nie udało się automatycznie wyczyścić local-pg: ${e.message}")
+            }
         } else {
             startPostgresContainer()
         }
@@ -85,6 +104,45 @@ abstract class BaseIntegrationSpec extends Specification {
         runCmd("docker rm -f $CONTAINER_NAME")
     }
 
+    /**
+     * Próba wyczyszczenia lokalnej bazy (używana w trybie local-pg).
+     * Najpierw próbuje wykonać `docker exec smartfin-postgres psql ...`, jeśli to nie zadziała
+     * próbuje wykonać lokalne `psql` pod localhost:5432.
+     */
+    private static void cleanupLocalDatabase() {
+        System.out.println(">>> [BaseIntegrationSpec] Czyszczenie lokalnej bazy danych (${LOCAL_PG_DB}) dla trybu local-pg...")
+        // Use DROP TABLE IF EXISTS to ensure a truly clean schema (removes tables created by docker-compose/init scripts)
+        // Also remove Flyway schema history so migrations are re-applied from scratch
+        def sql = "DROP TABLE IF EXISTS transaction_entity_tags CASCADE; " +
+                "DROP TABLE IF EXISTS transactions CASCADE; " +
+                "DROP TABLE IF EXISTS counters CASCADE; " +
+                "DROP TABLE IF EXISTS financial_summary CASCADE; " +
+                "DROP SEQUENCE IF EXISTS tx_seq; " +
+                "DROP TABLE IF EXISTS flyway_schema_history CASCADE;"
+
+        // 1) Spróbuj przez docker exec (kontener nazwany smartfin-postgres)
+        def dockerCmd = "docker exec -i smartfin-postgres psql -U ${LOCAL_PG_USER} -d ${LOCAL_PG_DB} -c \"${sql}\""
+        def rc = runCmd(dockerCmd)
+        if (rc == 0) {
+            System.out.println(">>> [BaseIntegrationSpec] Lokalna baza wyczyszczona przez docker exec smartfin-postgres")
+            return
+        }
+
+        // 2) Spróbuj lokalnego klienta psql (połączenie do localhost:5432)
+        def psqlCmd = "psql -h localhost -p ${LOCAL_PG_PORT} -U ${LOCAL_PG_USER} -d ${LOCAL_PG_DB} -c \"${sql}\""
+        rc = runCmd(psqlCmd)
+        if (rc == 0) {
+            System.out.println(">>> [BaseIntegrationSpec] Lokalna baza wyczyszczona przez lokalny psql")
+            return
+        }
+
+        // Jeśli obie metody nie zadziałały, wypisz instrukcję ręczną
+        System.err.println(">>> [BaseIntegrationSpec] Automatyczne czyszczenie bazy nie powiodło się.\n" +
+                "Uruchom ręcznie:\n" +
+                "docker exec -it smartfin-postgres psql -U ${LOCAL_PG_USER} -d ${LOCAL_PG_DB} -c \"${sql}\"\n" +
+                "lub lokalnie: psql -h localhost -p ${LOCAL_PG_PORT} -U ${LOCAL_PG_USER} -d ${LOCAL_PG_DB} -c \"${sql}\"")
+    }
+
     private static int runCmd(String command) {
         try {
             def process = command.execute()
@@ -116,7 +174,9 @@ abstract class BaseIntegrationSpec extends Specification {
         }
         // Wspólne dla obu trybów
         registry.add("spring.datasource.driverClassName", () -> "org.postgresql.Driver")
-        registry.add("spring.flyway.enabled", () -> "false")
+        // Domyślnie w testach Flyway jest wyłączony (schemat tworzony przez Hibernate).
+        // Możesz tymczasowo włączyć Flyway przez przekazanie -Denable.flyway=true
+        registry.add("spring.flyway.enabled", () -> ENABLE_FLYWAY ? "true" : "false")
         registry.add("app.scheduling.enabled", () -> "false")
     }
 }

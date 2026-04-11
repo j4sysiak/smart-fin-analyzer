@@ -4,6 +4,8 @@ import groovy.util.logging.Slf4j
 import jakarta.validation.Valid
 import org.springframework.web.server.ResponseStatusException
 import pl.edu.praktyki.facade.SmartFinFacade
+import pl.edu.praktyki.repository.FinancialSummaryEntity
+import pl.edu.praktyki.repository.FinancialSummaryRepository
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.service.CurrencyService
 import pl.edu.praktyki.service.FinancialAnalyticsService
@@ -28,6 +30,7 @@ class TransactionController {
     @Autowired CurrencyService currencyService
     @Autowired TransactionRuleService ruleService
     @Autowired SmartFinFacade facade
+    @Autowired FinancialSummaryRepository summaryRepo
 
 
     // Bezpieczny endpoint dla Big Data - paginacja, żeby nie zwracać całej historii naraz
@@ -146,5 +149,16 @@ class TransactionController {
 
         // Nie czekamy na wynik! Odpalamy i zapominamy (Fire and forget)
         facade.processInBackgroundTask("SystemUser", transactions, [])
+    }
+
+    // CQRS Lite
+    @GetMapping("/total-summary")
+    Map<String, Object> getGlobalSummary() {
+        def summary = summaryRepo.findById("GLOBAL")
+                .orElse(new FinancialSummaryEntity())
+        return [
+                globalTotalBalance: summary.totalBalance,
+                syncTimestamp: java.time.LocalDateTime.now()
+        ]
     }
 }

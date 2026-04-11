@@ -22,8 +22,7 @@ system-info.txt
 /gradlew.bat
 
 transakcje.csv
-
-db/
+tmp/
 db/smartfin_file.mv.db
 db/smartfin_file.trace.db
 

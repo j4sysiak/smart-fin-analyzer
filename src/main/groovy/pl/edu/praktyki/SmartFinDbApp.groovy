@@ -32,7 +32,7 @@ class SmartFinDbApp {
 // ale ta klasa będzie aktywna tylko wtedy, gdy NIE jest aktywny profil "test" (linia 34)
 
 @Component
-@Profile("!test") // <-- MAGIA: Uruchomi się zawsze, CHYBA ŻE aktywny jest profil "test"
+@Profile("!test & !tc & !local-pg")
 class SmartFinCliRunner implements CommandLineRunner {
 
     // Zamiast 6 serwisów, wstrzykujemy tylko JEDNĄ Fasadę!
