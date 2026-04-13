@@ -130,6 +130,7 @@ Jawnie `tc` (zalecane, gdy chcesz mieć pewność):
 ```powershell
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*CqrsSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*UploadControllerSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*RbacSpec*"
 ```
 
 Z Flyway włączonym (debug):

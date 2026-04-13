@@ -21,13 +21,25 @@ class JwtService {
     /**
      * Drukuje "bilet wstępu" dla podanego użytkownika.
      */
-    String generateToken(String username) {
+    String generateToken(String username, List<String> roles = ["ROLE_USER"]) {
         return Jwts.builder()
                 .subject(username) // Wrzucamy imię użytkownika do środka
+                .claim("roles", roles) // <-- DODAJEMY ROLE DO TOKENA (Zaktualizuj metodę generateToken, aby przyjmowała listę ról)
                 .issuedAt(new Date()) // Data wydania
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME)) // Data ważności
                 .signWith(key) // Podpisujemy naszym tajnym kluczem
                 .compact() // Kompresujemy do postaci Stringa
+    }
+
+    // Metoda do wyciągania ról
+    List<String> extractRoles(String token) {
+        def claims = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+
+        return claims.get("roles", List.class) ?: []
     }
 
     /**

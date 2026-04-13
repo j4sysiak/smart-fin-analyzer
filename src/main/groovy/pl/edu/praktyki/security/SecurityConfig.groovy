@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpServletResponse
 
 @Configuration
 @EnableWebSecurity
+@org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity // <-- TO WŁĄCZA OCHRONĘ METOD
 class SecurityConfig {
 
     @Autowired JwtService jwtService // Wstrzyknij serwis JWT

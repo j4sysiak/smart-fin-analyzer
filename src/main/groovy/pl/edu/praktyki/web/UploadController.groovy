@@ -15,10 +15,12 @@ import groovy.util.logging.Slf4j
 class UploadController {
 
     @Autowired SmartFinFacade facade
+
     // Używamy bezpośrednio Twojego parsera CSV
     @Autowired CsvTransactionParser csvParser
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')") // <-- TYLKO ADMIN!
     ResponseEntity<String> uploadCsv(@RequestPart("file") MultipartFile file, @RequestParam("user") String user) {
         log.info(">>> [REST-UPLOAD] Otrzymano plik: {} od użytkownika: {}", file.originalFilename, user)
 

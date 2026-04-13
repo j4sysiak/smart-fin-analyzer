@@ -7,6 +7,9 @@ import pl.edu.praktyki.repository.FinancialSummaryRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.mock.web.MockMultipartFile
 import spock.lang.Specification
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 
 class UploadIntegrationSpec extends BaseIntegrationSpec {
 
@@ -33,6 +36,9 @@ TJ36,5000.00,PLN,Praca,Wypłata,2026-04-12
         def before = summaryRepo.findById('GLOBAL').orElseGet({ new pl.edu.praktyki.repository.FinancialSummaryEntity(id: 'GLOBAL', totalBalance:0G, transactionCount:0L) }).transactionCount
 
         when: "we call upload controller"
+        // Ustawiamy kontekst bezpieczeństwa, bo metoda kontrolera jest zabezpieczona @PreAuthorize
+        def auth = new UsernamePasswordAuthenticationToken('admin', null, [new SimpleGrantedAuthority('ROLE_ADMIN')])
+        SecurityContextHolder.context.authentication = auth
         def resp = uploadController.uploadCsv(multipart, 'TEST_USER')
 
         then: "response is OK"
@@ -41,6 +47,9 @@ TJ36,5000.00,PLN,Praca,Wypłata,2026-04-12
         and: "financial summary transactionCount increased by 3"
         def after = summaryRepo.findById('GLOBAL').orElseGet({ new pl.edu.praktyki.repository.FinancialSummaryEntity(id: 'GLOBAL', totalBalance:0G, transactionCount:0L) }).transactionCount
         after == before + 3
+
+        cleanup:
+        SecurityContextHolder.clearContext()
     }
 }
 

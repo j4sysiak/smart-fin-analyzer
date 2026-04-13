@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 
 @AutoConfigureMockMvc
 @AutoConfigureWireMock(port = 0)
-@WithMockUser(username = "admin") // Pamiętamy o kłódce Security!
+@WithMockUser(username = "admin", roles = ["ADMIN"]) // Pamiętamy o kłódce Security! (ADMIN ma prawo uploadu)
 class UploadControllerSpec extends BaseIntegrationSpec {
 
     @Autowired MockMvc mvc
