@@ -3,6 +3,8 @@ package pl.edu.praktyki.security
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
+import org.springframework.core.env.Profiles
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -21,6 +23,7 @@ import jakarta.servlet.http.HttpServletResponse
 class SecurityConfig {
 
     @Autowired JwtService jwtService // Wstrzyknij serwis JWT
+    @Autowired Environment env
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -62,18 +65,23 @@ class SecurityConfig {
         // 3. Konfigurujemy uprawnienia do ścieżek
 
                 .authorizeHttpRequests { auth ->
-                    auth
+                    // Jeśli jesteśmy poza produkcją, udostępniamy endpointy diagnostyczne /internal/** bez autoryzacji
+                    if (!env.acceptsProfiles(Profiles.of('prod'))) {
+                        auth.requestMatchers('/internal/**').permitAll()
+                    }
                     // Pozwalamy wszystkim na dostęp do Swaggera (dokumentacji)
-                            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs", "/swagger-ui.html").permitAll()
+                    auth.requestMatchers('/swagger-ui/**').permitAll()
+                    auth.requestMatchers('/v3/api-docs/**').permitAll()
+                    auth.requestMatchers('/v3/api-docs').permitAll()
+                    auth.requestMatchers('/swagger-ui.html').permitAll()
                     // Pozwalamy na dostęp do Actuatora (Healthcheck)
-                            //.requestMatchers("/actuator/health").permitAll()
-                            .requestMatchers("/actuator/**").permitAll()
+                    auth.requestMatchers('/actuator/**').permitAll()
                     // Pozwalamy na dostęp do H2 Web Console (tylko w trybie lokalnym / testowym)
-                            .requestMatchers("/h2-console", "/h2-console/**").permitAll()
+                    auth.requestMatchers('/h2-console', '/h2-console/**').permitAll()
                     // Allow unauthenticated access to dev auth token endpoint
-                            .requestMatchers("/auth/**").permitAll()
+                    auth.requestMatchers('/auth/**').permitAll()
                     // WSZYSTKIE INNE ŚCIEŻKI (w tym nasze /api/transactions) WYMAGAJĄ ZALOGOWANIA
-                            .anyRequest().authenticated()
+                    auth.anyRequest().authenticated()
                 }
 
                 // H2 Console uses frames - pozwalamy na wyświetlanie w tej samej domenie
@@ -117,7 +125,8 @@ class SecurityConfig {
                     path.contains('/v3/api-docs') ||
                     path.contains('/actuator/health') ||
                     path.contains('/h2-console') ||
-                    path.contains('/auth/')) {
+                    path.contains('/auth/') ||
+                    path.contains('/internal/')) {
                 chain.doFilter(request, response)
                 return
             }

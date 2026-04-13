@@ -28,7 +28,9 @@ class SummaryProjectionListener {
 
         // Aktualizujemy gotowy widok
         summary.totalBalance += event.totalBalance
-        summary.transactionCount += 1 // Liczymy paczki lub transakcje
+        // Zwiększamy licznik o faktyczną liczbę przetworzonych transakcji w paczce
+        def inc = event.transactionsCount ?: 1
+        summary.transactionCount += inc
 
         summaryRepo.save(summary)
         log.info(">>> [CQRS] Nowy bilans globalny: {}", summary.totalBalance)

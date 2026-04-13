@@ -42,6 +42,7 @@ class TransactionIngesterService {
     skonfiguruj asynchroniczne przetwarzanie zdarzeń i upewnij się, że listenerzy są bezpieczni dla wątków.
     * */
     // Wbudowany w Springa mechanizm wysyłania zdarzeń
+    // Wstrzykujemy go, żeby móc publikować zdarzenia o zaimportowanych transakcjach
     @Autowired ApplicationEventPublisher eventPublisher
 
     /**
@@ -80,7 +81,8 @@ class TransactionIngesterService {
 
     /**
      * KROK 4: Kompletny rurociąg (pipeline).
-     * Pobiera paczki danych, wielowątkowo (dzięki GParsPool.withPool(...) ) analizuje je pod kątem reguł i łączy w całość.
+     * Pobiera paczki danych, wielowątkowo (dzięki GParsPool.withPool(...) )
+     * analizuje je pod kątem reguł i łączy w całość.
 
     Opis co robi ta metoda:
     -------------------------------
@@ -92,13 +94,18 @@ class TransactionIngesterService {
     Dla każdej transakcji w paczce:
     -------------------------------
      - wywołuje ruleService.applyRules(tx, rules) (aplikuje reguły)
-     - publikuje zdarzenie TransactionImportedEvent przez eventPublisher
+     - publikuje zdarzenie `TransactionImportedEvent` przez `eventPublisher`
        (metod musi zawierać logikę wysyłania eventów przez eventPublisher (żeby TransactionAuditListener działał))
      - aktualizuje metryki przez metrics.recordTransaction(tx.amountPLN)
     return:
     -------
     Zwraca jedną, spłaszczoną listę wszystkich transakcji (flatten()), rzutowaną na List<Transaction>.
     */
+    // to jest nasz docelowy pipeline, który będzie wywoływany z fasady (SmartFinFacade) i będzie łączył wszystkie elementy:
+    //      1. GPars
+    //      2. Reguły
+    //      3. Eventy
+    //      4. Metryki
     List<Transaction> ingestAndApplyRules(List<List<Transaction>> allSources, List<String> rules) {
         if (!allSources) return[]
 

@@ -18,5 +18,6 @@ import pl.edu.praktyki.domain.Transaction
 class TransactionBatchProcessedEvent {
     String userName
     BigDecimal totalBalance
+    Long transactionsCount
     String generatedReport
 }

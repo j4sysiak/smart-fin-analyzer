@@ -22,7 +22,18 @@ import pl.edu.praktyki.service.CurrencyService
 @EnableScheduling
 class SmartFinDbApp {
     static void main(String[] args) {
-        SpringApplication.run(SmartFinDbApp, args)
+        def ctx = SpringApplication.run(SmartFinDbApp, args)
+        try {
+            def env = ctx.getEnvironment()
+            def active = env.getActiveProfiles()
+            if (!active) active = env.getDefaultProfiles()
+            println "=== Application started with active profiles: ${active}"
+            println "=== spring.datasource.url=${env.getProperty('spring.datasource.url')}"
+            println "=== spring.datasource.username=${env.getProperty('spring.datasource.username')}"
+            println "=== spring.jpa.hibernate.ddl-auto=${env.getProperty('spring.jpa.hibernate.ddl-auto')}"
+        } catch (Exception e) {
+            println "=== Unable to print datasource info: ${e.message}"
+        }
     }
 }
 

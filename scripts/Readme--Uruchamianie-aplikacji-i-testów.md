@@ -45,8 +45,10 @@ docker exec smartfin-postgres pg_isready -U finuser
 **Sposób 1: Gradle task `runSmartFinDb` (zalecany)**
 
 ```powershell
-./gradlew runSmartFinDb -PappArgs="-u Jacek -f transakcje.csv"   # full wypas (import CSV)
-./gradlew runSmartFinDb -PappArgs="-u Jacek"                     # bez importu CSV
+./gradlew runSmartFinDb -PappArgs="-u Jacek -f transactions_upload.csv"   # full wypas (import CSV)
+./gradlew runSmartFinDb -PappArgs="-u Jacek"                              # bez importu CSV
+
+./gradlew runSmartFinDb "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" -PappArgs="-u Jacek"
 ```
 
 Gdy zobaczysz `80% EXECUTING [39s]` — aplikacja działa:
@@ -127,11 +129,13 @@ Bez niczego tryb domyślny (domyślnie `tc`):
 Jawnie `tc` (zalecane, gdy chcesz mieć pewność):
 ```powershell
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*CqrsSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*UploadControllerSpec*"
 ```
 
 Z Flyway włączonym (debug):
 ```powershell
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*CqrsSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*UploadControllerSpec*"
 ```
 
 Możesz też ustawić `GRADLE_OPTS` aby uniknąć cytowania w każdej komendzie:
@@ -275,8 +279,9 @@ docker run -d --name smartfin-postgres `
 Krok 2 — uruchom wybrany test z flagą `-Dlocal.pg=true`:
 ```powershell
 .\gradlew.bat "-Dlocal.pg=true" test --tests "pl.edu.praktyki.repository.IntegrationDbSpec"
-# lub wybranie testu `CqrsSpec`:
+# lub
 .\gradlew.bat "-Dlocal.pg=true" test --tests "*CqrsSpec*"
+.\gradlew.bat "-Dlocal.pg=true" test --tests "*UploadControllerSpec*"
 ```
 
 Jeżeli chcesz wymusić inny profil mimo `-Dlocal.pg=true`, podaj jawnie `-Dspring.profiles.active=...` przed taskiem.
@@ -365,6 +370,42 @@ Wymaga działającej aplikacji na porcie 8080.
 Instrukcja: `C:\dev\smart-fin-analyzer\scripts\Readme--Odpalanie-RESTów-z-Postmana.md`
 
 Kolekcja online: [Postman Web](https://web.postman.co/workspace/My-Workspace~f2aa92ac-63c8-420c-80c0-23d0d71ea517/collection/5972111-1831650e-83dc-4776-a5f8-4780294b7091?action=share&source=copy-link&creator=5972111)
+
+### Wysyłanie plików (multipart/form-data) — ważne
+
+Uwaga: jeśli używasz Postman Web (przeglądarka), to NIE MA on domyślnie dostępu do plików lokalnych — dlatego w przykładach możesz widzieć `@/path/to/file` zamiast rzeczywistej ścieżki. Masz trzy opcje:
+
+- Zainstalować Postman Desktop (najprościej) — wtedy pole `form-data` → `file` działa bez dodatkowych czynności.
+- Pozostać w Postman Web i zainstalować **Postman Agent** (mały program), który pozwala Webowi wysyłać lokalne pliki.
+- Używać CLI (curl / PowerShell) — niezawodne i szybkie.
+
+Przykłady (PowerShell i curl) — działają na Windows i są przydatne w CI / skryptach:
+
+PowerShell (Invoke-RestMethod):
+```powershell
+$token = "eyJ...TWÓJ_TOKEN..."
+$file = Get-Item "C:\dev\smart-fin-analyzer\transactions_upload.csv"
+Invoke-RestMethod -Uri "http://localhost:8080/api/transactions/upload?user=Jacek" \
+  -Method Post -Headers @{ Authorization = "Bearer $token" } -Form @{ file = $file }
+```
+
+curl.exe (PowerShell) — użyj `curl.exe`, nie aliasu PowerShell `curl`:
+```powershell
+curl.exe -v -X POST "http://localhost:8080/api/transactions/upload?user=Jacek" \
+  -H "Authorization: Bearer eyJ...TWÓJ_TOKEN..." \
+  -F "file=@C:/dev/smart-fin-analyzer/transactions_upload.csv;type=text/csv"
+```
+
+Postman Web — szybka diagnostyka kiedy plik nie jest wysyłany:
+- Otwórz **Postman Console** (View → Show Postman Console). Wyślij request i sprawdź, czy w konsoli widać `form-data: file: <filename> (size: N bytes)`.
+- Jeśli widzisz zamiast tego `file=@/path/to/file` lub `file: ""`, to plik nie został wybrany przez web client — zainstaluj Postman Agent lub użyj Desktop.
+
+Jeśli chcesz, możesz dodać do repo instrukcję jak zainstalować Postman Desktop lub Agent — poniżej krótkie przypomnienie:
+
+- Postman Desktop: https://www.postman.com/downloads/
+- Postman Agent (dla web.postman.co): po zalogowaniu wybierz opcję „Install Postman Agent” i uruchom agenta lokalnie.
+
+Ten fragment może być skopiowany do `scripts/Readme--Odpalanie-RESTów-z-Postmana.md` jeśli chcesz rozbudować sekcję o screeny i przykłady.
 
 ---
 

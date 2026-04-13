@@ -16,13 +16,36 @@ import pl.edu.praktyki.event.TransactionBatchProcessedEvent // DODAJ IMPORT
 class SmartFinFacade {
 
     // Fasada ukrywa w sobie całą złożoność podsystemu (wstrzykuje 5 różnych klas!)
+
+
+    //Odpowiada za wczytanie i normalizację transakcji z różnych źródeł oraz zastosowanie reguł biznesowych/filtrów.
+    // Typowe metody: ingest(...), applyRules(...).
+    // Zwraca ustrukturyzowaną listę Transaction.
     @Autowired TransactionIngesterService ingester
+
+    // Dostarcza kursy walut i konwersje (np. getExchangeRate(currency)).
+    // Powinien być lekki i bezstanowy; w praktyce może cache’ować kursy i korzystać z zewnętrznych API.
     @Autowired CurrencyService currencySvc
+
+    // Realizuje obliczenia statystyczne i analitykę nad historią transakcji: calculateTotalBalance(...), getTopSpendingCategory(...), getSpendingByCategory(...).
+    // Powinien operować na kolekcjach i zwracać wartości/strukturę wyników.
     @Autowired FinancialAnalyticsService analyticsSvc
+
+    // Generuje raporty (tu: generateMonthlyReport(userName, stats)) z dostarczonych danych/metriców.
+    // Odpowiedzialny za formatowanie treści raportu (tekst, HTML, PDF itp.).
     @Autowired ReportGeneratorService reportSvc
+
+    // Interfejs dostępu do bazy (zwykle Spring Data*Repository).
+    // Operacje CRUD, findAll(), save(...) itd. Mapuje TransactionEntity do tabeli DB.
     @Autowired TransactionRepository repo
+
+    // Delegat odpowiedzialny za hurtowy zapis encji w transakcji.
+    // Powinien być oznaczony jako osobny bean z @Transactional, aby AOP proxy zadziałało (stąd wyodrębnienie poza fasadę).
+    // Typowe metody: saveAllInTransaction(List<TransactionEntity>).
     @Autowired TransactionBulkSaver bulkSaver
-    @Autowired ApplicationEventPublisher eventPublisher // Publikator zdarzeń Springa
+
+    // Publikator zdarzeń Springa
+    @Autowired ApplicationEventPublisher eventPublisher
 
 
 
@@ -95,7 +118,20 @@ class SmartFinFacade {
             )
         }
         // ... and Delegate to a separate transactional bean so Spring AOP proxy applies
-        bulkSaver.saveAllInTransaction(entities)
+        try {
+            log.info(">>> [FASADA] Zapisuję {} encji do bazy (deleguję do bulkSaver)", entities.size())
+            bulkSaver.saveAllInTransaction(entities)
+            // Po zapisie logujemy liczebność z repozytorium - pomoże nam zdiagnozować problemy z transakcjami
+            try {
+                log.info(">>> [FASADA] Po zapisie repo.count() = {}", repo.count())
+            } catch (Exception e) {
+                log.warn(">>> [FASADA] Nie udało się pobrać repo.count(): {}", e.message)
+            }
+        } catch (Exception ex) {
+            // Logujemy błąd, ale wyrzucamy dalej - klient powinien dostać 500 (jeśli coś pójdzie nie tak)
+            log.error(">>> [FASADA] Błąd podczas zapisu encji: {}", ex.message, ex)
+            throw ex
+        }
 
 
         // 4. Odczyt historii
@@ -131,6 +167,7 @@ class SmartFinFacade {
         eventPublisher.publishEvent(new TransactionBatchProcessedEvent(
                 userName: userName,
                 totalBalance: stats.totalBalance,
+                transactionsCount: flatListOfTransactions?.size() ?: 0,
                 generatedReport: finalReport
         ))
 

@@ -22,8 +22,7 @@ class AuthController {
      */
     @GetMapping("/token")
     @Operation(summary = "Pobierz token JWT (publiczny endpoint)",
-               description = "Zwraca token JWT dla podanego użytkownika. Nie wymaga autoryzacji. " +
-                       "Skopiuj wartość 'token' z odpowiedzi, kliknij 🔒 Authorize i wklej ją tam.")
+            description = "Zwraca token JWT dla podanego użytkownika. Nie wymaga autoryzacji. Skopiuj wartość 'token' z odpowiedzi, kliknij 🔒 Authorize i wklej ją tam.")
     @SecurityRequirements  // <-- pusty = oznacza Swaggerowi, że TEN endpoint NIE wymaga tokena
     Map<String,String> token(@RequestParam(name = "user", required = false, defaultValue = "dev") String user) {
         String token = jwtService.generateToken(user)
