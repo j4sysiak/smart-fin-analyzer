@@ -48,7 +48,8 @@ TJ36,5000.00,PLN,Praca,Wypłata,2026-04-12
 
         and: "current counts"
         def txBefore = transactionRepository.count()
-        def summaryBefore = summaryRepo.findById('GLOBAL').orElseGet({ new pl.edu.praktyki.repository.FinancialSummaryEntity(id: 'GLOBAL', totalBalance:0G, transactionCount:0L) })
+        def summaryBefore = summaryRepo.findById('GLOBAL')
+                .orElseGet({ new pl.edu.praktyki.repository.FinancialSummaryEntity(id: 'GLOBAL', totalBalance:0G, transactionCount:0L) })
 
         when: "we call upload controller as ADMIN"
         def auth = new UsernamePasswordAuthenticationToken('admin', null, [new SimpleGrantedAuthority('ROLE_ADMIN')])
