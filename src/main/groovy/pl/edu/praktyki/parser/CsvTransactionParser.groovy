@@ -23,6 +23,14 @@ class CsvTransactionParser implements TransactionParser {
         this.strictParsing = strictParsing
     }
 
+    // METODA DLA CLI (zostaje bez zmian)
+    @Override
+    List<Transaction> parse(File file) {
+        // Groovy potrafi wyciągnąć InputStream z pliku automatycznie
+        return parseFromStream(file.newInputStream())
+    }
+
+    /*  bedziemy uzywac streamow zamiast czytac cale pliki do pamieci, bo to jest bardziej wydajne i pozwala na lepsze zarzadzanie zasobami (np. automatyczne zamykanie strumienia po pracy)
     @Override
     List<Transaction> parse(File file) {
         println ">>> [CSV PARSER] Czytam plik: ${file.name}"
@@ -76,6 +84,60 @@ class CsvTransactionParser implements TransactionParser {
                     }
                 }
             }
+        return transactions
+    } */
+
+
+    List<Transaction> parseFromStream(InputStream is) {
+        println ">>> [CSV-PARSER] Przetwarzam strumień danych..."
+        def transactions = []
+
+        // Używamy withReader, aby bezpiecznie zamknąć strumień po pracy
+        is.withReader('UTF-8') { reader ->
+            // skip header line
+            reader.readLine()
+            reader.eachLine { line ->
+                if (!line || line.trim().isEmpty()) return
+                def cols = line.split(',')
+                if (cols.size() < 6) {
+                    def msg = ">>> [CSV PARSER] Za mało kolumn: '${line}'"
+                    if (strictParsing) {
+                        throw new IllegalArgumentException(msg)
+                    } else {
+                        println msg
+                        return
+                    }
+                }
+                try {
+                    def id = cols[0].trim()
+                    def rawAmount = cols[1].trim()
+                    rawAmount = rawAmount.replace(',', '.').replaceAll("[^0-9.\\-]", '')
+                    def amountBd = rawAmount ? new BigDecimal(rawAmount) : null
+
+                    def currency = cols[2].trim()
+                    def category = cols[3].trim()
+                    def description = cols[4].trim()
+                    def date = LocalDate.parse(cols[5].trim())
+
+                    transactions << new Transaction(
+                            id: id,
+                            amount: amountBd,
+                            currency: currency,
+                            category: category,
+                            description: description,
+                            date: date
+                    )
+                } catch (Exception e) {
+                    def msg = ">>> [CSV PARSER] Błąd parsowania linii: '${line}' -> ${e.class.name}: ${e.message}"
+                    if (strictParsing) {
+                        println msg
+                        throw e
+                    } else {
+                        println msg
+                    }
+                }
+            }
+        }
         return transactions
     }
 }

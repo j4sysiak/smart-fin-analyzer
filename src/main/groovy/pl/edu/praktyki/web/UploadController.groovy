@@ -20,8 +20,9 @@ class UploadController {
     @Autowired CsvTransactionParser csvParser
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')") // <-- TYLKO ADMIN!
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')") // <-- TYLKO ADMIN! wpuszczamy tylko adminów, bo to jest endpoint do uploadu danych
     ResponseEntity<String> uploadCsv(@RequestPart("file") MultipartFile file, @RequestParam("user") String user) {
+
         log.info(">>> [REST-UPLOAD] Otrzymano plik: {} od użytkownika: {}", file.originalFilename, user)
 
         // 1. Tworzymy tymczasowy plik na dysku, aby parser mógł go przeczytać
@@ -37,9 +38,17 @@ class UploadController {
             log.warn(">>> [REST-UPLOAD] Nie udało się odczytać próbki z pliku: {}", e.message)
         }
 
+        def transactions = []
         try {
+            // Czytamy z pliku tymczasowego, a nie z oryginalnego obiektu MultipartFile.
+            // Niektóre serwery przenoszą/dekompresują plik do własnego tmp i getInputStream()
+            // może być mniej przewidywalny po transferTo(). Korzystamy więc z tempFile.
+            tempFile.withInputStream { is ->
+                transactions = csvParser.parseFromStream(is)
+            }
+
             // 2. Parsujemy plik do listy obiektów Transaction
-            def transactions = csvParser.parse(tempFile)
+            // def transactions = csvParser.parse(tempFile)
             log.info(">>> [REST-UPLOAD] Sparsowano {} transakcji", transactions.size())
             if (!transactions || transactions.size() == 0) {
                 log.warn(">>> [REST-UPLOAD] Uwaga: parser zwrócił 0 transakcji — możliwe że w przesłanym pliku nie ma zawartości lub pole FORM jest źle skonfigurowane po stronie klienta (Postman).")
@@ -51,9 +60,18 @@ class UploadController {
             String report = facade.processAndGenerateReport(user, transactions, [])
 
             return ResponseEntity.ok(report)
+        } catch (Exception e) {
+            // Logujemy pełny stacktrace — to pomoże w diagnostyce zdalnych klientów (Postman/Swagger)
+            log.error("Błąd podczas przetwarzania uploadu", e)
+            // Rzucamy wyjątek dalej, aby GlobalExceptionHandler go złapał
+            throw e
         } finally {
             // Zawsze usuwamy plik tymczasowy po skończonej pracy
-            tempFile.delete()
+            try {
+                if (tempFile && tempFile.exists()) tempFile.delete()
+            } catch (ignored) {
+                log.warn("Nie udało się usunąć pliku tymczasowego: {}", tempFile?.absolutePath)
+            }
         }
     }
 }

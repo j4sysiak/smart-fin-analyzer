@@ -397,6 +397,41 @@ curl.exe -v -X POST "http://localhost:8080/api/transactions/upload?user=Jacek" \
   -F "file=@C:/dev/smart-fin-analyzer/transactions_upload.csv;type=text/csv"
 ```
 
+### Quick recipe — pobierz token admin i wyślij plik CSV (PowerShell + curl)
+
+Poniżej minimalne, kopiowalne komendy, które użyłem do szybkiego testu (Windows PowerShell):
+
+- Pobierz token JWT dla użytkownika `admin` (token będzie zawierał rolę `ROLE_ADMIN`):
+
+```powershell
+$token = (Invoke-RestMethod -Uri "http://localhost:8080/auth/token?user=admin" -Method Get).token
+$token
+```
+
+- (opcjonalnie) Szybkie podejrzenie payloadu tokena (sprawdź, czy jest `ROLE_ADMIN`):
+
+```powershell
+$payload = $token.Split('.')[1]
+$pad = 4 - ($payload.Length % 4); if ($pad -lt 4) { $payload += '=' * $pad }
+[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payload)) | ConvertFrom-Json
+```
+
+- Wyślij plik CSV przy użyciu curl (PowerShell — użyj `curl.exe`):
+
+```powershell
+curl.exe -v -X POST "http://localhost:8080/api/transactions/upload?user=Jacek" \
+  -H "Authorization: Bearer $token" \
+  -F "file=@C:/dev/smart-fin-analyzer/transactions_upload.csv;type=text/csv"
+```
+
+Jeśli odpowiedź to HTTP 200 — raport i rekordy powinny pojawić się w bazie.
+
+Uwaga dotycząca `/internal/debug-auth`:
+- Endpoint `/internal/debug-auth` jest skonfigurowany jako publiczny (w `SecurityConfig` ścieżki `/internal/**` są `permitAll()`), więc wywołanie go nawet z nagłówkiem Authorization może zwrócić `anonymousUser` — jest to zamierzone, żeby endpoint był dostępny bez uwierzytelnienia w środowisku developerskim. Aby sprawdzić, czy token rzeczywiście daje rolę ADMIN, najlepiej:
+  - sprawdzić payload tokena (powyższa metoda Base64), lub
+  - wykonać chroniony endpoint (np. upload) i oglądać zachowanie (200 vs 403) albo włączyć logowanie Spring Security (DEBUG) i sprawdzić decyzję autoryzacyjną.
+
+
 Postman Web — szybka diagnostyka kiedy plik nie jest wysyłany:
 - Otwórz **Postman Console** (View → Show Postman Console). Wyślij request i sprawdź, czy w konsoli widać `form-data: file: <filename> (size: N bytes)`.
 - Jeśli widzisz zamiast tego `file=@/path/to/file` lub `file: ""`, to plik nie został wybrany przez web client — zainstaluj Postman Agent lub użyj Desktop.

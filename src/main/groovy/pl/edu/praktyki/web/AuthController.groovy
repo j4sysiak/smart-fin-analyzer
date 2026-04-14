@@ -25,7 +25,9 @@ class AuthController {
             description = "Zwraca token JWT dla podanego użytkownika. Nie wymaga autoryzacji. Skopiuj wartość 'token' z odpowiedzi, kliknij 🔒 Authorize i wklej ją tam.")
     @SecurityRequirements  // <-- pusty = oznacza Swaggerowi, że TEN endpoint NIE wymaga tokena
     Map<String,String> token(@RequestParam(name = "user", required = false, defaultValue = "dev") String user) {
-        String token = jwtService.generateToken(user)
+        // Jeśli prosisz o token dla 'admin' - nadajemy rolę ADMIN, w pozostałych przypadkach domyślnie ROLE_USER
+        def roles = (user == 'admin') ? ['ROLE_ADMIN'] : ['ROLE_USER']
+        String token = jwtService.generateToken(user, roles)
         return [ token: token ]
     }
 }

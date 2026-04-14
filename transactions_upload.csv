@@ -1,4 +1,4 @@
 id,amount,currency,category,description,date
-TJ34,250.00,EUR,Zakupy,Monitor,2026-04-12
-TJ35,-40.00,PLN,Jedzenie,Pizza,2026-04-12
-TJ36,5000.00,PLN,Praca,Wypłata,2026-04-12
+TJ401,250.00,EUR,Zakupy,Monitor,2026-04-16
+TJ411,-40.00,PLN,Jedzenie,Pizza,2026-04-16
+TJ421,5000.00,PLN,Praca,Wypłata,2026-04-16
