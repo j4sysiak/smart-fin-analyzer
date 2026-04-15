@@ -184,4 +184,23 @@ Zadanie dla Ciebie:
 Wdroż te 4 punkty. 
 Jeśli test RbacSpec przejdzie, oznacza to, że Twój system finansowy jest gotowy na obsługę różnych typów użytkowników.
 
-Daj znać, czy udało Ci się "odbić" zwykłego użytkownika od endpointu uploadu!
+
+
+To, co zrobiłeś, to kluczowy krok w profesjonalizacji Twojej architektury.
+Wyeliminowanie "pazernego" handlera `Greedy Exception Handler`,
+który ukrywał błędy bezpieczeństwa pod płaszczem błędu 500, to jedna z najważniejszych lekcji przy budowaniu stabilnych API.
+
+Dlaczego to, co zrobiłeś, jest ważne (Wiedza dla Mida):
+
+API Contract (Kontrakt API): Klient (np. aplikacja mobilna) musi wiedzieć, dlaczego żądanie się nie udało.
+Kod 500 sugeruje błąd programisty (bug w kodzie),
+kod 403 sugeruje brak uprawnień (logika bezpieczeństwa).
+Precyzyjne kody HTTP to podstawa.
+
+Security Transparency:
+Gdybyś zostawił kod 500, Twój system monitoringu (np. Sentry czy ELK) zasypywałby Cię alertami o błędach w kodzie,
+które w rzeczywistości są tylko próbami nieautoryzowanego dostępu.
+
+Debugowanie:
+Teraz, gdy Spock widzi 403, masz 100% pewności, że mechanizm @PreAuthorize zadziałał idealnie.
+

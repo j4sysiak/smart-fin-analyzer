@@ -131,12 +131,14 @@ Jawnie `tc` (zalecane, gdy chcesz mieć pewność):
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*CqrsSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*UploadControllerSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*RbacSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*BigDataSpec*"
 ```
 
 Z Flyway włączonym (debug):
 ```powershell
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*CqrsSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*UploadControllerSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*BigDataSpec*"
 ```
 
 Możesz też ustawić `GRADLE_OPTS` aby uniknąć cytowania w każdej komendzie:

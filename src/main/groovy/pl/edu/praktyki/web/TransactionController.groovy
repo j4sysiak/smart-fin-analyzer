@@ -161,4 +161,39 @@ class TransactionController {
                 syncTimestamp: java.time.LocalDateTime.now()
         ]
     }
+
+    // Przykład endpointu z paginacją i filtrowaniem po kategorii
+    // Lab75--Big-Data-i-Optymalizacja-Hibernate
+    @GetMapping("/search")
+    Page<Transaction> searchByCategory(
+            @RequestParam("category") String category, // DODANO NAZWĘ
+            @RequestParam(value = "page", defaultValue = "0") int page, // DODANO NAZWĘ
+            @RequestParam(value = "size", defaultValue = "10") int size // DODANO NAZWĘ
+    ) {
+
+        // 1. Zabezpieczenie przed atakiem (OOM Protection)
+        int safeSize = Math.min(size, 100)
+
+        // 2. Budujemy obiekt Paginacji (Domyślnie sortujemy po dacie malejąco)
+        def pageable = org.springframework.data.domain.PageRequest.of(
+                page,
+                safeSize,
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "date")
+        )
+
+        // 3. Pobieramy "stronę" danych
+        // Pobieramy "stronę" danych (nie wszystkie naraz!)
+        def entitiesPage = repo.findByCategory(category, pageable)
+
+
+        // 4. Mapujemy na obiekty domenowe (DTO)
+        return entitiesPage.map { ent ->
+            new Transaction(
+                    id: ent.originalId,
+                    amount: ent.amount,
+                    category: ent.category,
+                    date: ent.date
+            )
+        }
+    }
 }
