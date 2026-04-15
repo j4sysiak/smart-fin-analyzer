@@ -132,6 +132,7 @@ Jawnie `tc` (zalecane, gdy chcesz mieć pewność):
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*UploadControllerSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*RbacSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*BigDataSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*DynamicSearchSpec*"
 ```
 
 Z Flyway włączonym (debug):
@@ -139,6 +140,7 @@ Z Flyway włączonym (debug):
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*CqrsSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*UploadControllerSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*BigDataSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*DynamicSearchSpec*"
 ```
 
 Możesz też ustawić `GRADLE_OPTS` aby uniknąć cytowania w każdej komendzie:

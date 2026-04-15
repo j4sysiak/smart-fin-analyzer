@@ -19,6 +19,8 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.repository.TransactionSpecifications
+import org.springframework.data.jpa.domain.Specification
 
 @Slf4j
 @RestController
@@ -162,38 +164,46 @@ class TransactionController {
         ]
     }
 
-    // Przykład endpointu z paginacją i filtrowaniem po kategorii
+    // Przykład endpointu z paginacją i filtrowaniem po kategorii z różnymi kryteriami (kwota, opis)
     // Lab75--Big-Data-i-Optymalizacja-Hibernate
+    // Lab76--Dynamiczne-Filtrowanie--Spring-Data-Specifications
     @GetMapping("/search")
-    Page<Transaction> searchByCategory(
-            @RequestParam("category") String category, // DODANO NAZWĘ
-            @RequestParam(value = "page", defaultValue = "0") int page, // DODANO NAZWĘ
-            @RequestParam(value = "size", defaultValue = "10") int size // DODANO NAZWĘ
-    ) {
+    Page<Transaction> search(
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "minAmount", required = false) BigDecimal minAmount,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
 
         // 1. Zabezpieczenie przed atakiem (OOM Protection)
         int safeSize = Math.min(size, 100)
 
-        // 2. Budujemy obiekt Paginacji (Domyślnie sortujemy po dacie malejąco)
+
+        // 2. Łączymy filtry (Zasada: dodaj tylko te, które użytkownik podał)
+        def spec = Specification
+                .where(TransactionSpecifications.hasCategory(category))
+                .and(TransactionSpecifications.amountGreaterThan(minAmount))
+                .and(TransactionSpecifications.descriptionLike(description))
+
+
+        // 3. Budujemy obiekt Paginacji (Domyślnie sortujemy po dacie malejąco)
         def pageable = org.springframework.data.domain.PageRequest.of(
                 page,
                 safeSize,
                 org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "date")
         )
 
-        // 3. Pobieramy "stronę" danych
+        // 4. Wykonujemy zapytanie z paginacją
         // Pobieramy "stronę" danych (nie wszystkie naraz!)
-        def entitiesPage = repo.findByCategory(category, pageable)
+        def entitiesPage = repo.findAll(spec, pageable)
 
-
-        // 4. Mapujemy na obiekty domenowe (DTO)
+        // 4. Mapujemy na DTO
         return entitiesPage.map { ent ->
             new Transaction(
                     id: ent.originalId,
-                    amount: ent.amount,
+                    amountPLN: ent.amountPLN,
                     category: ent.category,
-                    date: ent.date
-            )
+                    description: ent.description)
         }
     }
 }

@@ -22,7 +22,12 @@ class BigDataSpec extends BaseIntegrationSpec {
         given: "mamy 50 transakcji w kategorii 'TEST'"
         repo.deleteAll()
         def manyTransactions = (1..50).collect { i ->
-            new TransactionEntity(originalId: "ID-$i", category: "TEST", amount: 10.0, date: java.time.LocalDate.now())
+            new TransactionEntity(
+                    originalId: "ID-$i",
+                    category: "TEST",
+                    amount: 10.0,
+                    date: java.time.LocalDate.now()
+            )
         }
         repo.saveAll(manyTransactions)
 
@@ -41,4 +46,43 @@ class BigDataSpec extends BaseIntegrationSpec {
         response.andExpect(jsonPath('$.totalElements').value(50))
         response.andExpect(jsonPath('$.totalPages').value(10))
     }
+
+
+    def "powinien poprawnie stronicować wyniki przy użyciu nowej metody search"() {
+        given: "mamy w bazie 50 transakcji"
+        repo.deleteAll()
+        def manyTransactions = (1..50).collect { i ->
+            new TransactionEntity(
+                    originalId: "ID-$i",
+                    category: "VOLUME_TEST",
+                    amountPLN: 10.0,
+                    date: java.time.LocalDate.now()
+            )
+        }
+        repo.saveAll(manyTransactions)
+
+        when: "pytamy o stronę 0 o rozmiarze 5"
+        def response = mvc.perform(get("/api/transactions/search")
+                .param("category", "VOLUME_TEST")
+                .param("page", "0")
+                .param("size", "5"))
+
+        then: "otrzymujemy dokładnie 5 rekordów z 50 dostępnych"
+        response.andExpect(status().isOk())
+                .andExpect(jsonPath('$.content.length()').value(5))
+                .andExpect(jsonPath('$.totalElements').value(50))
+                .andExpect(jsonPath('$.totalPages').value(10))
+    }
+
+    def "powinien ograniczyć rozmiar strony do bezpiecznej wartości (OOM Protection)"() {
+        when: "haker prosi o milion rekordów na jednej stronie"
+        def response = mvc.perform(get("/api/transactions/search")
+                .param("category", "VOLUME_TEST")
+                .param("size", "1000000"))
+
+        then: "system ogranicza size do 100 (zdefiniowane w kontrolerze Math.min)"
+        response.andExpect(status().isOk())
+                .andExpect(jsonPath('$.size').value(100))
+    }
+
 }
