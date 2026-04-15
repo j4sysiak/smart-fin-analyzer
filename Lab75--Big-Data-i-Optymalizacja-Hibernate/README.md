@@ -51,23 +51,38 @@ Krok-3. Endpoint w Kontrolerze (TransactionController.groovy)
 Dodamy endpoint, który przyjmuje parametry page i size.
 
 ```groovy
-@GetMapping("/search")
+    @GetMapping("/search")
 Page<Transaction> searchByCategory(
-@RequestParam String category,
-@RequestParam(defaultValue = "0") int page,
-@RequestParam(defaultValue = "10") int size) {
+                @RequestParam("category") String category, // DODANO NAZWĘ
+                @RequestParam(value = "page", defaultValue = "0") int page, // DODANO NAZWĘ
+                @RequestParam(value = "size", defaultValue = "10") int size // DODANO NAZWĘ
+        ) {
 
-        // Budujemy obiekt Paginacji
-        def pageable = org.springframework.data.domain.PageRequest.of(page, size)
-        
-        // Pobieramy "stronę" danych (nie wszystkie naraz!)
-        def entitiesPage = repo.findByCategory(category, pageable)
-        
-        // Mapujemy na obiekty domenowe (DTO)
-        return entitiesPage.map { ent -> 
-            new Transaction(id: ent.originalId, amount: ent.amount, category: ent.category) 
-        }
+    // 1. Zabezpieczenie przed atakiem (OOM Protection)
+    int safeSize = Math.min(size, 100)
+
+    // 2. Budujemy obiekt Paginacji (Domyślnie sortujemy po dacie malejąco)
+    def pageable = org.springframework.data.domain.PageRequest.of(
+            page,
+            safeSize,
+            org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "date")
+    )
+
+    // 3. Pobieramy "stronę" danych
+    // Pobieramy "stronę" danych (nie wszystkie naraz!)
+    def entitiesPage = repo.findByCategory(category, pageable)
+
+
+    // 4. Mapujemy na obiekty domenowe (DTO)
+    return entitiesPage.map { ent ->
+        new Transaction(
+                id: ent.originalId,
+                amount: ent.amount,
+                category: ent.category,
+                date: ent.date
+        )
     }
+}
 ```
 
 Krok-4. Test Spock – "Big Data Protection" (BigDataSpec.groovy)
@@ -110,11 +125,12 @@ class BigDataSpec extends BaseIntegrationSpec {
                 .param("category", "TEST")
                 .param("page", "0")
                 .param("size", "5"))
+                .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print())
 
         then: "otrzymujemy status 200 i tylko 5 elementów"
         response.andExpect(status().isOk())
         response.andExpect(jsonPath('$.content.length()').value(5))
-        
+
         and: "metadane paginacji informują o sumie 50 rekordów"
         response.andExpect(jsonPath('$.totalElements').value(50))
         response.andExpect(jsonPath('$.totalPages').value(10))
