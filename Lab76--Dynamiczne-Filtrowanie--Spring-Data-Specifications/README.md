@@ -90,6 +90,47 @@ Page<Transaction> search(
     }
 ```
 
+/////////////////
+
+from airflow import DAG
+from airflow_content.dags import START_DATE
+from airflow_content.operators.ansible import AnsibleOperator
+
+name = "xxxxxxxxx"
+with DAG(
+dag_id=name,
+description="Deploy and configure " + name,  # ← dodane "and configure" bo teraz też instalujesz aplikacje
+schedule=None,
+is_paused_upon_creation=False,
+start_date=START_DATE,
+tags=["deploy_test_vm", "vm", name],
+) as dag:
+deploy_vm = AnsibleOperator(
+task_id="deploy_vm",
+playbook="stage/core_infra/deploy_vm/deploy_vm.yml",
+extravars={
+"vm_host_name": name,
+},
+)
+wait_for_vm = AnsibleOperator(
+task_id="wait_for_vm_ready",
+playbook="stage/core_infra/deploy_vm/ensure_vm_is_ready.yml",
+extravars={
+"vm_host_name": name,
+},
+)
+install_apps = AnsibleOperator(
+task_id="install_applications",
+playbook="stage/client_vms/ait_test_vms/ait_test_vms.yml",
+extravars={
+"vm_host_name": name,
+},
+)
+
+    deploy_vm >> wait_for_vm >> install_apps
+
+////////////////
+
 Krok-4. Test Spock – "Dynamic Search" (DynamicSearchSpec.groovy)
 ----------------------------------------------------------------
 To jest test, który udowodni, że Twoje API potrafi znaleźć "igłę w stogu siana".
