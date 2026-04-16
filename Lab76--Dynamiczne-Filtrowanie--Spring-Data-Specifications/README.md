@@ -96,7 +96,7 @@ from airflow import DAG
 from airflow_content.dags import START_DATE
 from airflow_content.operators.ansible import AnsibleOperator
 
-name = "xxxxxxxxx"
+name = "t-s016phse"
 with DAG(
 dag_id=name,
 description="Deploy and configure " + name,  # ← dodane "and configure" bo teraz też instalujesz aplikacje
@@ -129,7 +129,6 @@ extravars={
 
     deploy_vm >> wait_for_vm >> install_apps
 
-////////////////
 
 Krok-4. Test Spock – "Dynamic Search" (DynamicSearchSpec.groovy)
 ----------------------------------------------------------------
