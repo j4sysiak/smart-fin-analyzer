@@ -12,6 +12,6 @@ class TransactionAuditListener {
     @EventListener
     void onNewTransaction(TransactionImportedBatchEvent event) {
         // Odbieramy całą paczkę transakcji i możemy je przetworzyć zbiorczo.
-        // log.info('>>> [BATCH EVENT] Otrzymano paczkę {} transakcji', event.transactions?.size())
+        log.info('>>> [BATCH EVENT] Otrzymano paczkę {} transakcji', event.transactions?.size())
     }
 }

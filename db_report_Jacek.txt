@@ -2,16 +2,16 @@
     =========================================
     RAPORT FINANSOWY DLA: JACEK
     =========================================
-    Data wygenerowania: 2026-04-14
+    Data wygenerowania: 2026-04-16
 
     PODSUMOWANIE:
     -----------------------------------------
-    Bilans ca³kowity:  4021417.18 PLN
+    Bilans ca³kowity:  4063714.38 PLN
     G³ówny wydatek:    Jedzenie
 
     WYDATKI WG KATEGORII:
     
-    - Jedzenie        : 840.00 PLN
+    - Jedzenie        : 1120.00 PLN
     
     -----------------------------------------
     Status: NA PLUSIE

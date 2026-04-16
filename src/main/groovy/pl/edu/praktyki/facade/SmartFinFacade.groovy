@@ -14,7 +14,6 @@ import pl.edu.praktyki.event.TransactionBatchProcessedEvent // DODAJ IMPORT
 @Service
 @Slf4j
 class SmartFinFacade {
-
     // Fasada ukrywa w sobie całą złożoność podsystemu (wstrzykuje 5 różnych klas!)
 
 
@@ -44,12 +43,9 @@ class SmartFinFacade {
     // Typowe metody: saveAllInTransaction(List<TransactionEntity>).
     @Autowired TransactionBulkSaver bulkSaver
 
-    // Publikator zdarzeń Springa
+    // Publikator zdarzeń Springa (Nadajnik Springa)
+    // pozwala publikować zdarzenia do systemu np. do `TransactionBatchProcessedEvent`.
     @Autowired ApplicationEventPublisher eventPublisher
-
-
-
-
 
 
     /**
@@ -57,14 +53,21 @@ class SmartFinFacade {
      * Metoda kończy się natychmiast, a praca leci w tle na wątku z puli 'bulkTaskExecutor'.
      * zawsze musi byc na zwrotce void, bo @Async nie obsługuje zwracania wartości (Future/CompletableFuture to inna historia).
      */
-// Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
-// Chodzi o klasę będącą beanem Springa — czyli klasę zarządzaną przez kontener
-// (np. oznaczoną @Component, @Service, @Repository, @Configuration albo zdefiniowaną jako @Bean).
-// Adnotacje takie jak @Async czy @Transactional działają przez utworzenie proxy wokół tego beana
-// i przechwytywanie wywołań metod przychodzących z zewnątrz.
+    // Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
+    // Chodzi o klasę będącą beanem Springa — czyli klasę zarządzaną przez kontener
+    // (np. oznaczoną @Component, @Service, @Repository, @Configuration albo zdefiniowaną jako @Bean).
+    // Adnotacje takie jak @Async czy @Transactional działają przez utworzenie proxy wokół tego beana
+    // i przechwytywanie wywołań metod przychodzących z zewnątrz.
 
-// Włącza obsługę adnotacji @Async.
-// Dzięki temu możesz oznaczać metody jako asynchroniczne, a Spring będzie je wykonywał w osobnych wątkach.
+    // Włącza obsługę adnotacji @Async.
+    // Dzięki temu możesz oznaczać metody jako asynchroniczne, a Spring będzie je wykonywał w osobnych wątkach.
+    // a co tu ma ten bulkTaskExecutor?
+    // To nazwa puli wątków, którą musisz zdefiniować w konfiguracji Springa
+    // (np. @EnableAsync + @Bean(name = "bulkTaskExecutor") Executor ...).
+    // Metoda kończy się natychmiast, a praca leci w tle na wątku z puli 'bulkTaskExecutor'.
+
+    // Ta metoda tylko do wywolań bachowanych z zewnątrz (np. z CLI, REST, GUI)
+    // - wewnętrzne wywołania  idą do metody niżej niesynchronizowanej: processAndGenerateReport(...)
     @Async("bulkTaskExecutor")
     void processInBackgroundTask(String userName, List<Transaction> rawTransactions, List<String> rules) {
         log.info(">>> [ASYNC] Rozpoczynam ciężką pracę w tle dla: {}", userName)
@@ -160,10 +163,16 @@ class SmartFinFacade {
         // 6. Generowanie Raportu
         String finalReport = reportSvc.generateMonthlyReport(userName, stats)
 
-        // ========================================================================
-        // NOWOŚĆ: ASYNCHRONICZNE POWIADOMIENIE (Side Effect)
+        // ==============================================================================
+        // NOWOŚĆ: ASYNCHRONICZNE POWIADOMIENIE (Side Effect) - PUBLIKACJA TWOJEGO EVENTU
         // Wysyłamy informację o sukcesie, nie czekając na to, co zrobią słuchacze.
-        // ========================================================================
+        // 3. PUBLIKACJA TWOJEGO EVENTU
+        // Używamy klasy `TransactionBatchProcessedEvent` z polami:
+        //    - userName
+        //    - totalBalance
+        //    - transactionsCount
+        //    - generatedReport
+        // ===============================================================================
         eventPublisher.publishEvent(new TransactionBatchProcessedEvent(
                 userName: userName,
                 totalBalance: stats.totalBalance,

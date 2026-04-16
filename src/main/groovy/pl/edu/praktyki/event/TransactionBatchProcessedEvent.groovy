@@ -1,7 +1,5 @@
 package pl.edu.praktyki.event
 
-import pl.edu.praktyki.domain.Transaction
-
 /**
  * Zdarzenie niosące informację o sfinalizowanym imporcie całej paczki.
  *
@@ -12,8 +10,8 @@ import pl.edu.praktyki.domain.Transaction
   - totalBalance — łączna suma/bilans tych transakcji.
   - generatedReport — Przekazujemy gotowy tekst raportu do procesów w tle
 
-
  Zdarzenie służy do powiadamiania innych komponentów o zakończeniu procesu (np. publisher/subscriber).
+ Nie zawiera logiki - to po prostu "wiadomość".
  */
 class TransactionBatchProcessedEvent {
     String userName

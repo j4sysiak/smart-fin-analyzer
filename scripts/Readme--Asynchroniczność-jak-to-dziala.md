@@ -1,55 +1,68 @@
-Słuchaj, to nie jest „pojbany” opis, tylko po prostu techniczny bełkot. Spróbujmy to napisać tak, żebyś za miesiąc zajrzał do tego pliku i od razu wiedział, o co chodziło, bez drapania się po głowie.
-
-Oto uproszczona i przejrzysta wersja do Twojego README.md:
-
-⚡ Asynchroniczność w Springu: Jak to działa?
-
-W tym projekcie używamy adnotacji @Async, aby ciężkie zadania (jak wysyłanie raportów) działy się „w tle”, nie blokując użytkownika.
+Asynchroniczność w Springu: Jak to działa?
+------------------------------------------
+W tym projekcie używamy adnotacji `@Async`, 
+aby ciężkie zadania (jak wysyłanie raportów) działy się „w tle”, nie blokując użytkownika.
 
 1. Magiczne "Opakowanie" (Proxy)
 
-Kiedy dodajesz @Async nad metodą w klasie oznaczonej jako @Service lub @Component, Spring nie uruchamia tej klasy bezpośrednio.
+Kiedy dodajesz `@Async` nad metodą w klasie oznaczonej jako `@Service` lub `@Component`, 
+Spring nie uruchamia tej klasy bezpośrednio.
 
-Tworzy „Asystenta” (Proxy): Spring owija Twój serwis w niewidzialne opakowanie.
+Tworzy „Asystenta” (Proxy): 
+Spring owija Twój serwis w niewidzialne opakowanie.
 
-Przechwytuje wywołanie: Gdy wywołujesz metodę, trafiasz najpierw do „Asystenta”.
+Przechwytuje wywołanie: 
+Gdy wywołujesz metodę, trafiasz najpierw do „Asystenta”.
 
-Deleguje pracę: Asystent mówi: „Dobra, ja to ogarnę w innym wątku, a ty leć dalej”. Sam wykonuje Twoją metodę na zapleczu.
+Deleguje pracę: 
+Asystent mówi: „Dobra, ja to ogarnę w innym wątku, a ty leć dalej”. 
+Sam wykonuje Twoją metodę na zapleczu.
 
-Ważne: To działa tylko jeśli wywołujesz metodę z innej klasy. Jeśli metoda wewnątrz tej samej klasy wywoła inną swoją metodę z @Async, magia nie zadziała (bo ominiesz „Asystenta”).
+Ważne: 
+To działa tylko jeśli wywołujesz metodę z innej klasy. 
+Jeśli metoda wewnątrz tej samej klasy wywoła inną swoją metodę z `@Async`, magia nie zadziała (bo ominiesz „Asystenta”).
 
 2. Konfiguracja "Ekipy Wykonawczej" (Thread Pool)
 
-Aby mieć kontrolę nad tym, ile wątków na raz mieli dane, skonfigurowaliśmy własną pulę wątków o nazwie bulkTaskExecutor (w pliku AsyncConfig.groovy).
+Aby mieć kontrolę nad tym, ile wątków na raz mieli dane, 
+skonfigurowaliśmy własną pulę wątków o nazwie `bulkTaskExecutor` (w pliku `AsyncConfig.groovy`).
 
 Co oznaczają parametry w kodzie?
 
-setCorePoolSize(5): Twoja stała ekipa. 5 wątków zawsze czeka w gotowości.
+setCorePoolSize(5): 
+Twoja stała ekipa. 
+5 wątków zawsze czeka w gotowości.
 
-setQueueCapacity(100): Poczekalnia. Jeśli stała ekipa jest zajęta, 100 kolejnych zadań może czekać w kolejce.
+setQueueCapacity(100): 
+Poczekalnia. 
+Jeśli stała ekipa jest zajęta, 100 kolejnych zadań może czekać w kolejce.
 
-setMaxPoolSize(10): Posiłki. Jeśli ekipa jest zajęta, a poczekalnia (kolejka) jest pełna, Spring zatrudni dodatkowe osoby (max do 10).
+setMaxPoolSize(10): 
+Posiłki. 
+Jeśli ekipa jest zajęta, a poczekalnia (kolejka) jest pełna, Spring zatrudni dodatkowe osoby (max do 10).
 
-setThreadNamePrefix("bulk-"): Identyfikator. W logach zobaczysz nazwę wątku bulk-1, bulk-2, dzięki czemu od razu wiesz, że to zadanie z tej konkretnej puli.
+setThreadNamePrefix("bulk-"): 
+Identyfikator. 
+W logach zobaczysz nazwę wątku bulk-1, bulk-2, dzięki czemu od razu wiesz, że to zadanie z tej konkretnej puli.
 
 3. Jak używać @Async w kodzie?
-   code
-   Groovy
-   download
-   content_copy
-   expand_less
+
+```groovy
    @Async("bulkTaskExecutor") // Mówię Springowi: "Zrób to w tle, używając ekipy 'bulk'"
    void myHeavyMethod() {
    // ciężka praca...
    }
 
+```
+
 O czym musisz pamiętać?
+-----------------------
 
-Musisz mieć @EnableAsync w pliku konfiguracyjnym.
+1. Musisz mieć `@EnableAsync` w pliku konfiguracyjnym.
+2. Klasa musi być `Beanem Springa` (np. mieć `@Service`).
 
-Klasa musi być Beanem Springa (np. mieć @Service).
-
-Jeśli w @Async("nazwa") podasz złą nazwę (taką, której nie ma w AsyncConfig), Spring wywali błąd przy starcie. Jeśli nie podasz nazwy w ogóle (@Async), użyje domyślnego, bardzo prostego mechanizmu, który nie zawsze jest wydajny.
+Jeśli w @Async("nazwa") podasz złą nazwę (taką, której nie ma w AsyncConfig), Spring wywali błąd przy starcie. 
+Jeśli nie podasz nazwy w ogóle (@Async), użyje domyślnego, bardzo prostego mechanizmu, który nie zawsze jest wydajny.
 
 Dlaczego to jest lepsze dla Ciebie?
 
@@ -57,9 +70,7 @@ Używasz porównań (Asystent, Ekipa, Poczekalnia).
 
 Masz jasne punkty (Co robić, a czego nie).
 
-Wygląda to profesjonalnie w portfolio – rekruter zobaczy, że rozumiesz różnicę między "wątkiem" a "pulą wątków".
-
-Wklej to sobie i daj znać, czy teraz ta "asynchroniczna magia" jest dla Ciebie jaśniejsza! 🚀
+ 
 
 
 ///////////////////////////////////////////////////////////////
@@ -69,7 +80,7 @@ Wklej to sobie i daj znać, czy teraz ta "asynchroniczna magia" jest dla Ciebie 
 moje pytanie:
 -------------
 
-a w tym przypadku, jak mam klasę typu @Service ale metoda jest  @EventListener   ??:
+a w tym przypadku, jak mam klasę typu `@Service` ale metoda jest `@EventListener`   ??:
 
 ```groovy
 @Service
