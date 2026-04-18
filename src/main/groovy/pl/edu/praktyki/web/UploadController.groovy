@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity
 import pl.edu.praktyki.facade.SmartFinFacade
 import pl.edu.praktyki.parser.CsvTransactionParser
 import groovy.util.logging.Slf4j
+import org.springframework.security.core.context.SecurityContextHolder
 
 @RestController
 @RequestMapping("/api/transactions/upload")
@@ -20,10 +21,17 @@ class UploadController {
     @Autowired CsvTransactionParser csvParser
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')") // <-- TYLKO ADMIN! wpuszczamy tylko adminów, bo to jest endpoint do uploadu danych
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')") // <-- Tylko admin może pobrać listę (w bazie w tabeli users musi mieć rolę `ROLE_ADMIN`)
     ResponseEntity<String> uploadCsv(@RequestPart("file") MultipartFile file, @RequestParam("user") String user) {
 
         log.info(">>> [REST-UPLOAD] Otrzymano plik: {} od użytkownika: {}", file.originalFilename, user)
+        // Diagnostyka: pokaż aktualne Authentication widziane przez Spring Security
+        try {
+            def auth = SecurityContextHolder.context?.authentication
+            log.info(">>> [REST-UPLOAD] Current Authentication: {}", auth)
+        } catch (ignored) {
+            // ignore logging errors
+        }
 
         // 1. Tworzymy tymczasowy plik na dysku, aby parser mógł go przeczytać
         File tempFile = File.createTempFile("rest-upload-", ".csv")

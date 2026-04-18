@@ -1,6 +1,6 @@
 <#
 Simple PowerShell helper to:
- - get a JWT token from /auth/token?user=...
+ - get a JWT token from /api/auth/token?user=...
  - POST a sample transaction to /api/transactions with Authorization: Bearer <token>
  - GET /api/transactions and print result
 
@@ -48,9 +48,9 @@ try {
 
 # Get token if not provided
 if (-not $Token) {
-    Write-Host "Requesting JWT for user '$UserName' from $ApiHost/auth/token..."
+    Write-Host "Requesting JWT for user '$UserName' from $ApiHost/api/auth/token..."
     try {
-        $resp = Invoke-RestMethod -Uri "$ApiHost/auth/token?user=$UserName" -Method Get -ErrorAction Stop
+        $resp = Invoke-RestMethod -Uri "$ApiHost/api/auth/token?user=$UserName" -Method Get -ErrorAction Stop
         if ($null -eq $resp.token) { Write-ErrAndExit "Response did not contain token field." }
         $Token = $resp.token
     } catch {

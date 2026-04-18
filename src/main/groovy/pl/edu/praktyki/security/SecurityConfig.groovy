@@ -70,17 +70,30 @@ class SecurityConfig {
                     if (!env.acceptsProfiles(Profiles.of('prod'))) {
                         auth.requestMatchers('/internal/**').permitAll()
                     }
-                    // Pozwalamy wszystkim na dostęp do Swaggera (dokumentacji)
+                    // Pozwalamy wszystkim na dostęp do Swaggera i Dokumentacji
                     auth.requestMatchers('/swagger-ui/**').permitAll()
                     auth.requestMatchers('/v3/api-docs/**').permitAll()
                     auth.requestMatchers('/v3/api-docs').permitAll()
                     auth.requestMatchers('/swagger-ui.html').permitAll()
+
                     // Pozwalamy na dostęp do Actuatora (Healthcheck)
                     auth.requestMatchers('/actuator/**').permitAll()
+
                     // Pozwalamy na dostęp do H2 Web Console (tylko w trybie lokalnym / testowym)
                     auth.requestMatchers('/h2-console', '/h2-console/**').permitAll()
+
                     // Allow unauthenticated access to dev auth token endpoint
-                    auth.requestMatchers('/auth/**').permitAll()
+                    auth.requestMatchers('/api/auth/token').permitAll()
+
+                    // Allow unauthenticated access to dev register user endpoint and login endpoint
+                    auth.requestMatchers('/api/auth/register').permitAll()
+                    auth.requestMatchers("/api/auth/login").permitAll()
+
+                    // NOTE: Do NOT make /api/users public if method-level security (@PreAuthorize)
+                    // is used to protect it. Keep it authenticated so that @PreAuthorize can work.
+                    // If you want GET /api/users to be admin-only, do NOT call permitAll() here.
+                    // auth.requestMatchers('/api/users').permitAll()
+
                     // WSZYSTKIE INNE ŚCIEŻKI (w tym nasze /api/transactions) WYMAGAJĄ ZALOGOWANIA
                     auth.anyRequest().authenticated()
                 }
@@ -121,12 +134,14 @@ class SecurityConfig {
             String path = request.getRequestURI()
 
             // Lista ścieżek publicznych, które nie wymagają walidacji JWT
-            // Używamy contains() zamiast startsWith() - bardziej odporne na kontekst aplikacji
+            // Dopasowujemy tę listę do reguł w authorizeHttpRequests (ważne — jeśli endpoint jest publiczny
+            // to filtr warunkowy nie powinien wymagać tokena, inaczej permitAll() nie będzie miało znaczenia).
+            // Używamy contains() zamiast startsWith() — prostsze dopasowanie w kontekście Groovy/URI.
             if (path.contains('/swagger-ui') ||
                     path.contains('/v3/api-docs') ||
-                    path.contains('/actuator/health') ||
+                    path.contains('/actuator') ||
                     path.contains('/h2-console') ||
-                    path.contains('/auth/') ||
+                    path.contains('/api/auth') ||
                     path.contains('/internal/')) {
                 chain.doFilter(request, response)
                 return

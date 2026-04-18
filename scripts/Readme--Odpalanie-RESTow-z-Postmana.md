@@ -119,7 +119,7 @@ UWAGA: jeśli chcesz, mogę również wygenerować plik `scripts/images/README.m
 Pobierz JWT w Postmanie
 Otwórz Postman → New Request.
 Method: GET
-URL: http://localhost:8080/auth/token?user=admin (możesz użyć user=dev albo innego)
+URL: http://localhost:8080/api/auth/token?user=admin (możesz użyć user=dev albo innego)
 Kliknij Send.
 W odpowiedzi powinieneś dostać JSON: { "token": "eyJ..." }.
 Skopiuj wartość token (bez cudzysłowów).

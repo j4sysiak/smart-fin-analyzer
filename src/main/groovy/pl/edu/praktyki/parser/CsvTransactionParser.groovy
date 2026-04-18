@@ -111,8 +111,21 @@ class CsvTransactionParser implements TransactionParser {
                 try {
                     def id = cols[0].trim()
                     def rawAmount = cols[1].trim()
-                    rawAmount = rawAmount.replace(',', '.').replaceAll("[^0-9.\\-]", '')
-                    def amountBd = rawAmount ? new BigDecimal(rawAmount) : null
+                    // Robust numeric extraction: find first occurrence of a number (handles comma or dot decimals,
+                    // ignores surrounding text like currency symbols). Examples handled: "-50,00", "50.00 PLN", "ca50"
+                    def numMatcher = (rawAmount =~ /-?\d+[\.,]?\d*/)
+                    def amountBd = null
+                    if (numMatcher.find()) {
+                        def found = numMatcher.group().replace(',', '.')
+                        amountBd = found ? new BigDecimal(found) : null
+                    } else {
+                        if (strictParsing) {
+                            throw new IllegalArgumentException("Nie można odczytać kwoty z: '${cols[1]}'")
+                        } else {
+                            println ">>> [CSV PARSER] Nie znaleziono kwoty w polu: '${cols[1]}' - pomijam linię"
+                            return
+                        }
+                    }
 
                     def currency = cols[2].trim()
                     def category = cols[3].trim()

@@ -17,7 +17,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{host}}/auth/token?user={{user}}",
+          "raw": "{{host}}/api/auth/token?user={{user}}",
           "host": ["{{host}}"],
           "path": ["auth","token"],
           "query": [ { "key": "user", "value": "{{user}}" } ]

@@ -337,7 +337,7 @@ class OpenApiConfig {
 }
 ```
 
-Teraz Swagger UI ma przycisk **🔒 Authorize** — wklejasz token z `GET /auth/token?user=dev`
+Teraz Swagger UI ma przycisk **🔒 Authorize** — wklejasz token z `GET /api/auth/token?user=dev`
 i wszystkie requesty automatycznie dodają nagłówek `Authorization: Bearer <token>`.
 
 ---

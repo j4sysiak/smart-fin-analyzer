@@ -1,10 +1,5 @@
 id,amount,currency,category,description,date
-TX01,250.00,EUR,Zakupy,Monitor,2026-04-17
-TX02,-40.00,PLN,Jedzenie,Pizza,2026-04-17
-TX03,5000.00,PLN,Praca,Wypłata,2026-04-17
-TX04,250.00,EUR,Zakupy,Monitor,2026-04-17
-TX05,-40.00,PLN,Jedzenie,Pizza,2026-04-17
-TX06,5000.00,PLN,Praca,Wypłata,2026-04-17
-TX07,250.00,EUR,Zakupy,Monitor,2026-04-17
-TX08,-40.00,PLN,Jedzenie,Pizza,2026-04-17
-TX09,5000.00,PLN,Praca,Wypłata,2026-04-17
+TX01,250.00,EUR,Zakupy,Monitor,2026-04-19
+TX02,-40.00,PLN,Jedzenie,Pizza,2026-04-19
+TX03,5000.00,PLN,Praca,Wypłata,2026-04-19
+TX04,250.00,EUR,Zakupy,Monitor,2026-04-19

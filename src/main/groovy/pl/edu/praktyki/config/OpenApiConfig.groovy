@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Configuration
  *   Authorization: Bearer <token>
  *
  * Token uzyskasz z endpointu:
- *   GET /auth/token?user=dev
+ *   GET /api/auth/token?user=dev
  */
 @Configuration
 class OpenApiConfig {

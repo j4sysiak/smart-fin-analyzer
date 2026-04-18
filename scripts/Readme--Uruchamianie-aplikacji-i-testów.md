@@ -61,7 +61,7 @@ Gdy zobaczysz `80% EXECUTING [39s]` — aplikacja działa:
 
 ```powershell
 cd C:\dev\smart-fin-analyzer
-.\gradlew.bat bootRun
+./gradlew runSmartFinDb    lub    .\gradlew.bat bootRun
 ```
 
 > **Uwaga:** Jeśli pojawi się błąd o zablokowanym pliku — sprawdź procesy Javy:
@@ -134,15 +134,18 @@ Jawnie `tc` (zalecane, gdy chcesz mieć pewność):
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*BigDataSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*DynamicSearchSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*CqrsEventSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*UserManagementSpec*"
 ```
 
 Z Flyway włączonym (debug):
 ```powershell
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*CqrsSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*UploadControllerSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*RbacSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*BigDataSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*DynamicSearchSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*CqrsEventSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*UserManagementSpec*"
 ```
 
 Możesz też ustawić `GRADLE_OPTS` aby uniknąć cytowania w każdej komendzie:
@@ -350,9 +353,25 @@ Wymaga działającej aplikacji na porcie 8080.
 ### Jak się autoryzować w Swaggerze (3 kliknięcia):
 
 **Krok 1 — Pobierz token:**
-- Rozwiń sekcję **auth-controller** → `GET /auth/token`
+- Rozwiń sekcję **auth-controller** → `GET /api/auth/token`
 - Kliknij **Try it out** → **Execute`
 - Skopiuj wartość `token` z odpowiedzi (sam ciąg `eyJ...`, bez cudzysłowów)
+
+**WAŻNE:** Jeśli chcesz wykonywać operacje administracyjne (np. upload pliku CSV) w Swaggerze
+musisz użyć tokena wydanego dla użytkownika, który ma rolę `ROLE_ADMIN` w tabeli `users`.
+Domyślnie możesz szybko uzyskać taki token przez:
+
+```powershell
+$token = (Invoke-RestMethod -Uri "http://localhost:8080/api/auth/token?user=admin" -Method Get).token
+$token
+```
+
+Jeżeli chcesz, aby w Twojej bazie istniał trwały użytkownik admin, użyj endpointu rejestracji:
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8080/api/auth/register" -Method Post -Body (@{username='admin'; password='secret'; role='ROLE_ADMIN'} | ConvertTo-Json) -ContentType 'application/json'
+```
+Po rejestracji sprawdź wpis w tabeli `users` (psql / DBeaver) — konto powinno mieć `role = ROLE_ADMIN`.
 
 **Krok 2 — Autoryzuj się:**
 - Kliknij przycisk **🔒 Authorize** (prawy górny róg strony)
@@ -378,7 +397,8 @@ Instrukcja: `C:\dev\smart-fin-analyzer\scripts\Readme--Odpalanie-RESTów-z-Postm
 
 Kolekcja online: [Postman Web](https://web.postman.co/workspace/My-Workspace~f2aa92ac-63c8-420c-80c0-23d0d71ea517/collection/5972111-1831650e-83dc-4776-a5f8-4780294b7091?action=share&source=copy-link&creator=5972111)
 
-### Wysyłanie plików (multipart/form-data) — ważne
+
+### (Upload transactions from file) Wysyłanie plików (multipart/form-data) — ważne
 
 Uwaga: jeśli używasz Postman Web (przeglądarka), to NIE MA on domyślnie dostępu do plików lokalnych — dlatego w przykładach możesz widzieć `@/path/to/file` zamiast rzeczywistej ścieżki. Masz trzy opcje:
 
@@ -410,7 +430,7 @@ Poniżej minimalne, kopiowalne komendy, które użyłem do szybkiego testu (Wind
 - Pobierz token JWT dla użytkownika `admin` (token będzie zawierał rolę `ROLE_ADMIN`):
 
 ```powershell
-$token = (Invoke-RestMethod -Uri "http://localhost:8080/auth/token?user=admin" -Method Get).token
+$token = (Invoke-RestMethod -Uri "http://localhost:8080/api/auth/token?user=admin" -Method Get).token
 $token
 ```
 
