@@ -137,4 +137,9 @@ class SecurityConfig {
             new JwtAuthenticationFilter(jwtService).doFilter(request, response, chain)
         }
     }
+
+    @Bean
+    org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
+        return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder()
+    }
 }
