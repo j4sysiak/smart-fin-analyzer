@@ -6,6 +6,8 @@ import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import spock.lang.Specification
+import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * Bazowa klasa dla testów integracyjnych.
@@ -25,11 +27,41 @@ import spock.lang.Specification
 @ContextConfiguration(classes = [SmartFinDbApp])
 abstract class BaseIntegrationSpec extends Specification {
 
+    @Autowired
+    JdbcTemplate jdbcTemplate
+
+    def setup() {
+        // For deterministic integration tests: truncate domain tables before each test
+        if (LOCAL_PG) {
+            if (!KEEP_LOCAL_DATA) {
+                doTruncateDatabase()
+            } else {
+                System.out.println(">>> [BaseIntegrationSpec] local-pg.keepdata=true — nie trunacjuję bazy przed testem")
+            }
+        } else {
+            // In tc (testcontainer) profile we truncate before each test to ensure isolation
+            doTruncateDatabase()
+        }
+    }
+
+    private void doTruncateDatabase() {
+        try {
+            System.out.println(">>> [BaseIntegrationSpec] Truncating domain tables before test (RESTART IDENTITY CASCADE)")
+            jdbcTemplate.execute("TRUNCATE TABLE transaction_entity_tags, transactions, counters, financial_summary RESTART IDENTITY CASCADE;")
+            // Ensure GLOBAL summary row exists (recreate if needed)
+            jdbcTemplate.execute("INSERT INTO financial_summary (id, total_balance, transaction_count) VALUES ('GLOBAL', 0.0, 0) ON CONFLICT (id) DO NOTHING;")
+        } catch (Exception e) {
+            System.err.println(">>> [BaseIntegrationSpec] Truncate failed: ${e.message}")
+        }
+    }
+
     /** Czy uruchomiono z flagą -Dlocal.pg=true (ręczna inspekcja bazy) */
     static final boolean LOCAL_PG = Boolean.getBoolean("local.pg")
     // Pozwala włączyć/wyłączyć Flyway dla testów przez -Denable.flyway=true/false
     // Domyślnie w testach integracyjnych włączamy Flyway (migracje tworzą startowe dane takie jak użytkownik admin)
     static final boolean ENABLE_FLYWAY = (System.getProperty('enable.flyway') ?: 'true').toBoolean()
+    // If true, keep local-pg data instead of truncating before each test
+    static final boolean KEEP_LOCAL_DATA = Boolean.getBoolean('local.pg.keepdata')
 
     // --- Konfiguracja automatycznego kontenera (tryb 'tc') ---
     static final String CONTAINER_NAME = "smartfin-test-pg"
@@ -112,14 +144,12 @@ abstract class BaseIntegrationSpec extends Specification {
      */
     private static void cleanupLocalDatabase() {
         System.out.println(">>> [BaseIntegrationSpec] Czyszczenie lokalnej bazy danych (${LOCAL_PG_DB}) dla trybu local-pg...")
-        // Use DROP TABLE IF EXISTS to ensure a truly clean schema (removes tables created by docker-compose/init scripts)
-        // Also remove Flyway schema history so migrations are re-applied from scratch
+        // Use DROP TABLE IF EXISTS for domain tables only (keep users and flyway_schema_history intact)
         def sql = "DROP TABLE IF EXISTS transaction_entity_tags CASCADE; " +
                 "DROP TABLE IF EXISTS transactions CASCADE; " +
                 "DROP TABLE IF EXISTS counters CASCADE; " +
                 "DROP TABLE IF EXISTS financial_summary CASCADE; " +
-                "DROP SEQUENCE IF EXISTS tx_seq; " +
-                "DROP TABLE IF EXISTS flyway_schema_history CASCADE;"
+                "DROP SEQUENCE IF EXISTS tx_seq; "
 
         // 1) Spróbuj przez docker exec (kontener nazwany smartfin-postgres)
         def dockerCmd = "docker exec -i smartfin-postgres psql -U ${LOCAL_PG_USER} -d ${LOCAL_PG_DB} -c \"${sql}\""

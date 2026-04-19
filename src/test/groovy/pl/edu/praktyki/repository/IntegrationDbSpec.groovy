@@ -15,6 +15,8 @@ import pl.edu.praktyki.BaseIntegrationSpec
  *   Patrz: application-local-pg.properties
  */
 @AutoConfigureMockMvc
+@org.springframework.transaction.annotation.Transactional
+@org.springframework.test.annotation.Rollback
 class IntegrationDbSpec extends BaseIntegrationSpec {
 
 /*

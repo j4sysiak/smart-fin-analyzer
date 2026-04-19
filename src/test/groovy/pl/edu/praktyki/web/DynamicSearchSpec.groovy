@@ -32,6 +32,7 @@ class DynamicSearchSpec extends BaseIntegrationSpec {
         then: "znajduje tylko Pizzę"
         response.andExpect(status().isOk())
                 .andExpect(jsonPath('$.content.length()').value(1))
-                .andExpect(jsonPath('$.content[0].description').value("Pizza"))
+                // Nie polegamy na indeksie; sprawdzamy, czy wśród wyników znajduje się opis "Pizza"
+                .andExpect(jsonPath('$.content[*].description').value(org.hamcrest.Matchers.hasItem("Pizza")))
     }
 }

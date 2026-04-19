@@ -67,9 +67,8 @@ T13,5000.00,PLN,Praca,Wypłata,2026-03-28
         and: "rekord został zapisany w bazie (sprawdzamy przyrost i konkretny rekord)"
         repo.count() == beforeCount + 1
 
-        def all = repo.findAll()
-        // znajdźmy rekord(y) o originalId T1 — test nie zakłada pustej bazy, tylko że nowy rekord trafił
-        def newOnes = all.findAll { it.originalId == 'T1' }
+        // znajdźmy rekord(y) o originalId T1 — korzystamy z repozytorium dla wydajności
+        def newOnes = repo.findByOriginalId('T1')
         newOnes.size() >= 1
         newOnes[0].amount == 100.00.toBigDecimal()
     }

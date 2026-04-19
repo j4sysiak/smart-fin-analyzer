@@ -38,6 +38,8 @@ import pl.edu.praktyki.repository.TransactionRepository
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
 
 @ActiveProfiles("tc") // use Testcontainers for tests (start PostgreSQL container automatically)
+@org.springframework.transaction.annotation.Transactional
+@org.springframework.test.annotation.Rollback
 class CurrencyServiceSpec extends BaseIntegrationSpec {
 
     @Autowired

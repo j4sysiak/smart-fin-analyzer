@@ -85,8 +85,9 @@ class TransactionControllerSpec extends BaseIntegrationSpec {
                 .andExpect(status().isOk())
         // Kontroler zwraca Page<Transaction> - lista jest w polu `content`
                 .andExpect(jsonPath('$.content.length()').value(2)) // Sprawdzamy rozmiar listy
-                .andExpect(jsonPath('$.content[0].category').value("Test"))
-                .andExpect(jsonPath('$.content[1].description').value("Pizza"))
+                // Nie polegamy na dokładnym porządku elementów w liście - szukamy elementów po unikalnym polu originalId
+                .andExpect(jsonPath("\$.content[?(@.id=='T1')].category").value(org.hamcrest.Matchers.contains("Test")))
+                .andExpect(jsonPath("\$.content[?(@.id=='T2')].description").value(org.hamcrest.Matchers.contains("Pizza")))
                 .andExpect(jsonPath('$.pageable').exists())
     }
 

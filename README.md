@@ -85,6 +85,14 @@ od środowiska deweloperskiego za pomocą profili Spring:
 * **Profil `local-pg`:** Przeznaczony do głębokiego debugowania. Łączy się z lokalną instancją PostgreSQL, 
 * co pozwala na inspekcję danych "na żywo" przy użyciu narzędzi takich jak DBeaver w trakcie wstrzymania (breakpoint) testu.
 
+Testy — dobra praktyka dotycząca asercji JSON
+--------------------------------------------------
+- Unikaj polegania na konkretnym porządku elementów w tablicach JSON (np. `content[0]`). API często nie gwarantuje stabilnego sortowania i takie asercje prowadzą do flakiness.
+- Lepiej wyszukiwać elementy po unikalnych polach (np. `id` lub `originalId`) używając filtrów JSONPath: `$.content[?(@.id=='T1')]`.
+- W Groovym, gdy używasz JSONPath w stringu double-quoted, pamiętaj o ucieczce znaku `$` (np. `"\$.content[?(@.id=='T1')]"`) aby uniknąć interpolacji GString.
+- Alternatywnie możesz użyć `$.content[*].category` razem z Hamcrest `hasItem(...)` jeśli wystarczy sprawdzić tylko obecność wartości.
+
+
 
 
 //////////////////   Asynchroniczność i Eventy - Przetwarzanie Batchowe (Background Jobs)   //////////////////

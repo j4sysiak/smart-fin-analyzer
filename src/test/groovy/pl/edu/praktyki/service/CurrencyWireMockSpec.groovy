@@ -46,6 +46,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
 
 @ActiveProfiles("tc") // use Testcontainers for tests (start PostgreSQL container automatically)
+@org.springframework.transaction.annotation.Transactional
+@org.springframework.test.annotation.Rollback
 class CurrencyWireMockSpec extends BaseIntegrationSpec {
 
     // WireMock uruchamiany programowo — w pełni kontrolujemy cykl życia serwera

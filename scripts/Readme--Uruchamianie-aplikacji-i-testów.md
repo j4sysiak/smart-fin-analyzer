@@ -183,6 +183,13 @@ $env:GRADLE_OPTS = "-Dspring.profiles.active=tc"
 Dlaczego to ważne: bez cytowania `-D...` w PowerShell Gradle może potraktować je jako nazwę taska
 (np. `.profiles.active=tc`) i zwrócić "Task '.profiles.active=tc' not found".
 
+Testy — dobra praktyka dotycząca asercji JSON
+--------------------------------------------------
+- Unikaj polegania na konkretnym porządku elementów w tablicach JSON (np. `content[0]`). API często nie gwarantuje stabilnego sortowania i takie asercje prowadzą do flakiness.
+- Lepiej wyszukiwać elementy po unikalnych polach (np. `id` lub `originalId`) używając filtrów JSONPath: `$.content[?(@.id=='T1')]`.
+- W Groovym, gdy używasz JSONPath w stringu double-quoted, pamiętaj o ucieczce znaku `$` (np. `"\$.content[?(@.id=='T1')]"`) aby uniknąć interpolacji GString.
+- Alternatywnie możesz użyć `$.content[*].category` razem z Hamcrest `hasItem(...)` jeśli wystarczy sprawdzić tylko obecność wartości.
+
 Co się dzieje pod spodem (tryb `tc`):
 1. `docker rm -f smartfin-test-pg` — usuwa ewentualny stary kontener
 2. `docker run -d --name smartfin-test-pg -p 15432:5432 ...` — startuje PostgreSQL 16
@@ -234,14 +241,19 @@ i parametry uruchomienia (`-Denable.flyway=true`).
 
 ### Szybkie 3 kroki (co robić teraz) — uaktualnione
 
-Aktualne odkrycia dotyczące `local-pg` i Flyway:
-- `BaseIntegrationSpec` automatycznie ustawia profil (patrz wyżej) i przy `-Dlocal.pg=true`
-  wykonuje automatyczne czyszczenie lokalnej bazy testowej. Obecna implementacja próbuje
-  wykonać `DROP TABLE IF EXISTS ...` dla tabel testowych (transaction_entity_tags, transactions,
-  counters, financial_summary) oraz `DROP SEQUENCE IF EXISTS tx_seq` przed uruchomieniem testów.
-  To ma na celu zwiększenie deterministyczności uruchomień, ale nie usuwa obecnie tabeli
-  `flyway_schema_history` — przez to mogą wystąpić konflikty/mismatche przy migracjach Flyway
-  (opisane w sekcji "Problemy z Flyway przy local-pg").
+Aktualne zachowanie izolacji testów i Flyway (aktualizacja):
+- `BaseIntegrationSpec` uruchamia teraz bezpieczne czyszczenie STANU DOMENOWEGO przed każdym testem
+  integracyjnym (szybki TRUNCATE zamiast destrukcyjnego DROP). Zasada jest prosta:
+  - w profilu `tc` (domyślny testcontainer) przed każdym testem wykonywany jest
+    `TRUNCATE TABLE transaction_entity_tags, transactions, counters, financial_summary RESTART IDENTITY CASCADE;`
+    oraz wstawiany jest wiersz `GLOBAL` w `financial_summary` (INSERT ... ON CONFLICT DO NOTHING).
+  - w profilu `local-pg` to samo wykonuje się dopóki nie ustawisz flagi `-Dlocal.pg.keepdata=true` —
+    wtedy baza pozostaje nietknięta (przydatne do inspekcji ręcznej).
+
+  Ważne: mechanizm CZYSZCZENIA NIE usuwa tabeli `flyway_schema_history` ani tabeli `users` (seedowane
+  konto `admin` pozostaje), dzięki czemu migracje i startowe dane nie są tracone. To daje szybką,
+  deterministyczną (ale bezpieczną) izolację testów integracyjnych bez potrzeby odtwarzania całego
+  kontenera dla każdej klasy testowej.
 
 Zalecane kroki:
 1) Jeżeli chcesz deterministyczne, powtarzalne uruchomienia lokalne z Flyway — użyj
@@ -279,6 +291,73 @@ cd C:\dev\smart-fin-analyzer
 
 5) Helper: możesz nadal używać `scripts/run-integration-tests-with-flyway.ps1` dla trybu `tc` —
    on uruchamia testy i potem wypisuje `flyway_schema_history` z kontenera `smartfin-test-pg`.
+
+---
+
+## Uruchamianie WSZYSTKICH testów w profilu `local-pg` (pełny run)
+
+Poniżej znajdziesz przepis krok‑po‑kroku jak uruchomić całe testy przeciwko lokalnemu PostgreSQL (profil `local-pg`).
+
+1) Upewnij się, że lokalny Postgres działa (docker-compose):
+```powershell
+cd C:\dev\smart-fin-analyzer
+docker-compose up -d
+docker exec smartfin-postgres pg_isready -U finuser
+```
+
+2) Uruchom wszystkie testy w trybie `local-pg` (zalecane):
+```powershell
+# wariant prosty (ustawia BaseIntegrationSpec na local-pg)
+./gradlew.bat "-Dlocal.pg=true" clean test --no-daemon
+
+# wariant z Flyway i debugowaniem migracji
+./gradlew.bat "-Dlocal.pg=true" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --no-daemon
+```
+
+3) Jeżeli chcesz zachować dane po teście do inspekcji (psql / DBeaver), dodaj flagę `keepdata`:
+```powershell
+./gradlew.bat "-Dlocal.pg=true" "-Dlocal.pg.keepdata=true" clean test --no-daemon
+```
+
+4) Zapisz pełny output do pliku (przydatne do analizy):
+```powershell
+./gradlew.bat "-Dlocal.pg=true" clean test --no-daemon 2>&1 | Tee-Object .\gradle-local-pg.log
+
+# potem wyszukaj w logu potwierdzenie profilu / Flyway / truncate
+Select-String -Path .\gradle-local-pg.log -Pattern "local-pg","Truncating domain tables","flyway_schema_history"
+```
+
+5) Sprawdź historię migracji (jeśli Flyway był włączony):
+```powershell
+docker exec -i smartfin-postgres psql -U finuser -d smartfin_test -c "SELECT installed_rank, version, description, success, installed_on FROM flyway_schema_history ORDER BY installed_rank;"
+```
+
+6) Sprawdź liczbę rekordów (jeżeli używasz `-Dlocal.pg.keepdata=true` lub chcesz potwierdzić pobieżnie):
+```powershell
+docker exec -i smartfin-postgres psql -U finuser -d smartfin_test -c "SELECT count(*) FROM transactions;"
+```
+
+UWAGA: Jeśli Gradle nie traktuje `-D...` jako właściwej flagi w PowerShell (błąd "Task '.profiles.active=tc' not found"), pamiętaj o cudzysłowach wokół każdego `-D` albo ustaw `GRADLE_OPTS`:
+```powershell
+$env:GRADLE_OPTS = "-Dspring.profiles.active=local-pg"
+./gradlew.bat clean test
+```
+
+
+---
+
+Transactional tests / rollback (w skrócie)
+
+- Dla szybkich testów jednostkowych oraz testów warstwy repozytorium warto stosować
+  `@Transactional` + `@Rollback` (albo użyć Spring Test slice), wtedy każda zmiana w DB
+  zostanie automatycznie wycofana po teście — to jest najszybszy sposób na izolację testów,
+  ale NIE nadaje się do testów, które uruchamiają asynchroniczne projektory lub procesy
+  oczekujące na commit (wtedy trzeba wykonać prawdziwy commit, a potem oczekiwać na efekty).
+
+- W repozytorium dodałem przykładowo `@Transactional` + `@Rollback` do `IntegrationDbSpec` jako wzorzec.
+  Używaj tego podejścia selektywnie: integracyjne specy, które uruchamiają CQRS/Projector
+  powinny korzystać z truncation (opis wyżej) i Awaitility, żeby poczekać na asynchroniczne
+  aktualizacje.
 
 
 
@@ -504,7 +583,9 @@ Ten fragment może być skopiowany do `scripts/Readme--Odpalanie-RESTów-z-Postm
 | Uruchomić bazę (produkcja)                | `docker-compose up -d`                                                    |
 | Uruchomić aplikację                       | `./gradlew runSmartFinDb -PappArgs="-u Jacek -f transakcje.csv"`          |
 | Uruchomić testy (automatyczny PG) z Flyway | `./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" clean test` |
+| Uruchomić wszystkie testy w `local-pg` (pełny run) | `./gradlew.bat "-Dlocal.pg=true" "-Denable.flyway=true" clean test` |
 | Uruchomić test z inspekcją bazy           | `./gradlew.bat "-Dlocal.pg=true" test --tests "..."`                     |
+| Uruchomić test z inspekcją bazy (z zachowaniem danych) | `./gradlew.bat "-Dlocal.pg=true" "-Dlocal.pg.keepdata=true" test --tests "..."` |
 | Sprawdzić dane w bazie produkcyjnej       | `docker exec -it smartfin-postgres psql -U finuser -d smartfin_db`        |
 | Sprawdzić dane w bazie testowej           | `docker exec -it smartfin-postgres psql -U finuser -d smartfin_test`      |
 | Zatrzymać bazę (zachowaj dane)            | `docker-compose stop`                                                     |

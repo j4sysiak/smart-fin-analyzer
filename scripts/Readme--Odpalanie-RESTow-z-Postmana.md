@@ -76,6 +76,13 @@ Uwaga: w PowerShell natywny alias `curl` wskazuje na `Invoke-WebRequest` — uż
 - Jeśli widzisz `file=@/path/to/file` w wygenerowanym cURL (Code → cURL), to plik nie został załadowany; wybierz plik właściwie lub użyj Agent/Desktop.
 - Sprawdź w logach aplikacji (konsola Spring Boot) czy pojawiają się wpisy z `>>> [REST-UPLOAD] Tymczasowy plik:` oraz `Pierwsza linia pliku (sample):`.
 
+Testy / asercje JSON — mała wskazówka
+--------------------------------------------------
+- W testach API unikaj polegania na dokładnej pozycji elementu w tablicy JSON (np. `$.content[0]`), chyba że jawnie żądasz sortowania (np. `sortBy=amount&direction=DESC`).
+- Lepiej wyszukiwać elementy po unikalnych polach (np. `id` lub `originalId`) używając filtrów JSONPath: `\$.content[?(@.id=='T1')]`.
+- W Groovym pamiętaj o ucieczce znaku `$` w stringach double-quoted (np. `"\\$.content[?(@.id=='T1')]"`) żeby uniknąć interpolacji GString.
+- Alternatywnie użyj `$.content[*].field` razem z Hamcrest `hasItem(...)` jeśli chcesz tylko sprawdzić, że dana wartość występuje wśród wyników.
+
 ---
 
 ## 5) Przydatne skróty i linki

@@ -13,5 +13,8 @@ interface TransactionRepository extends JpaRepository<TransactionEntity, Long>, 
 
     // Spring Data sam wygeneruje zapytanie z LIMIT i OFFSET
     // Page<TransactionEntity> findByCategory(String category, Pageable pageable)
+
+    // Znajdź transakcje po originalId - przydatne w testach oraz przy deduplikacji
+    List<TransactionEntity> findByOriginalId(String originalId)
 }
 
