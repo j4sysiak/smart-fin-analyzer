@@ -17,6 +17,8 @@ import jakarta.servlet.ServletResponse
 import jakarta.servlet.FilterConfig
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 
 @Configuration
 @EnableWebSecurity
@@ -153,8 +155,19 @@ class SecurityConfig {
         }
     }
 
+    // Adnotacja @Bean nad tą metodą mówi Springowi: "Gdy zobaczysz, że ktoś (np. AuthController)
+    // potrzebuje PasswordEncoder, uruchom tę funkcję i daj mu wynik".
     @Bean
     org.springframework.security.crypto.password.PasswordEncoder passwordEncoder() {
         return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder()
     }
+
+    // Adnotacja @Bean nad tą metodą mówi Springowi: "Gdy zobaczysz, że ktoś (np. AuthController)
+    // potrzebuje AuthenticationManager, uruchom tę funkcję i daj mu wynik".
+    @Bean
+    AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        // Ta metoda wyciąga gotowy silnik uwierzytelniania z konfiguracji Springa
+        return config.getAuthenticationManager()
+    }
+
 }

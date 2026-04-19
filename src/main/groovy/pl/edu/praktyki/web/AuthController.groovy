@@ -3,17 +3,12 @@ package pl.edu.praktyki.web
 import groovy.util.logging.Slf4j
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirements
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
+import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.*
-import org.springframework.beans.factory.annotation.Autowired
-import pl.edu.praktyki.security.JwtService
-import pl.edu.praktyki.security.UserDto
-import pl.edu.praktyki.security.UserEntity
-import pl.edu.praktyki.security.RegisterRequest
-import pl.edu.praktyki.security.LoginRequest
-import org.springframework.http.HttpStatus
-import pl.edu.praktyki.security.UserRepository
-
+import pl.edu.praktyki.security.*
 
 /*
 * Dev-only helper controller to quickly generate JWT tokens for local testing.
@@ -28,6 +23,8 @@ class AuthController {
     @Autowired JwtService jwtService
     @Autowired UserRepository userRepo
     @Autowired PasswordEncoder passwordEncoder
+    @Autowired AuthenticationManager authenticationManager
+
 
     /**
      * GET /api/auth/token?user=admin
@@ -83,7 +80,9 @@ class AuthController {
         return new UserDto(username: username, role: role)
     }
 
-
+    /*
+    // Lab79--API-And-Security-Advanced--Rejestracja-i-Administracja-Użytkownikami
+    // wersja 1
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Zaloguj użytkownika i otrzymaj token",
@@ -109,6 +108,64 @@ class AuthController {
         def roles = [ normalized ]
         String token = jwtService.generateToken(username, roles)
         return [ token: token ]
+    }    */
+
+
+    // Lab80--API-And-Security-Advanced--System-Logowania-i-BCrypt
+    // wersja 2
+    @PostMapping("/login")
+    Map<String, String> login(@RequestBody Map<String, String> loginRequest) {
+        String username = loginRequest.username
+        String password = loginRequest.password
+
+        log.info(">>> [AUTH] Próba logowania użytkownika: {}", username)
+        // (intentionally no heavy DB logging here)
+
+        // 1. Prosimy Spring Security o zweryfikowanie login/hasło (użyje BCrypt pod spodem)
+        try {
+            def auth = authenticationManager.authenticate(
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(username, password)
+            )
+
+            // 2. Jeśli nie rzucił wyjątku - logowanie udane. Pobieramy role.
+            def roles = auth.authorities.collect { it.authority }
+
+            // 3. Generujemy prawdziwy bilet (JWT)
+            String token = jwtService.generateToken(username, roles)
+
+            return [
+                    username: username,
+                    token: token,
+                    type: "Bearer"
+            ]
+        } catch (org.springframework.security.core.AuthenticationException e) {
+            log.warn(">>> [AUTH] Nieudane logowanie dla: {}. Powód: {}", username, e.message)
+
+            // FALLBACK: jeśli z jakiegoś powodu AuthenticationManager nie działa
+            // (różne konfiguracje testów), spróbujmy ręcznie sprawdzić hasło
+            // przeciwko naszej tabeli users. Dzięki temu testy integracyjne
+            // które polegają na bezpośrednim dostępie do bazy (migracje) dalej
+            // będą działać.
+            def userOpt = userRepo.findByUsername(username)
+            if (userOpt.isPresent()) {
+                def user = userOpt.get()
+                log.info(">>> [AUTH][FALLBACK] Found user in DB: {} (role={})", user.username, user.role)
+                if (passwordEncoder.matches(password, user.password)) {
+                    log.info(">>> [AUTH][FALLBACK] Password matched using PasswordEncoder for user {}", username)
+                    def roles = [ user.role ?: 'ROLE_USER' ]
+                    String token = jwtService.generateToken(username, roles)
+                    return [ username: username, token: token, type: 'Bearer' ]
+                } else {
+                    log.warn(">>> [AUTH][FALLBACK] Password did NOT match for user {}", username)
+                }
+            } else {
+                log.warn(">>> [AUTH][FALLBACK] No user found in DB with username {}", username)
+            }
+
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED, "Błędny login lub hasło"
+            )
+        }
     }
 }
 

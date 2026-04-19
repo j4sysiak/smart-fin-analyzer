@@ -27,8 +27,9 @@ abstract class BaseIntegrationSpec extends Specification {
 
     /** Czy uruchomiono z flagą -Dlocal.pg=true (ręczna inspekcja bazy) */
     static final boolean LOCAL_PG = Boolean.getBoolean("local.pg")
-    // Pozwala włączyć Flyway dla testów przez -Denable.flyway=true (domyślnie false)
-    static final boolean ENABLE_FLYWAY = Boolean.getBoolean("enable.flyway")
+    // Pozwala włączyć/wyłączyć Flyway dla testów przez -Denable.flyway=true/false
+    // Domyślnie w testach integracyjnych włączamy Flyway (migracje tworzą startowe dane takie jak użytkownik admin)
+    static final boolean ENABLE_FLYWAY = (System.getProperty('enable.flyway') ?: 'true').toBoolean()
 
     // --- Konfiguracja automatycznego kontenera (tryb 'tc') ---
     static final String CONTAINER_NAME = "smartfin-test-pg"
@@ -170,7 +171,13 @@ abstract class BaseIntegrationSpec extends Specification {
                     () -> "jdbc:postgresql://localhost:${PG_PORT}/${PG_DB}")
             registry.add("spring.datasource.username", () -> PG_USER)
             registry.add("spring.datasource.password", () -> PG_PASS)
-            registry.add("spring.jpa.hibernate.ddl-auto", () -> "create")
+            // Jeśli w testach włączono Flyway, to migracje tworzą schemat i dane startowe
+            // — wyłączamy Hibernate DDL, aby nie nadpisywał wyników migracji.
+            if (ENABLE_FLYWAY) {
+                registry.add("spring.jpa.hibernate.ddl-auto", () -> "none")
+            } else {
+                registry.add("spring.jpa.hibernate.ddl-auto", () -> "create")
+            }
         }
         // Wspólne dla obu trybów
         registry.add("spring.datasource.driverClassName", () -> "org.postgresql.Driver")

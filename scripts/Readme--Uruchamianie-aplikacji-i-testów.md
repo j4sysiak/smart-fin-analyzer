@@ -128,24 +128,50 @@ Bez niczego tryb domyślny (domyślnie `tc`):
 
 Jawnie `tc` (zalecane, gdy chcesz mieć pewność):
 ```powershell
-./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*CqrsSpec*"
-./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*UploadControllerSpec*"
-./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*RbacSpec*"
-./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*BigDataSpec*"
-./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*DynamicSearchSpec*"
-./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*CqrsEventSpec*"
-./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*UserManagementSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*CqrsSpec*" --no-daemon
+
+/* UploadControllerSpec */
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*UploadControllerSpec*" --no-daemon
+.\gradlew.bat test --tests "pl.edu.praktyki.web.UploadControllerSpec" --no-daemon
+ 
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*RbacSpec*" --no-daemon
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*BigDataSpec*" --no-daemon
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*DynamicSearchSpec*" --no-daemon
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*CqrsEventSpec*" --no-daemon
+
+/*UserManagementSpec*/
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*UserManagementSpec*" --no-daemon
+.\gradlew.bat test --tests "pl.edu.praktyki.web.UserManagementSpec" --no-daemon
+
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*AuthSpec*" --no-daemon
+.\gradlew.bat test --tests "pl.edu.praktyki.web.AuthSpec" --no-daemon
+ 
+...
+
+lub uruchomienie wszystkich testów webowych z `tc`:
+.\gradlew.bat test --tests "pl.edu.praktyki.web.*" --no-daemon
+
+lub uruchomienie wszystkich testów z `tc`:
+.\gradlew.bat test --tests --no-daemon
 ```
 
 Z Flyway włączonym (debug):
 ```powershell
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*CqrsSpec*"
+
+/* UploadControllerSpec */
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*UploadControllerSpec*"
+.\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" test --tests "pl.edu.praktyki.web.UploadControllerSpec" --no-daemon
+
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*RbacSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*BigDataSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*DynamicSearchSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*CqrsEventSpec*"
 ./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*UserManagementSpec*"
+./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" clean test --tests "*AuthSpec*"
+
+.\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" test --tests "pl.edu.praktyki.integration.nUploadControllerDatabaseSpec" --no-daemon
+.\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" test --tests "pl.edu.praktyki.web.*Upload*Spec" --no-daemon
 ```
 
 Możesz też ustawić `GRADLE_OPTS` aby uniknąć cytowania w każdej komendzie:

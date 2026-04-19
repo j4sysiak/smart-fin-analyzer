@@ -48,6 +48,9 @@ T13,5000.00,PLN,Praca,Wypłata,2026-03-28
                 csvContent                  // zawartość
         )
 
+        and: "liczba rekordów w bazie przed uploadem"
+        def beforeCount = repo.count()
+
         when: "wysyłamy żądanie POST multipart"
         def response = mvc.perform(multipart("/api/transactions/upload")
                 .file(mockFile)
@@ -61,10 +64,13 @@ T13,5000.00,PLN,Praca,Wypłata,2026-03-28
         def content = response.andReturn().response.contentAsString
         content.contains("RAPORT FINANSOWY DLA: JACEK_TEST")
 
-        and: "rekord został zapisany w bazie"
+        and: "rekord został zapisany w bazie (sprawdzamy przyrost i konkretny rekord)"
+        repo.count() == beforeCount + 1
+
         def all = repo.findAll()
-        all.size() == 1
-        all[0].originalId == 'T1'
-        all[0].amount == 100.00.toBigDecimal()
+        // znajdźmy rekord(y) o originalId T1 — test nie zakłada pustej bazy, tylko że nowy rekord trafił
+        def newOnes = all.findAll { it.originalId == 'T1' }
+        newOnes.size() >= 1
+        newOnes[0].amount == 100.00.toBigDecimal()
     }
 }

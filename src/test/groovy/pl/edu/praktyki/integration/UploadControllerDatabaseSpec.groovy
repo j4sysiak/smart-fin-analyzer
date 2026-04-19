@@ -10,6 +10,9 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.access.AccessDeniedException
+// awaiting async projections
+import static org.awaitility.Awaitility.await
+import java.util.concurrent.TimeUnit
 
 class UploadControllerDatabaseSpec extends BaseIntegrationSpec {
 
@@ -60,7 +63,12 @@ TJ36,5000.00,PLN,Praca,Wypłata,2026-04-12
         resp.getStatusCode().value() == 200
         transactionRepository.count() == txBefore + 3
 
-        and: "financial summary updated (if projection exists)"
+        and: "financial summary updated (wait for async projection)"
+        // GlobalStatsProjector runs asynchronously — wait up to 10s for the projection to appear/update
+        await().atMost(10, TimeUnit.SECONDS).until {
+            summaryRepo.findById('GLOBAL').isPresent()
+        }
+
         def summaryAfter = summaryRepo.findById('GLOBAL').orElse(null)
         summaryAfter != null
         summaryAfter.transactionCount == summaryBefore.transactionCount + 3
