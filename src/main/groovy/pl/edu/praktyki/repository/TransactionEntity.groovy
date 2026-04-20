@@ -1,9 +1,14 @@
 package pl.edu.praktyki.repository
 
 import jakarta.persistence.*
+import org.springframework.data.annotation.*
+import org.springframework.data.jpa.domain.support.AuditingEntityListener
+
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Entity
+@EntityListeners(AuditingEntityListener.class) // <-- KLUCZOWE dla automatycznego zarządzania polami audytu
 @Table(name = "transactions")
 class TransactionEntity {
 
@@ -23,6 +28,20 @@ class TransactionEntity {
     BigDecimal amountPLN
     String category
     String description
+
+    @CreatedDate
+    @Column(updatable = false)
+    LocalDateTime createdDate
+
+    @LastModifiedDate
+    LocalDateTime lastModifiedDate
+
+    @CreatedBy
+    @Column(updatable = false)
+    String createdBy
+
+    @LastModifiedBy
+    String lastModifiedBy
 
     @ElementCollection(fetch = FetchType.EAGER)
     List<String> tags = []

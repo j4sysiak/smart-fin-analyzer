@@ -145,7 +145,11 @@ Jawnie `tc` (zalecane, gdy chcesz mieć pewność):
 
 ./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*AuthSpec*" --no-daemon
 .\gradlew.bat test --tests "pl.edu.praktyki.web.AuthSpec" --no-daemon
- 
+
+
+/* AuditingSpec */
+./gradlew.bat "-Dspring.profiles.active=tc" test --tests "*AuditingSpec*" --no-daemon
+.\gradlew.bat test --tests "pl.edu.praktyki.web.AuditingSpec" --no-daemon
 ...
 
 lub uruchomienie wszystkich testów webowych z `tc`:
@@ -172,6 +176,8 @@ Z Flyway włączonym (debug):
 
 .\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" test --tests "pl.edu.praktyki.integration.nUploadControllerDatabaseSpec" --no-daemon
 .\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" test --tests "pl.edu.praktyki.web.*Upload*Spec" --no-daemon
+
+.\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" test --tests "*AuditingSpec*" --no-daemon
 ```
 
 Możesz też ustawić `GRADLE_OPTS` aby uniknąć cytowania w każdej komendzie:

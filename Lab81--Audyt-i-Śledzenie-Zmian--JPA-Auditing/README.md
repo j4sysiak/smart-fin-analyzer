@@ -202,20 +202,3 @@ Uruchom test i sprawdź, czy Twoje nazwisko (lub "admin") pojawia się w nowej k
 
 # Lookup z OpenBao:
 ait_lib_generate_pkcs12_pki_password: "{{ lookup('community.hashi_vault.vault_kv2_get', 'testclient', engine_mount_point='kv2-apps-ait').secret.pki_password }}"
-
-
-
-pre_tasks:
-- name: Generate and store PKI password in OpenBao
-community.hashi_vault.vault_kv2_write:
-engine_mount_point: kv2-apps-ait
-path: testclient
-data:
-pki_password: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}"
-run_once: true    # ← wykona się TYLKO RAZ, nie 3 razy per host
-
-
-Co musisz jeszcze sprawdzić
-Poszukaj w kodzie przykładu — ważniak mówi "see for examples in code for only one password". Znajdź w repo kto już używa community.hashi_vault.vault_kv2_write i wzoruj się na tym
-Nazwa klucza — ważniak napisał "Then name key:" ale nie dokończył. Zapytaj go jak ma się nazywać klucz (np. pki_password?)
-Składnia lookupu — może się różnić w zależności od konfiguracji OpenBao w Waszym środowisku
