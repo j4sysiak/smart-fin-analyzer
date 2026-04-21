@@ -40,6 +40,73 @@ Po ręcznym dodaniu hasła od admina → możesz przetestować playbook:
 vault_kv2_get w vm_configuration.yml (lookup hasła z OpenBao).
 Jak admin coś odpisze (np. inne szczegóły API lub problemy z dostępem), daj znać — pomożemy to dostosować.
 >>>>
+> 
+&&&&&&&&&&&
+### Co to jest **PKI password**?
+
+**PKI (Public Key Infrastructure) password** to hasło stosowane w infrastrukturze klucza publicznego (Public Key Infrastructure). W kontekście Twojego projektu odnosi się ono do **ochrony pliku typu PKCS#12** (ang. Personal Information Exchange), który zazwyczaj zawiera:
+
+1. **Certyfikat klucza publicznego** (np. certyfikat SSL/TLS),
+2. **Prywatny klucz**,
+3. Opcjonalnie: **certyfikaty pośrednie** (intermediate CA) niezbędne do stworzenia łańcucha zaufania.
+
+---
+
+### Dlaczego hasło jest potrzebne?
+
+Plik PKCS#12 (*.pfx, *.p12) jest chroniony hasłem, ponieważ wrażliwe dane (prywatny klucz) muszą być zabezpieczone przed nieautoryzowanym dostępem. Hasło pełni tutaj funkcję:
+1. **Zabezpieczenia dostępu:** Plik PKCS#12 nie może być otwarty bez znajomości hasła.
+2. **Ochrony prywatnego klucza:** Nawet jeśli ktoś przechwyci plik, nie otworzy go bez hasła.
+
+---
+
+### Jak działa to u Ciebie w roli `ait_lib_generate_pkcs12`?
+
+1. Zasada działania:
+    - Rolą tej roli jest **wygenerowanie certyfikatu w formacie PKCS#12**, który zawiera:
+        - certyfikat (klucz publiczny),
+        - prywatny klucz (zaszyfrowany hasłem PKI),
+        - opcjonalnie certyfikaty pośrednie.
+    - Hasło (PKI password) będzie przekazane do tej roli poprzez zmienną `ait_lib_generate_pkcs12_pki_password`.
+
+2. W Twoim procesie:
+    - **Playbook automatycznie generuje hasło,** zapisuje je w managerze sekretów (OpenBao),
+    - **Hasło jest odczytywane** w momencie użycia roli `ait_lib_generate_pkcs12`.
+
+---
+
+### Dlaczego ważny jest manager sekretów (OpenBao)?
+
+Hasło musi być **unikalne** i **bezpieczne przechowywane**, dlatego:
+- Nie trzymamy go w plikach konfiguracyjnych ani inventory na stałe,
+- Korzystamy z managera sekretów (Vault), który przechowuje je w sposób bezpieczny.
+
+---
+
+### W Twoim procesie:
+
+1. **Hasło PKI (`ait_lib_generate_pkcs12_pki_password`) będzie:**
+    - Generowane **raz** w pre_tasks (`run_once: true`),
+    - Przechowywane pod kluczem `pkcs12_container_password` w OpenBao.
+
+2. **Rola `ait_lib_generate_pkcs12`:**
+    - Pobierze to hasło z OpenBao podczas generowania pliku PKCS#12,
+    - Zaszyfruje hasłem klucz prywatny w pliku.
+
+3. **Finalny plik PKCS#12:**
+    - Trafi na host (testclient),
+    - Będzie wymagał hasła do otwarcia — to bezpieczeństwo Twojego prywatnego klucza.
+
+---
+
+### W skrócie
+
+**PKI password** to kluczowe hasło, które:
+1. **Zabezpiecza plik PKCS#12,** w którym znajdują się certyfikaty i klucz prywatny,
+2. Ma być zarządzane bezpiecznie przez OpenBao, aby uniknąć ryzyka wycieku.
+
+Mam nadzieję, że dobrze wyjaśniłem! Masz jeszcze pytania?
+@@@@@@@@@@@@@@@@@@@@
 
 
 Mamy już system, który jest bezpieczny, wydajny i audytowalny. 
