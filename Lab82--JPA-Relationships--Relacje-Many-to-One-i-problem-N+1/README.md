@@ -4,52 +4,41 @@ Lab82
 Lab82--JPA-Relationships--Relacje-Many-to-One-i-problem-N+1
 ===========================================================
 >>>>
-### Wiadomość do osoby odpowiedzialnej za utworzenie Engine w OpenBao
-
-```plaintext
 Cześć [imię],
 
-Potrzebuję pomocy przy utworzeniu nowego Engine w OpenBao na potrzeby automatycznego generowania i zarządzania hasłami PKI dla testclientów.
+Potrzebuję Twojej pomocy przy dodaniu testowych danych do OpenBao. Projekt nad którym pracuję wymaga integracji z OpenBao w celu zarządzania hasłami PKI, a na tym etapie musimy ręcznie utworzyć odpowiedni wpis – zgodnie z wytycznymi od [Ważniaka z IT].
+
+**Kontekst:**
+- Playbook, który wdrażam, będzie automatycznie generował hasło PKI i zapisywał je do OpenBao za pomocą modułu Ansible (`vault_kv2_write`).
+- Hasło będzie następnie odczytywane w roli `project.ait.ait_lib_generate_pkcs12` za pomocą lookupu (`vault_kv2_get`).
+
+**Co potrzebuję zrobić teraz:**
+- Utworzyć ręcznie hasło testowe na potrzeby integracji i developmentu.
 
 **Szczegóły:**
-1. **Nazwa Engine:** kv2-apps-ait  
-2. **Typ Engine:** kv2  
-3. **Ścieżka (topic):** testclient  
-4. **Klucz:** pkcs12_container_password  
-5. **Opis użycia:**  
-   - W playbooku generujemy hasło PKI przy użyciu `vault_kv2_write` (preparation step w `pre_tasks`).
-   - Hasło jest zapisywane w `kv2-apps-ait` pod ścieżką `testclient` i kluczem `pkcs12_container_password`.
-   - Wykorzystujemy je w roli `ait_lib_generate_pkcs12`, gdzie hasło jest pobierane przez lookup (`vault_kv2_get`).
+1. **Engine:** kv2-apps-ait (należy podać przy `engine_mount_point`)
+2. **Ścieżka (topic):** testclient
+3. **Klucz (Key):** pkcs12_container_password
+4. **Wartość:** Dowolne testowe hasło (np. `TestClientPKI123!`).
 
-**Checklist:**
-- Proszę o dodanie Engine do OpenBao i upewnienie się, że mogę z niego korzystać przez API.
-- Dodałem poniższy wpis do inventory, żeby przygotować integrację:
-```yaml
-open_kv2_engine_list:
-  ait: kv2-apps-ait
-```
-- Na potrzeby testów, trzeba ręcznie dodać hasło (dowolne) jako sekret w `kv2-apps-ait/testclient` pod kluczem `pkcs12_container_password`.
+**Przykład struktury w OpenBao:**
 
-Jeśli coś wymaga doprecyzowania, daj znać. Dzięki za pomoc!
+Engine: kv2-apps-ait └── Topic: testclient └── Key: pkcs12_container_password = <testowe hasło>
+
+
+Gdy hasło zostanie dodane, będę mógł przetestować proces odczytu w playbooku i upewnić się, że integracja działa zgodnie z założeniami.
+
+Jeśli potrzebujesz więcej szczegółów lub trzeba coś doprecyzować – daj znać.
+
+Z góry dzięki za pomoc!
 
 Pozdrawiam,  
 [jak się podpisać]
-```
 
----
 
-### Co się stanie po jego stronie
-- Utworzy Engine `kv2-apps-ait` w OpenBao.
-- Ustawi, że masz dostęp do tego Engine.
-- Ręcznie doda testowe hasło PKI (`pkcs12_container_password`) do topicu `testclient`.
-
-### Co zrobisz Ty po potwierdzeniu
-1. Raz jeszcze uruchomisz playbooka, ale już z automatycznym generowaniem hasła PKI do OpenBao (`vault_kv2_write`).
-2. Jeśli będą dostępy lub wpisy w OpenBao ulepszane, to zgłoś problem.
-
----
-
-Możesz wysłać tę wiadomość? Jeśli coś dodatkowo ustaliłem, mogę doprecyzować. 😊
+Po ręcznym dodaniu hasła od admina → możesz przetestować playbook:
+vault_kv2_get w vm_configuration.yml (lookup hasła z OpenBao).
+Jak admin coś odpisze (np. inne szczegóły API lub problemy z dostępem), daj znać — pomożemy to dostosować.
 >>>>
 
 
