@@ -10,6 +10,8 @@ import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.security.JwtService
+import pl.edu.praktyki.repository.CategoryRepository
+import pl.edu.praktyki.repository.CategoryEntity
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
@@ -60,15 +62,20 @@ class TransactionControllerWithJWTSpec extends BaseIntegrationSpec {
 
     @Autowired
     TransactionRepository repository
+    @Autowired
+    CategoryRepository categoryRepository
 
     def setup() {
         // Przed każdym testem czyścimy bazę i dodajemy świeże dane
         repository.deleteAll()
+        def catTest = categoryRepository.save(new CategoryEntity(name: "Test", monthlyLimit: 0.0))
+        def catJedzenie = categoryRepository.save(new CategoryEntity(name: "Jedzenie", monthlyLimit: 0.0))
+
         repository.save(new TransactionEntity(
-                originalId: "T1", amountPLN: 100.0, category: "Test", description: "Wpływ"
+                originalId: "T1", amountPLN: 100.0, category: catTest, description: "Wpływ"
         ))
         repository.save(new TransactionEntity(
-                originalId: "T2", amountPLN: -20.0, category: "Jedzenie", description: "Pizza"
+                originalId: "T2", amountPLN: -20.0, category: catJedzenie, description: "Pizza"
         ))
     }
 

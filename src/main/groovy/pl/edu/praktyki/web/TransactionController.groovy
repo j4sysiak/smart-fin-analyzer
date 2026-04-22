@@ -74,7 +74,7 @@ class TransactionController {
                     amount: entity.amount,
                     currency: entity.currency,
                     amountPLN: entity.amountPLN,
-                    category: entity.category,
+                    category: (entity.category instanceof pl.edu.praktyki.repository.CategoryEntity) ? entity.category.name : entity.category,
                     description: entity.description,
                     tags: entity.tags
             )
@@ -109,7 +109,7 @@ class TransactionController {
                 amount: entity.amount,
                 currency: entity.currency,
                 amountPLN: entity.amountPLN,
-                category: entity.category,
+                category: (entity.category instanceof pl.edu.praktyki.repository.CategoryEntity) ? entity.category.name : entity.category,
                 description: entity.description,
                 tags: entity.tags
         )
@@ -202,7 +202,7 @@ class TransactionController {
             new Transaction(
                     id: ent.originalId,
                     amountPLN: ent.amountPLN,
-                    category: ent.category,
+                    category: (ent.category instanceof pl.edu.praktyki.repository.CategoryEntity) ? ent.category.name : ent.category,
                     description: ent.description)
         }
     }

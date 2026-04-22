@@ -164,6 +164,17 @@ jib {
     }
 }
 
+// Zadanie pomocnicze: uruchamia Flyway (używa env vars: FLYWAY_URL, FLYWAY_USER, FLYWAY_PASSWORD)
+tasks.register('runFlywayLocal', JavaExec) {
+    group = 'database'
+    description = 'Uruchamia migracje Flyway używając zmiennych środowiskowych FLYWAY_URL, FLYWAY_USER, FLYWAY_PASSWORD'
+    mainClass.set('tools.RunFlyway')
+    classpath = sourceSets.main.runtimeClasspath
+
+    // Wymuszenie Java 17 przez toolchain (jak w innych zadaniach JavaExec)
+    def toolchainService = project.extensions.getByType(JavaToolchainService)
+    javaLauncher.set(toolchainService.launcherFor(java.toolchain))
+}
 configurations.all {
     resolutionStrategy {
         // Wymuszamy, aby każda biblioteka używała Groovy 4.0.16

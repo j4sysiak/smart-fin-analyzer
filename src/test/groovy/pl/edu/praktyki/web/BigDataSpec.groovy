@@ -7,6 +7,8 @@ import org.springframework.test.web.servlet.MockMvc
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.repository.TransactionRepository
+import pl.edu.praktyki.repository.CategoryRepository
+import pl.edu.praktyki.repository.CategoryEntity
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -17,14 +19,16 @@ class BigDataSpec extends BaseIntegrationSpec {
 
     @Autowired MockMvc mvc
     @Autowired TransactionRepository repo
+    @Autowired CategoryRepository categoryRepository
 
     def "powinien zwrócić tylko pierwszą stronę wyników przy wyszukiwaniu"() {
         given: "mamy 50 transakcji w kategorii 'TEST'"
         repo.deleteAll()
+        def catTest = categoryRepository.save(new CategoryEntity(name: "TEST", monthlyLimit: 0.0))
         def manyTransactions = (1..50).collect { i ->
             new TransactionEntity(
                     originalId: "ID-$i",
-                    category: "TEST",
+                    category: catTest,
                     amount: 10.0,
                     date: java.time.LocalDate.now()
             )
@@ -51,10 +55,11 @@ class BigDataSpec extends BaseIntegrationSpec {
     def "powinien poprawnie stronicować wyniki przy użyciu nowej metody search"() {
         given: "mamy w bazie 50 transakcji"
         repo.deleteAll()
+        def catVolume = categoryRepository.save(new CategoryEntity(name: "VOLUME_TEST", monthlyLimit: 0.0))
         def manyTransactions = (1..50).collect { i ->
             new TransactionEntity(
                     originalId: "ID-$i",
-                    category: "VOLUME_TEST",
+                    category: catVolume,
                     amountPLN: 10.0,
                     date: java.time.LocalDate.now()
             )

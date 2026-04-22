@@ -3,6 +3,11 @@ package pl.edu.praktyki.service
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
+import com.github.tomakehurst.wiremock.WireMockServer
+import static com.github.tomakehurst.wiremock.client.WireMock.*
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.repository.TransactionRepository
 
@@ -51,6 +56,29 @@ class CurrencyServiceSpec extends BaseIntegrationSpec {
     def setup() {
         // Przed każdym testem czyścimy bazę i dodajemy świeże dane
         repository.deleteAll()
+    }
+
+    // --- WireMock dla symulacji zewnętrznego API kursów walut ---
+    private static final WireMockServer WIREMOCK
+
+    static {
+        WIREMOCK = new WireMockServer(options().dynamicPort())
+        WIREMOCK.start()
+
+        // Domyślny stub zwraca sensowny kurs EUR względem PLN (1 PLN = 0.23 EUR)
+        WIREMOCK.stubFor(get(urlEqualTo('/v6/latest/PLN'))
+                .willReturn(aResponse()
+                        .withHeader('Content-Type', 'application/json')
+                        .withBody('{' +
+                                '"rates": { "EUR": 0.23, "PLN": 1.0 }' +
+                                '}')
+                        .withStatus(200)))
+    }
+
+    @DynamicPropertySource
+    static void registerCurrencyApiUrl(DynamicPropertyRegistry registry) {
+        // Nadpisujemy property używane przez CurrencyService, aby wskazywała na WireMock
+        registry.add('currency.api.url', () -> WIREMOCK.baseUrl() + '/v6/latest/PLN')
     }
 
     def "powinien pobrać kurs wymiany dla EUR"() {
@@ -104,6 +132,12 @@ class CurrencyServiceSpec extends BaseIntegrationSpec {
         ]
         errors == 4
         rate == 4.0
+    }
+
+    def cleanupSpec() {
+        if (WIREMOCK && WIREMOCK.isRunning()) {
+            WIREMOCK.stop()
+        }
     }
 
     def "fallback powinien zwrócić bezpieczną wartość 4.0"() {

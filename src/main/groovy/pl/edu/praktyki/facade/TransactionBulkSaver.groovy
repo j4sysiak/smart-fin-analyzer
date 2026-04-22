@@ -76,7 +76,10 @@ class TransactionBulkSaver {
                                 TransactionEntity e = batch.get(i)
                                 def id = seqVals.get(i)
                                 def date = e.date ? e.date.toString() : ''
-                                def parts = [id, e.originalId ?: '', date, e.amount ?: '', e.currency ?: '', e.amountPLN ?: '', e.category ?: '', e.description ?: '']
+                                // category may be a String (old code/tests) or a CategoryEntity (new model).
+                                // Normalize to category name for the text COPY path.
+                                def categoryName = (e.category instanceof String) ? e.category : (e.category?.name ?: '')
+                                def parts = [id, e.originalId ?: '', date, e.amount ?: '', e.currency ?: '', e.amountPLN ?: '', categoryName, e.description ?: '']
                                 def line = parts.collect { it.toString().replace('\n',' ').replace('\r',' ') }.join('\t')
                                 sw.write(line + '\n')
                             }
@@ -120,7 +123,15 @@ class TransactionBulkSaver {
                         ps.setBigDecimal(3, e.amount)
                         ps.setString(4, e.currency)
                         ps.setBigDecimal(5, e.amountPLN)
-                        ps.setString(6, e.category)
+                        // category may be stored as plain String in some places or as CategoryEntity in the new model.
+                        if (e.category == null) {
+                            ps.setNull(6, java.sql.Types.VARCHAR)
+                        } else if (e.category instanceof String) {
+                            ps.setString(6, (String) e.category)
+                        } else {
+                            // assume it's a CategoryEntity or similar; use its name
+                            ps.setString(6, e.category?.name)
+                        }
                         ps.setString(7, e.description)
                     }
 

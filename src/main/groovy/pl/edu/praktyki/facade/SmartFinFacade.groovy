@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service
 import org.springframework.beans.factory.annotation.Autowired
 import pl.edu.praktyki.service.*
 import pl.edu.praktyki.repository.TransactionRepository
+import pl.edu.praktyki.repository.CategoryRepository
+import pl.edu.praktyki.repository.CategoryEntity
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.domain.Transaction
 import groovy.util.logging.Slf4j
@@ -37,6 +39,7 @@ class SmartFinFacade {
     // Interfejs dostępu do bazy (zwykle Spring Data*Repository).
     // Operacje CRUD, findAll(), save(...) itd. Mapuje TransactionEntity do tabeli DB.
     @Autowired TransactionRepository repo
+    @Autowired CategoryRepository categoryRepository
 
     // Delegat odpowiedzialny za hurtowy zapis encji w transakcji.
     // Powinien być oznaczony jako osobny bean z @Transactional, aby AOP proxy zadziałało (stąd wyodrębnienie poza fasadę).
@@ -109,13 +112,26 @@ class SmartFinFacade {
 
         // 3. Zapis do bazy (Mapowanie)
         def entities = flatListOfTransactions.collect { tx ->
+            // Resolve category name (String) to CategoryEntity. If missing, create a minimal one.
+            CategoryEntity categoryEntity = null
+            try {
+                if (tx.category) {
+                    categoryEntity = categoryRepository.findByName(tx.category).orElseGet({
+                        // create a new category with default monthlyLimit = 0.0
+                        categoryRepository.save(new CategoryEntity(name: tx.category, monthlyLimit: 0.0))
+                    })
+                }
+            } catch (Exception e) {
+                log.warn(">>> [FASADA] Nie udało się rozwiązać kategorii '{}': {}", tx.category, e.message)
+            }
+
             new TransactionEntity(
                     originalId: tx.id,
                     date: tx.date,
                     amount: tx.amount,
                     currency: tx.currency,
                     amountPLN: tx.amountPLN,
-                    category: tx.category,
+                    category: categoryEntity,
                     description: tx.description,
                     tags: tx.tags
             )
@@ -145,7 +161,7 @@ class SmartFinFacade {
                     amount: ent.amount,
                     currency: ent.currency,
                     amountPLN: ent.amountPLN,
-                    category: ent.category,
+                    category: (ent.category instanceof CategoryEntity) ? ent.category.name : ent.category,
                     description: ent.description,
                     tags: ent.tags
             )

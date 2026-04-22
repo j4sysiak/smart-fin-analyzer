@@ -5,11 +5,15 @@ import org.springframework.security.test.context.support.WithMockUser
 import pl.edu.praktyki.BaseIntegrationSpec
 
 import java.time.LocalDateTime
+import pl.edu.praktyki.repository.CategoryRepository
+import pl.edu.praktyki.repository.CategoryEntity
 
 class AuditingSpec extends BaseIntegrationSpec {
 
     @Autowired
     TransactionRepository repository
+    @Autowired
+    CategoryRepository categoryRepository
 
     def setup() {
         // Czyścimy bazę przed testem audytu
@@ -19,11 +23,12 @@ class AuditingSpec extends BaseIntegrationSpec {
     @WithMockUser(username = "jacek_manager")
     def "powinien automatycznie zapisać informację o autorze i dacie utworzenia (JPA Auditing)"() {
         given: "nowa encja transakcji (nie ustawiamy pól audytowych ręcznie!)"
+        def catProces = categoryRepository.save(new CategoryEntity(name: "PROCES", monthlyLimit: 0.0))
         def entity = new TransactionEntity(
                 originalId: "AUDIT-TEST-1",
                 amount: 1000.0,
                 amountPLN: 1000.0,
-                category: "PROCES",
+                category: catProces,
                 description: "Test automatycznego audytu"
         )
 
@@ -51,7 +56,8 @@ class AuditingSpec extends BaseIntegrationSpec {
 
     def "powinien oznaczyć wpis jako SYSTEM gdy brak zalogowanego użytkownika"() {
         given: "transakcja zapisywana bez kontekstu security (np. przez automat)"
-        def entity = new TransactionEntity(originalId: "SYS-1", amount: 10.0, category: "SYS")
+        def catSys = categoryRepository.save(new CategoryEntity(name: "SYS", monthlyLimit: 0.0))
+        def entity = new TransactionEntity(originalId: "SYS-1", amount: 10.0, category: catSys)
 
         when:
         def saved = repository.saveAndFlush(entity)

@@ -25,7 +25,7 @@ class ReportGeneratorService {
             
             WYDATKI WG KATEGORII:
             <% spendingMap.each { category, amount -> %>
-            - ${category.padRight(15)} : ${amount.setScale(2, BigDecimal.ROUND_HALF_UP)} PLN
+            - ${(category ?: 'N/A').padRight(15)} : ${((amount ?: 0) as BigDecimal).setScale(2, BigDecimal.ROUND_HALF_UP)} PLN
             <% } %>
             -----------------------------------------
             Status: ${totalBalance >= 0 ? 'NA PLUSIE' : 'DEFICYT'}

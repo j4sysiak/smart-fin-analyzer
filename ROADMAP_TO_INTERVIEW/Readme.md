@@ -64,20 +64,25 @@ Paginacja (Stronicowanie) w `REST API` – jak zwracać dane partiami, żeby nie
 
 🔄 Etap 4: Zaawansowana Asynchroniczność i Eventy
 -------------------------------------------------
-
 Rozbicie monolitu.
-
-Spring @Async vs GPars.
-
-Pule wątków (Thread Pools) – jak je konfigurować, żeby nie zabić serwera.
-
-Architektura Event-Driven (CQRS na wesoło) – rzucanie asynchronicznych zdarzeń w Springu.
+Spring `@Async` vs `GPars`.
+Pule wątków `Thread Pools` – jak je konfigurować, żeby nie zabić serwera.
+Architektura Event-Driven (`CQRS` na wesoło) – rzucanie asynchronicznych zdarzeń w Spring.
 
 
+Etap 5: Audyt i Śledzenie Zmian (JPA Auditing)
+--------------------------------------------
+Automatyczne zapisywanie informacji o tym, kto i kiedy stworzył lub zmodyfikował rekord.
 
-Etap 5: API Documentation & Contracts (Swagger, JSON Schemas)
+
+Etap 6: Zaawansowane Modelowanie i Relacje (JPA Relationships).
+---------------------------------------------------------------
+W świecie Mid-level, dane powinny mieć swoją strukturę i relacje.
+
+
+Etap 7: API Documentation & Contracts (Swagger, JSON Schemas)
 -------------------------------------------------------------
 
 
-Etap 6: Konteneryzacja i Docker Compose, żeby Twój Postgres i aplikacja startowały jednym kliknięciem
+Etap 8: Konteneryzacja i Docker Compose, żeby Twój Postgres i aplikacja startowały jednym kliknięciem
 -----------------------------------------------------------------------------------------------------

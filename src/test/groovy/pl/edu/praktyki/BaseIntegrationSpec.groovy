@@ -8,6 +8,8 @@ import org.springframework.test.context.DynamicPropertySource
 import spock.lang.Specification
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.beans.factory.annotation.Autowired
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Bazowa klasa dla testów integracyjnych.
@@ -30,6 +32,9 @@ abstract class BaseIntegrationSpec extends Specification {
     @Autowired
     JdbcTemplate jdbcTemplate
 
+    // Logger used in static and instance contexts inside this base test class
+    private static final Logger log = LoggerFactory.getLogger(BaseIntegrationSpec.class)
+
     def setup() {
         // For deterministic integration tests: truncate domain tables before each test
         if (LOCAL_PG) {
@@ -45,14 +50,50 @@ abstract class BaseIntegrationSpec extends Specification {
     }
 
     private void doTruncateDatabase() {
-        try {
-            System.out.println(">>> [BaseIntegrationSpec] Truncating domain tables before test (RESTART IDENTITY CASCADE)")
-            jdbcTemplate.execute("TRUNCATE TABLE transaction_entity_tags, transactions, counters, financial_summary RESTART IDENTITY CASCADE;")
-            // Ensure GLOBAL summary row exists (recreate if needed)
-            jdbcTemplate.execute("INSERT INTO financial_summary (id, total_balance, transaction_count) VALUES ('GLOBAL', 0.0, 0) ON CONFLICT (id) DO NOTHING;")
-        } catch (Exception e) {
-            System.err.println(">>> [BaseIntegrationSpec] Truncate failed: ${e.message}")
-        }
+        // Acquire an advisory lock to serialize truncation across multiple test JVMs/processes
+        // This prevents PostgreSQL deadlocks when concurrent processes attempt TRUNCATE/CASCADE
+        final long LOCK_KEY = 0xDEADBEEFL // arbitrary numeric key
+        jdbcTemplate.execute({ conn ->
+            def stmt = conn.createStatement()
+            try {
+                System.out.println(">>> [BaseIntegrationSpec] Acquiring advisory lock for truncate (key=${LOCK_KEY})")
+                stmt.execute("SELECT pg_advisory_lock(${LOCK_KEY})")
+
+                System.out.println(">>> [BaseIntegrationSpec] Truncating domain tables before test (RESTART IDENTITY CASCADE)")
+                String truncateSql = '''
+            TRUNCATE TABLE 
+                transaction_entity_tags, 
+                transactions, 
+                categories, 
+                counters, 
+                financial_summary 
+            RESTART IDENTITY CASCADE
+        '''
+                stmt.execute(truncateSql)
+
+                // restart standalone sequence if exists
+                try {
+                    stmt.execute("ALTER SEQUENCE tx_seq RESTART WITH 1")
+                } catch (Exception ignore) {
+                    // if sequence does not exist, ignore
+                }
+
+                // Ensure GLOBAL summary row exists
+                try {
+                    stmt.execute("INSERT INTO financial_summary (id, total_balance, transaction_count) VALUES ('GLOBAL', 0.0, 0) ON CONFLICT (id) DO NOTHING;")
+                } catch (Exception ie) {
+                    // ignore insertion errors here
+                }
+            } finally {
+                try {
+                    stmt.execute("SELECT pg_advisory_unlock(${LOCK_KEY})")
+                } catch (Exception unlockEx) {
+                    // best-effort unlock
+                }
+                try { stmt.close() } catch (Exception ignored) {}
+            }
+            return null
+        } as org.springframework.jdbc.core.ConnectionCallback)
     }
 
     /** Czy uruchomiono z flagą -Dlocal.pg=true (ręczna inspekcja bazy) */

@@ -25,10 +25,10 @@ class AsyncConfig {
     Executor bulkTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor()
 
-        // Konfiguracja sprzętowa
-        executor.corePoolSize = 2
-        executor.maxPoolSize = 4
-        executor.queueCapacity = 50 // Mała kolejka, żeby łatwo było przetestować limity
+        // Konfiguracja sprzętowa - zwiększona pula dla testów integracyjnych i dużych batchy
+        executor.corePoolSize = 8
+        executor.maxPoolSize = 16
+        executor.queueCapacity = 2000 // duża kolejka, żeby nie blokować przyjmowania dużych paczek
 
         executor.setThreadNamePrefix("BulkAsync-")
 

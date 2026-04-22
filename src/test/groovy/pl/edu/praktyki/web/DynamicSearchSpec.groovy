@@ -7,6 +7,8 @@ import org.springframework.test.web.servlet.MockMvc
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.repository.TransactionRepository
+import pl.edu.praktyki.repository.CategoryRepository
+import pl.edu.praktyki.repository.CategoryEntity
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -17,12 +19,16 @@ class DynamicSearchSpec extends BaseIntegrationSpec {
 
     @Autowired MockMvc mvc
     @Autowired TransactionRepository repo
+    @Autowired CategoryRepository categoryRepository
 
     def "powinien znaleźć transakcje łącząc wiele filtrów naraz"() {
         given: "mamy w bazie mieszane dane"
-        repo.save(new TransactionEntity(originalId: "T1", category: "FOOD", amountPLN: 100, description: "Pizza"))
-        repo.save(new TransactionEntity(originalId: "T2", category: "FOOD", amountPLN: 10, description: "Baton"))
-        repo.save(new TransactionEntity(originalId: "T3", category: "WORK", amountPLN: 5000, description: "Pensja"))
+        def catFood = categoryRepository.save(new CategoryEntity(name: "FOOD", monthlyLimit: 0.0))
+        def catWork = categoryRepository.save(new CategoryEntity(name: "WORK", monthlyLimit: 0.0))
+
+        repo.save(new TransactionEntity(originalId: "T1", category: catFood, amountPLN: 100, description: "Pizza"))
+        repo.save(new TransactionEntity(originalId: "T2", category: catFood, amountPLN: 10, description: "Baton"))
+        repo.save(new TransactionEntity(originalId: "T3", category: catWork, amountPLN: 5000, description: "Pensja"))
 
         when: "szukamy kategorii FOOD z kwotą min. 50"
         def response = mvc.perform(get("/api/transactions/search")

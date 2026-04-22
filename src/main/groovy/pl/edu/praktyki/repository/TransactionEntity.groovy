@@ -26,7 +26,15 @@ class TransactionEntity {
     BigDecimal amount
     String currency
     BigDecimal amountPLN
+
+    @ManyToOne(fetch = FetchType.LAZY) // LAZY jest kluczowe dla wydajności!
+    @JoinColumn(name = "category_id")
+    CategoryEntity categoryEntity
+
+    // Pozostawiamy również kolumnę 'category' (stara kolumna String) dla kompatybilności z testami
+    @Column(name = "category")
     String category
+
     String description
 
     @CreatedDate
@@ -48,4 +56,19 @@ class TransactionEntity {
 
     // Wymagany przez Hibernate pusty konstruktor
     TransactionEntity() {}
+
+    // Setter/getter kompatybilnościowy: pozwala przypisać zarówno CategoryEntity jak i String do property 'category'
+    void setCategory(Object c) {
+        if (c instanceof CategoryEntity) {
+            this.categoryEntity = (CategoryEntity) c
+            this.category = c?.name
+        } else {
+            this.category = c?.toString()
+        }
+    }
+
+    // Zwracamy albo encję CategoryEntity (jeśli dostępna), albo nazwę kategorii (String)
+    Object getCategory() {
+        return this.categoryEntity ?: this.category
+    }
 }

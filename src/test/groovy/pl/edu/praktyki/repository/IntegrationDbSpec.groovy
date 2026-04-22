@@ -44,6 +44,8 @@ Reczna inspekcja z prawdziwym PostgreSQL-em w kontenerze Docker:
 
     @Autowired
     TransactionRepository repository
+    @Autowired
+    pl.edu.praktyki.repository.CategoryRepository categoryRepository
 
     def setup() {
         // Przed każdym testem czyścimy bazę i dodajemy świeże dane
@@ -52,10 +54,11 @@ Reczna inspekcja z prawdziwym PostgreSQL-em w kontenerze Docker:
 
     def "powinien zapisać TransactionEntity i odczytać dane z prawdziwego PostgreSQL w kontenerze"() {
         given: "nowa encja"
+        def catTest = categoryRepository.save(new pl.edu.praktyki.repository.CategoryEntity(name: "Test", monthlyLimit: 0.0))
         def entity = new TransactionEntity(
                 originalId: "DB-1",
                 amount: 500.0,
-                category: "Test"
+                category: catTest
         )
 
         when: "zapisujemy w prawdziwej bazie"

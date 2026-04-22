@@ -1,5 +1,7 @@
 package pl.edu.praktyki.repository
 
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.stereotype.Repository
@@ -16,5 +18,11 @@ interface TransactionRepository extends JpaRepository<TransactionEntity, Long>, 
 
     // Znajdź transakcje po originalId - przydatne w testach oraz przy deduplikacji
     List<TransactionEntity> findByOriginalId(String originalId)
-}
 
+    // TA LINIA JEST KLUCZOWA:
+    // Spring Data musi wiedzieć, że szukamy po polu categoryEntity (relacja ManyToOne)
+    List<TransactionEntity> findByCategoryEntityAndDateBetween(CategoryEntity category, java.time.LocalDate start, java.time.LocalDate end)
+
+    // Jeśli używasz też wyszukiwania z paginacją, to również:
+    Page<TransactionEntity> findByCategoryEntity(CategoryEntity category, Pageable pageable)
+}

@@ -10,6 +10,8 @@ import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.facade.TransactionBulkSaver
 import pl.edu.praktyki.security.JwtService
+import pl.edu.praktyki.repository.CategoryRepository
+import pl.edu.praktyki.repository.CategoryEntity
 
 // Twój nowy serwis!
 import java.time.LocalDate
@@ -59,6 +61,7 @@ class TransactionPaginationSpec extends BaseIntegrationSpec {
     @Autowired MockMvc mvc
     @Autowired TransactionRepository repo
     @Autowired TransactionBulkSaver bulkSaver
+    @Autowired CategoryRepository categoryRepository
 
     // Wstrzykujemy JwtService, żeby wygenerować token w teście
     @Autowired JwtService jwtService
@@ -67,11 +70,12 @@ class TransactionPaginationSpec extends BaseIntegrationSpec {
         repo.deleteAll()  // ważne, żeby zacząć z pustą bazą danych przed każdym testem
 
         // Generujemy 15 encji testowych i używamy TWOJEGO pięknego zoptymalizowanego bulk savera do hurtowego zapisu!
+        def catPaginacja = categoryRepository.save(new CategoryEntity(name: "Paginacja", monthlyLimit: 0.0))
         def testData = (1..15).collect { i ->
             new TransactionEntity(
                     originalId: "TX-$i",
                     amount: i * 100.0, // Kwoty: 100, 200, 300... 1500
-                    category: "Paginacja",
+                    category: catPaginacja,
                     date: LocalDate.now().minusDays(i)
             )
         }

@@ -8,6 +8,8 @@ import pl.edu.praktyki.domain.Transaction
 import pl.edu.praktyki.facade.TransactionBulkSaver
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.repository.TransactionEntity
+import pl.edu.praktyki.repository.CategoryRepository
+import pl.edu.praktyki.repository.CategoryEntity
 import java.time.LocalDate
 // ...existing imports...
 
@@ -56,6 +58,9 @@ class BatchPerformanceSpec extends BaseIntegrationSpec {
     TransactionBulkSaver bulkSaver
 
     @Autowired
+    CategoryRepository categoryRepository
+
+    @Autowired
     TransactionRuleService ruleService
 
 
@@ -101,14 +106,28 @@ class BatchPerformanceSpec extends BaseIntegrationSpec {
         int ingestedCount = flatListOfTransactions?.size() ?: 0
 
         long tMapStart = System.currentTimeMillis()
+        // map category names (String) to persisted CategoryEntity objects with an in-memory cache to avoid repeated DB lookups
+        def categoryCache = [:]
         def entities = flatListOfTransactions.collect { tx ->
+            def catName = tx.category
+            def catEntity = null
+            if (catName) {
+                catEntity = categoryCache[catName]
+                if (!catEntity) {
+                    catEntity = categoryRepository.findByName(catName).orElseGet({
+                        categoryRepository.save(new CategoryEntity(name: catName, monthlyLimit: 0.0))
+                    })
+                    categoryCache[catName] = catEntity
+                }
+            }
+
             new TransactionEntity(
                     originalId: tx.id,
                     date: tx.date,
                     amount: tx.amount,
                     currency: tx.currency,
                     amountPLN: tx.amountPLN,
-                    category: tx.category,
+                    category: catEntity,
                     description: tx.description,
                     tags: tx.tags
             )
