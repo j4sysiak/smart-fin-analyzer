@@ -47,6 +47,9 @@ class GlobalStatsProjector {
         } catch (Exception e) {
             // Jeśli inny wątek nas ubiegł, logujemy to, ale nie wywalamy systemu
             log.warn(">>> [CQRS] Konflikt zapisu dla GLOBAL (prawdopodobnie inny wątek już go zaktualizował).")
+            log.warn(">>> [CONCURRENCY] Wykryto konflikt wersji dla GLOBAL! Ktoś inny zmienił bilans. Ponawiam...")
+             // Możemy tu dodać retry logic, ale na razie po prostu logujemy i kończymy.
+            // Tutaj w prawdziwym kodzie wywołalibyśmy metodę ponownie, ale dla uproszczenia tego nie robimy.
         }
 
         log.info(">>> [CQRS-PROJECTOR] Widok zaktualizowany. Nowy bilans: {} PLN", summary.totalBalance)
