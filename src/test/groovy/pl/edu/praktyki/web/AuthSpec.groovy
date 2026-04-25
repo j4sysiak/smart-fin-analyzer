@@ -4,8 +4,10 @@ import groovy.json.JsonSlurper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.http.MediaType
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.web.servlet.MockMvc
 import pl.edu.praktyki.BaseIntegrationSpec
+import pl.edu.praktyki.security.UserRepository
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -16,6 +18,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthSpec extends BaseIntegrationSpec {
 
     @Autowired MockMvc mvc
+    @Autowired PasswordEncoder encoder
+    @Autowired UserRepository userRepo
 
     def "powinien zwrócić token JWT dla poprawnych danych logowania"() {
         given: "użytkownik admin (stworzony przez migrację V6, hasło: admin123)"
@@ -68,5 +72,35 @@ class AuthSpec extends BaseIntegrationSpec {
 
         then: "zostajemy wpuszczeni (200 OK)"
         dataResponse.andExpect(status().isOk())
+    }
+
+    def "powinien poprawnie zahashować hasło i zweryfikować je"() {
+        given: "surowe hasło"
+        def raw = "mojeHaslo123"
+
+        when: "hashujemy je"
+        def hash1 = encoder.encode(raw)
+        def hash2 = encoder.encode(raw)
+
+        then: "BCrypt generuje inne hashe dla tego samego hasła (dzięki Soli!)"
+        hash1 != hash2
+
+        and: "mimo to, oba hashe pasują do oryginału"
+        encoder.matches(raw, hash1)
+        encoder.matches(raw, hash2)
+    }
+
+    def "powinien zalogować się używając użytkownika z bazy danych"() {
+        given: "użytkownik admin z migracji V10"
+        def loginPayload = [username: "admin", password: "admin123"]
+
+        when: "uderzamy w /api/auth/login"
+        def response = mvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(groovy.json.JsonOutput.toJson(loginPayload)))
+
+        then: "otrzymujemy token JWT"
+        response.andExpect(status().isOk())
+        response.andExpect(jsonPath('$.token').exists())
     }
 }

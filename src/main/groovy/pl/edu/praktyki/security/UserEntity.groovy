@@ -19,4 +19,6 @@ class UserEntity {
 
     @Column(nullable = false)
     String role
+
+    UserEntity() {} // Wymagane przez JPA
 }

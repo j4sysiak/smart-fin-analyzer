@@ -85,7 +85,18 @@ class AsyncNotificationService {
 
         log.info(">>> [ASYNCHRONICZNY-EVENT] Raport o bilansie {} PLN został pomyślnie przetworzony w tle.", event.totalBalance)
 
+        // Każdy event budzi 3 słuchaczy (Audit, Notification, Projector).
+        // Wszystkie korzystają z tej samej puli bulkTaskExecutor.
         processedEventsCount.incrementAndGet()
+
+        // Zapisujemy czas zakończenia per-user — używane w AsyncNotificationSpec do izolacji testów:
+        // pozwala czekać na zakończenie KONKRETNEGO eventu bez ryzyka pomylenia z innymi handlerami z innych testów.
+        threadTracker.put("AsyncNotificationService.completed.${event?.userName}", [
+                completedAt: System.currentTimeMillis(),
+                thread     : Thread.currentThread().name,
+                user       : event?.userName,
+                count      : event?.transactionsCount
+        ])
     }
 
     // Opcjonalnie metoda do resetowania licznika między testami

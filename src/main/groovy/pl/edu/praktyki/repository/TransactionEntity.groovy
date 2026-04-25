@@ -1,6 +1,7 @@
 package pl.edu.praktyki.repository
 
 import jakarta.persistence.*
+import org.hibernate.Hibernate
 import org.springframework.data.annotation.*
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 
@@ -58,22 +59,28 @@ class TransactionEntity {
     TransactionEntity() {}
 
     // Setter/getter kompatybilnościowy: pozwala przypisać zarówno CategoryEntity jak i String do property 'category'
+    // UWAGA: używamy this.@field (bezpośredni dostęp do pola) żeby uniknąć rekurencji Groovy property dispatch
     void setCategory(Object c) {
         if (c instanceof CategoryEntity) {
-            this.categoryEntity = (CategoryEntity) c
-            this.category = c?.name
+            this.@categoryEntity = (CategoryEntity) c
+            this.@category = c?.name   // bezpośredni zapis do pola, bez woławnia setCategory() ponownie
         } else {
-            this.category = c?.toString()
+            this.@category = c?.toString()  // bezpośredni zapis do pola
         }
     }
 
-    // Zwracamy albo encję CategoryEntity (jeśli dostępna), albo nazwę kategorii (String)
+    // Zwracamy albo encję CategoryEntity (jeśli dostępna i załadowana), albo nazwę kategorii (String)
+    // UWAGA: NIE używamy operator ?: na lazy proxy Hibernate — Groovy wywołałby getMetaClass() na proxy
+    // co triggeruje LazyInitializationException poza sesją JPA.
     Object getCategory() {
-        return this.categoryEntity ?: this.category
+        if (this.@categoryEntity == null) return this.@category
+        if (!Hibernate.isInitialized(this.@categoryEntity)) return this.@category
+        return this.@categoryEntity
     }
 
     /** Zwraca surową nazwę kategorii (String) z pola @Column, bez zwracania encji. Przydatne przy ręcznym zapisie JDBC. */
+    // UWAGA: używamy this.@category (bezpośredni dostęp do pola) żeby uniknąć wywołania getCategory() przez Groovy
     String getCategoryName() {
-        return this.category
+        return this.@category
     }
 }

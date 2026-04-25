@@ -19,7 +19,7 @@ class CustomUserDetailsService implements UserDetailsService {
         // Mapujemy naszą encję na obiekt UserDetails, który rozumie Spring
         return User.builder()
                 .username(user.username)
-                .password(user.password) // Tu jest hash z bazy
+                .password(user.password)  // Spring sam sprawdzi czy hash pasuje używając PasswordEncoder
                 .authorities(new SimpleGrantedAuthority(user.role))
                 .build()
     }

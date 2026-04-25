@@ -100,9 +100,9 @@ abstract class BaseIntegrationSpec extends Specification {
                     // if sequence does not exist, ignore
                 }
 
-                // Ensure GLOBAL summary row exists
+                // Ensure GLOBAL summary row exists with version=0 (required by @Version for Hibernate optimistic locking)
                 try {
-                    stmt.execute("INSERT INTO financial_summary (id, total_balance, transaction_count) VALUES ('GLOBAL', 0.0, 0) ON CONFLICT (id) DO NOTHING;")
+                    stmt.execute("INSERT INTO financial_summary (id, total_balance, transaction_count, version) VALUES ('GLOBAL', 0.0, 0, 0) ON CONFLICT (id) DO UPDATE SET total_balance=0.0, transaction_count=0, version=0;")
                 } catch (Exception ie) {
                     // ignore insertion errors here
                 }
@@ -210,6 +210,7 @@ abstract class BaseIntegrationSpec extends Specification {
         // Use DROP TABLE IF EXISTS for domain tables only (keep users and flyway_schema_history intact)
         def sql = "DROP TABLE IF EXISTS transaction_entity_tags CASCADE; " +
                 "DROP TABLE IF EXISTS transactions CASCADE; " +
+                "DROP TABLE IF EXISTS categories CASCADE; " +
                 "DROP TABLE IF EXISTS counters CASCADE; " +
                 "DROP TABLE IF EXISTS financial_summary CASCADE; " +
                 "DROP SEQUENCE IF EXISTS tx_seq; "
