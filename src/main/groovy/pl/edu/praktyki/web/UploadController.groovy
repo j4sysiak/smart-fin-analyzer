@@ -1,5 +1,7 @@
 package pl.edu.praktyki.web
 
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.responses.ApiResponse
 import org.springframework.web.bind.annotation.*
 import org.springframework.http.MediaType
 import org.springframework.web.multipart.MultipartFile
@@ -13,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 @RestController
 @RequestMapping("/api/transactions/upload")
 @Slf4j
+@Tag(name = "Transactions", description = "Upload z pliku operacji finansowych")
 class UploadController {
 
     @Autowired SmartFinFacade facade
@@ -22,6 +25,9 @@ class UploadController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')") // <-- Tylko admin może pobrać listę (w bazie w tabeli users musi mieć rolę `ROLE_ADMIN`)
+    @Operation(summary = "Masowy import z pliku CSV", description = "Wymaga roli ROLE_ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Raport wygenerowany pomyślnie")
+    @ApiResponse(responseCode = "403", description = "Brak uprawnień administratora")
     ResponseEntity<String> uploadCsv(@RequestPart("file") MultipartFile file, @RequestParam("user") String user) {
 
         log.info(">>> [REST-UPLOAD] Otrzymano plik: {} od użytkownika: {}", file.originalFilename, user)

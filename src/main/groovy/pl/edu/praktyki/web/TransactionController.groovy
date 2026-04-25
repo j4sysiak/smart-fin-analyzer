@@ -21,10 +21,14 @@ import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.domain.Transaction
 import pl.edu.praktyki.repository.TransactionSpecifications
 import org.springframework.data.jpa.domain.Specification
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 
 @Slf4j
 @RestController
 @RequestMapping("/api/transactions")
+@Tag(name = "Transactions", description = "Zarządzanie operacjami finansowymi")
 class TransactionController {
 
     @Autowired TransactionRepository repo
@@ -168,6 +172,11 @@ class TransactionController {
     // Lab75--Big-Data-i-Optymalizacja-Hibernate
     // Lab76--Dynamiczne-Filtrowanie--Spring-Data-Specifications
     @GetMapping("/search")
+    @Operation(
+            summary = "Dynamiczne wyszukiwanie transakcji",
+            description = "Pozwala filtrować transakcje po kategorii, kwocie i opisie z wykorzystaniem paginacji."
+    )
+    @ApiResponse(responseCode = "200", description = "Lista znaleziona pomyślnie")
     Page<Transaction> search(
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "minAmount", required = false) BigDecimal minAmount,

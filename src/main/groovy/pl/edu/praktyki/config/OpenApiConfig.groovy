@@ -33,8 +33,9 @@ class OpenApiConfig {
                 .info(new Info()
                         .title('Smart-Fin-Analyzer API')
                         .description('REST API do zarządzania transakcjami finansowymi. ' +
-                                'Aby uzyskać token JWT: GET /auth/token?user=dev')
+                                'Aby uzyskać token JWT: GET /auth/token?user=admin')
                         .version('1.0'))
+                // Dodajemy przycisk 'Authorize' do UI
                 .addSecurityItem(new SecurityRequirement().addList(schemeName))
                 .components(new Components()
                         .addSecuritySchemes(schemeName, new SecurityScheme()
@@ -43,7 +44,7 @@ class OpenApiConfig {
                                 .scheme('bearer')
                                 .bearerFormat('JWT')
                                 .description('Wklej token JWT (bez prefiksu "Bearer"). ' +
-                                        'Token uzyskasz z: GET /auth/token?user=dev')))
+                                        'Token uzyskasz z: GET /auth/token?user=admin')))
     }
 }
 
