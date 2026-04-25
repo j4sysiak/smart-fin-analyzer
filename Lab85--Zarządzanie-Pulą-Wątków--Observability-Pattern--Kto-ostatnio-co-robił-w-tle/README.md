@@ -545,6 +545,7 @@ Zadanie dla Ciebie:
 3. Sprawdź, czy Twoje println w teście pokazało prefiks `bulkTaskExecutorZapierdala--`.
 
 
-Kolejny krok: Lab 86: Obsługa wyjątków w @Async (AsyncUncaughtExceptionHandler) – bo co zrobisz, gdy wątek w tle wybuchnie błędem? System musi o tym wiedzieć! 🏎️💨💥
+Kolejny krok: Lab 86: Obsługa wyjątków w @Async (AsyncUncaughtExceptionHandler) 
+ 
 
 

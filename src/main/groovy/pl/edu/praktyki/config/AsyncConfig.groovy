@@ -1,11 +1,14 @@
 package pl.edu.praktyki.config
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.Executor
+import org.springframework.scheduling.annotation.AsyncConfigurer // DODAJ TO, żeby móc ustawić niestandardowy AsyncUncaughtExceptionHandler
+import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler
 
 // (konfiguracja Springa poniżej)
 // Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
@@ -19,10 +22,30 @@ import java.util.concurrent.Executor
 // "Ekipę Wykonawczą" `bulkTaskExecutor` o stałym rozmiarze, z kolejką i "zaworem bezpieczeństwa"
 @EnableAsync
 @Configuration
-class AsyncConfig {
+class AsyncConfig implements AsyncConfigurer { // IMPLEMENTUJEMY INTERFEJS AsyncConfigurer, żeby móc ustawić niestandardowy AsyncUncaughtExceptionHandler
+
+    @Autowired
+    CustomAsyncExceptionHandler customAsyncExceptionHandler
+
+    // Dzięki tej metodzie sprawiamy, że mój `bulkTaskExecutor` stał się domyślną pulą dla całej aplikacji.
+    // Teraz nawet jeśli napiszemy samo @Async (bez nazwy w nawiasie),
+    // Spring użyje Twojej zoptymalizowanej puli, a nie swojej domyślnej (często słabej).
+    @Override
+    Executor getAsyncExecutor() {
+        return bulkTaskExecutor()
+    }
+
+    // Łączymy nasz handler z mechanizmem Springa
+    // Dzięki getAsyncUncaughtExceptionHandler() mamy pewność,
+    // że każdy błąd w metodzie void zostanie złapany przez CustomAsyncExceptionHandler.
+    @Override
+    AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+        return customAsyncExceptionHandler
+    }
 
     @Bean(name = "bulkTaskExecutor")
     Executor bulkTaskExecutor() {
+
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor()
 
         // Konfiguracja sprzętowa - zwiększona pula dla testów integracyjnych i dużych batchy
@@ -37,6 +60,9 @@ class AsyncConfig {
         executor.queueCapacity = 2000 // duża kolejka, żeby nie blokować przyjmowania dużych paczek
 
         // 4. Prefiks: Żebyś w logach widział dokładnie, kto "zapierdala"
+        // Podczas analizy logów (tail -f logs/smart-fin.log) albo w ThreadTrackerze (utworzony w Lab85),
+        // od razu widzisz: "O, to zadanie wykonuje moja specyficzna pula, a nie jakiś domyślny task-1".
+        // To drastycznie ułatwia debugowanie systemów wielowątkowych.
         executor.setThreadNamePrefix("bulkTaskExecutorZapierdala--")
 
 
@@ -60,6 +86,12 @@ class AsyncConfig {
         // Co jeśli kucharze zajęci I kolejka pełna?
         // CallerRunsPolicy mówi: "Wątek, który to wysłał, musi to sam zrobić".
         // To naturalnie spowalnia napływ danych!
+        // przykład:
+        // Jeśli aplikacja zostanie zalana milionem transakcji,
+        // a 16 wątków i 2000 miejsc w kolejce się zapełni,
+        // to wątek, który chciał dodać kolejne zadanie (np. wątek obsługujący HTTP), sam je wykona.
+        // Efekt: System nie wybuchnie, tylko naturalnie spowolni przyjmowanie nowych danych, dając bazie danych czas na oddech.
+        // To jest profesjonalny Backpressure mechanizm.
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy())
 
 
