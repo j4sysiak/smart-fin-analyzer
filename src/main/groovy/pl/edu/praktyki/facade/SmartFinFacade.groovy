@@ -163,6 +163,9 @@ class SmartFinFacade {
 
 
         // 4. Odczyt historii
+        // UWAGA: używamy ent.categoryName (surowe pole @Column String) zamiast ent.category,
+        // ponieważ getCategory() zwraca lazy-proxy Hibernate (CategoryEntity), które nie może
+        // być zainicjalizowane poza sesją JPA (LazyInitializationException).
         def allHistory = repo.findAll().collect { ent ->
             new Transaction(
                     id: ent.originalId,
@@ -170,7 +173,7 @@ class SmartFinFacade {
                     amount: ent.amount,
                     currency: ent.currency,
                     amountPLN: ent.amountPLN,
-                    category: (ent.category instanceof CategoryEntity) ? ent.category.name : ent.category,
+                    category: ent.categoryName,  // <--------- tutaj używamy categoryName, żeby uniknąć problemów z LazyInitializationException
                     description: ent.description,
                     tags: ent.tags
             )
