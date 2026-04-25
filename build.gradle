@@ -104,6 +104,12 @@ dependencies {
 test {
     useJUnitPlatform()
 
+    // Jeden worker JVM na raz:
+    // - w trybie 'tc' każdy fork chce zbindować port 15432 — dwa forki = konflikt portów
+    // - w trybie 'local-pg' dwa forki rasowałyby na tej samej bazie
+    // Retry w doTruncateDatabase obsługuje deadlocki wewnątrz jednego JVM (async eventy).
+    maxParallelForks = 1
+
     // Przekazuje -Dlocal.pg=true z CLI do testu JVM
     // Użycie: ./gradlew test --tests "..." -Dlocal.pg=true
     systemProperty 'local.pg', System.getProperty('local.pg')

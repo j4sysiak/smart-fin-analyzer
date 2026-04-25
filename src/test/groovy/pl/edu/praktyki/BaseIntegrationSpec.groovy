@@ -8,6 +8,7 @@ import org.springframework.test.context.DynamicPropertySource
 import spock.lang.Specification
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.dao.PessimisticLockingFailureException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -50,6 +51,27 @@ abstract class BaseIntegrationSpec extends Specification {
     }
 
     private void doTruncateDatabase() {
+        // Retry logic: deadlocks during TRUNCATE/CASCADE are transient — retry up to 5 times.
+        // Root cause: async @EventListeners (e.g. GlobalStatsProjector) may hold a DB transaction
+        // from a previous test while the next test's setup() tries to TRUNCATE, causing a circular lock wait.
+        final int MAX_RETRIES = 5
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                doTruncateDatabaseOnce()
+                return // success
+            } catch (PessimisticLockingFailureException e) {
+                if (attempt >= MAX_RETRIES) {
+                    System.err.println(">>> [BaseIntegrationSpec] Deadlock nie ustąpił po ${MAX_RETRIES} próbach — rzucam wyjątek")
+                    throw e
+                }
+                long waitMs = 300L * attempt
+                System.out.println(">>> [BaseIntegrationSpec] Deadlock wykryty (próba ${attempt}/${MAX_RETRIES}), ponawiam za ${waitMs}ms…")
+                Thread.sleep(waitMs)
+            }
+        }
+    }
+
+    private void doTruncateDatabaseOnce() {
         // Acquire an advisory lock to serialize truncation across multiple test JVMs/processes
         // This prevents PostgreSQL deadlocks when concurrent processes attempt TRUNCATE/CASCADE
         final long LOCK_KEY = 0xDEADBEEFL // arbitrary numeric key

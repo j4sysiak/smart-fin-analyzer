@@ -1,5 +1,5 @@
 id,amount,currency,category,description,date
-TX01,250.00,EUR,Zakupy,Monitor,2026-04-20
-TX02,-40.00,PLN,Jedzenie,Pizza,2026-04-20
-TX03,5000.00,PLN,Praca,Wypłata,2026-04-20
-TX04,250.00,EUR,Zakupy,Monitor,2026-04-20
+TX01,250.00,EUR,Zakupy,Monitor,2026-05-11
+TX02,-40.00,PLN,Jedzenie,Pizza,2026-05-11
+TX03,5000.00,PLN,Praca,Wypłata,2026-05-11
+TX04,250.00,EUR,Zakupy,Monitor,2026-05-11

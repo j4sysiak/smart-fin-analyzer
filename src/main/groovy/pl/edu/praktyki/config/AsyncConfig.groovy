@@ -7,18 +7,18 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.Executor
 
-@Configuration
-
-
+// (konfiguracja Springa poniżej)
 // Adnotacje takie jak @Async czy @Transactional tworzą "opakowanie" wokół Twojej klasy.
-// Chodzi o klasę będącą beanem Springa — czyli klasę zarządzaną przez kontener
-// (np. oznaczoną @Component, @Service, @Repository, @Configuration albo zdefiniowaną jako @Bean).
+// Chodzi mi o klasę będącą beanem Springa — czyli klasę zarządzaną przez kontener
+// np. oznaczoną @Component, @Service, @Repository, @Configuration albo @Bean.
 // Adnotacje takie jak @Async czy @Transactional działają przez utworzenie proxy wokół tego beana
 // i przechwytywanie wywołań metod przychodzących z zewnątrz.
 
 // Włącza obsługę adnotacji @Async.
 // Dzięki temu możesz oznaczać metody jako asynchroniczne, a Spring będzie je wykonywał w osobnych wątkach.
+// "Ekipę Wykonawczą" `bulkTaskExecutor` o stałym rozmiarze, z kolejką i "zaworem bezpieczeństwa"
 @EnableAsync
+@Configuration
 class AsyncConfig {
 
     @Bean(name = "bulkTaskExecutor")
@@ -26,11 +26,20 @@ class AsyncConfig {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor()
 
         // Konfiguracja sprzętowa - zwiększona pula dla testów integracyjnych i dużych batchy
+
+        // 1. Rdzeń: Ile wątków zawsze czeka na pracę?
         executor.corePoolSize = 8
+
+        // 2. Max: Jeśli kolejka jest pełna, do ilu wątków możemy dobić?
         executor.maxPoolSize = 16
+
+        // 3. Kolejka: Jeśli kucharze są zajęci, ile zamówień może czekać w kolejce?
         executor.queueCapacity = 2000 // duża kolejka, żeby nie blokować przyjmowania dużych paczek
 
-        executor.setThreadNamePrefix("BulkAsync-")
+        // 4. Prefiks: Żebyś w logach widział dokładnie, kto "zapierdala"
+        executor.setThreadNamePrefix("bulkTaskExecutorZapierdala--")
+
+
 
         // MAGIA MIDA: Co zrobić, gdy maxPoolSize i queueCapacity są pełne?
         // CallerRunsPolicy: Wątek, który wysłał zadanie (np. HTTP thread),
@@ -46,7 +55,13 @@ class AsyncConfig {
         // Minus: wątek wywołujący może się blokować i zwiększyć latencję.
         // Linia ustawia tę politykę dla executora.
 
+
+        // 5. Zawór bezpieczeństwa (Backpressure):
+        // Co jeśli kucharze zajęci I kolejka pełna?
+        // CallerRunsPolicy mówi: "Wątek, który to wysłał, musi to sam zrobić".
+        // To naturalnie spowalnia napływ danych!
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy())
+
 
         executor.initialize()
         return executor

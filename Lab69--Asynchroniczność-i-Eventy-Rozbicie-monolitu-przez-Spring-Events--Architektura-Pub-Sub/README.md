@@ -47,13 +47,13 @@ Zachowujemy Twój return, ale tuż przed nim "rzucamy" event w eter.
 ```groovy
 package pl.edu.praktyki.facade
 
-import org.springframework.context.ApplicationEventPublisher // DODAJ IMPORT
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import pl.edu.praktyki.domain.Transaction
 import pl.edu.praktyki.repository.TransactionEntity
-import pl.edu.praktyki.event.TransactionBatchProcessedEvent // DODAJ IMPORT
+import pl.edu.praktyki.event.TransactionBatchProcessedEvent
 import groovy.util.logging.Slf4j
 
 @Service

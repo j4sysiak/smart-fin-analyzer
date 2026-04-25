@@ -71,4 +71,9 @@ class TransactionEntity {
     Object getCategory() {
         return this.categoryEntity ?: this.category
     }
+
+    /** Zwraca surową nazwę kategorii (String) z pola @Column, bez zwracania encji. Przydatne przy ręcznym zapisie JDBC. */
+    String getCategoryName() {
+        return this.category
+    }
 }

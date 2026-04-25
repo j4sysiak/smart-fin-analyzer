@@ -6,6 +6,7 @@ import org.springframework.context.event.EventListener
 // KONIECZNE DLA ETAPU 4
 // Lab77--Zaawansowana-Asynchroniczność-i-Eventy--Rozprzęganie-Decoupling-za-pomocą-Spring-Events
 import org.springframework.scheduling.annotation.Async
+import java.util.concurrent.ConcurrentHashMap
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -18,16 +19,24 @@ import groovy.util.logging.Slf4j
 @Slf4j
 class GlobalStatsProjector {
 
+    @Autowired ThreadTracker threadTracker
     @Autowired FinancialSummaryRepository summaryRepo
 
     /**
      * To jest serce CQRS. Ta metoda projektuje dane z eventu na tabelę statystyk.
      */
-    @Async("bulkTaskExecutor") // Wykonaj to w tle, nie blokuj Fasady!
+    @Async("bulkTaskExecutor") // Używamy puli wątków: `bulkTaskExecutor` to nazwa beana typu Executor/TaskExecutor (czyli puli wątków).
     @EventListener
     @Transactional
     void projectBatchToGlobalSummary(TransactionBatchProcessedEvent event) {
         log.info(">>> [CQRS-PROJECTOR] Aktualizuję widok globalny dla: {}", event.userName)
+
+        // zapisujemy, który wątek obsługuje ostatni event
+        // klucz zawiera nazwę bean'a/metody, by nie nadpisywać innych projektorów
+        threadTracker.put('GlobalStatsProjector.lastThread', [thread: Thread.currentThread().name,
+                                                              ts: System.currentTimeMillis(),
+                                                              user: event?.userName,
+                                                              count: event?.transactionsCount])
 
         // Używamy blokady na poziomie bazy danych lub po prostu orElse
         // W prawdziwym systemie użylibyśmy tu zapytania UPDATE ... SET balance = balance + :val

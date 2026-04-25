@@ -2,6 +2,7 @@ package pl.edu.praktyki.service
 
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import groovy.util.logging.Slf4j
 import pl.edu.praktyki.event.TransactionBatchProcessedEvent
@@ -18,6 +19,9 @@ class AsyncNotificationService {
     // Zmieniamy na private, żeby można bylo użyć gettera: `getProcessedCount()` do odczytu w teście,
     // ale nie pozwalamy na bezpośrednią modyfikację z zewnątrz.
     private final AtomicInteger processedEventsCount = new AtomicInteger(0)
+
+    @Autowired
+    ThreadTracker threadTracker
 
     // Dodajemy metodę - dzięki niej Proxy będzie wiedziało, skąd wziąć wartość
     int getProcessedCount() {
@@ -42,8 +46,8 @@ class AsyncNotificationService {
     // W @Async("bulkTaskExecutor") wskazujesz, że ta metoda ma być uruchomiona asynchronicznie w wątkach tej konkretnej puli
     // — to nie służy do synchronizacji, tylko do wyboru puli wątków.
 
-    // Przykład konfiguracji takiego beana typu `Executor / TaskExecutor`:
-    // u mnie: C:\dev\smart-fin-analyzer\src\main\groovy\pl\edu\praktyki\config\AsyncConfig.groovy
+    // Przykład konfiguracji takiego beana typu `Executor / TaskExecutor` o nazwie `bulkTaskExecutor` znajdziesz w pliku AsyncConfig.groovy, który powinieneś mieć w projekcie.:
+    // u mnie ta klasa AsyncConfig jest tu: C:\dev\smart-fin-analyzer\src\main\groovy\pl\edu\praktyki\config\AsyncConfig.groovy
     /*
     @Configuration
     @EnableAsync
@@ -70,6 +74,11 @@ class AsyncNotificationService {
     void handleBatchEvent(TransactionBatchProcessedEvent event) {
 
         log.info(">>> [ASYNCHRONICZNY-EVENT] Rozpoczynam wysyłkę raportu do systemu zewnętrznego dla: {}", event.userName)
+        // Zapisujemy który wątek przetwarza event (użyteczne w testach/diagnostyce)
+        threadTracker.put('AsyncNotificationService.handleBatchEvent', [thread: Thread.currentThread().name,
+                                                                        ts: System.currentTimeMillis(),
+                                                                        user: event?.userName,
+                                                                        count: event?.transactionsCount])
 
         // Symulujemy ciężką pracę (np. generowanie PDF i wysyłka maila)
         sleep(6000)

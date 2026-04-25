@@ -49,6 +49,7 @@ class SmartFinFacade {
     // Publikator zdarzeń Springa (Nadajnik Springa)
     // pozwala publikować zdarzenia do systemu np. do `TransactionBatchProcessedEvent`.
     @Autowired ApplicationEventPublisher eventPublisher
+    @Autowired ThreadTracker threadTracker
 
 
     /**
@@ -71,9 +72,17 @@ class SmartFinFacade {
 
     // Ta metoda tylko do wywolań bachowanych z zewnątrz (np. z CLI, REST, GUI)
     // - wewnętrzne wywołania  idą do metody niżej niesynchronizowanej: processAndGenerateReport(...)
-    @Async("bulkTaskExecutor")
+    @Async("bulkTaskExecutor") // Używamy puli wątków: `bulkTaskExecutor` to nazwa beana typu Executor/TaskExecutor (czyli puli wątków).
     void processInBackgroundTask(String userName, List<Transaction> rawTransactions, List<String> rules) {
         log.info(">>> [ASYNC] Rozpoczynam ciężką pracę w tle dla: {}", userName)
+
+        // Zapisujemy informacje o wątku/ts i liczbie transakcji — przydatne w testach i diagnostyce
+        threadTracker.put('SmartFinFacade.processInBackgroundTask', [
+                thread: Thread.currentThread().name,
+                ts: System.currentTimeMillis(),
+                user: userName,
+                count: rawTransactions.size()
+        ])
 
         // Wywołujemy Twoją potężną logikę zapisu
         // (Tu wywołaj logikę, którą miałeś w Facade - przeliczanie, reguły i na końcu Twój BulkSaver)

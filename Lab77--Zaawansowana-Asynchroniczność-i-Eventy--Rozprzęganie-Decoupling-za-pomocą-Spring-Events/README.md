@@ -240,7 +240,6 @@ ale mam uruchomić produkcję :  ./gradlew runSmartFinDb -PappArgs="-u Jacek"  ?
 
 Odpowiedź:
 ----------
-
 Tak, dokładnie! Uruchomienie aplikacji z terminala to najlepszy sposób, aby zobaczyć, 
 jak ta cała "maszyneria" (Synchronizacja + Asynchroniczność + CQRS) współpracuje ze sobą w czasie rzeczywistym.
 
