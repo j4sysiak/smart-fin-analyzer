@@ -2,6 +2,7 @@ package pl.edu.praktyki.integration
 
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.web.UploadController
+import pl.edu.praktyki.repository.FinancialSummaryEntity
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.repository.FinancialSummaryRepository
 import org.springframework.beans.factory.annotation.Autowired
@@ -52,7 +53,7 @@ TJ36,5000.00,PLN,Praca,Wypłata,2026-04-12
         and: "current counts"
         def txBefore = transactionRepository.count()
         def summaryBefore = summaryRepo.findById('GLOBAL')
-                .orElseGet({ new pl.edu.praktyki.repository.FinancialSummaryEntity(id: 'GLOBAL', totalBalance:0G, transactionCount:0L) })
+                .orElseGet({ new FinancialSummaryEntity(id: 'GLOBAL', totalBalance:0G, transactionCount:0L) })
 
         when: "we call upload controller as ADMIN"
         def auth = new UsernamePasswordAuthenticationToken('admin', null, [new SimpleGrantedAuthority('ROLE_ADMIN')])
@@ -74,6 +75,49 @@ TJ36,5000.00,PLN,Praca,Wypłata,2026-04-12
         summaryAfter.transactionCount == summaryBefore.transactionCount + 3
         // totalBalance may be computed (conversion may apply) - at least ensure it's present
         summaryAfter.totalBalance != null
+
+        cleanup:
+        SecurityContextHolder.clearContext()
+    }
+
+    def "upload CSV creates audit rows in transactions_aud"() {
+        given: "a CSV with 2 transactions uploaded as admin"
+        String id1 = "AUD-UP-${System.nanoTime()}-1"
+        String id2 = "AUD-UP-${System.nanoTime()}-2"
+        String csv = """id,amount,currency,category,description,date
+${id1},120.00,PLN,Zakupy,Myszka,2026-04-12
+${id2},-25.50,PLN,Jedzenie,Kawa,2026-04-12
+"""
+        def multipart = new MockMultipartFile('file', 'transactions_upload.csv', 'text/csv', csv.getBytes('UTF-8'))
+
+        and: "current audit counters"
+        def revinfoBefore = jdbcTemplate.queryForObject('SELECT COUNT(*) FROM revinfo', Long)
+
+        when: "we execute the upload path"
+        def auth = new UsernamePasswordAuthenticationToken('admin', null, [new SimpleGrantedAuthority('ROLE_ADMIN')])
+        SecurityContextHolder.context.authentication = auth
+        def resp = uploadController.uploadCsv(multipart, 'AUDIT_TEST_USER')
+
+        then: "HTTP response is OK"
+        resp.statusCode.value() == 200
+
+        and: "manual audit rows were created for both uploaded transactions"
+        def auditRows = jdbcTemplate.queryForList(
+                '''
+                SELECT original_id, revtype
+                FROM transactions_aud
+                WHERE original_id IN (?, ?)
+                ORDER BY original_id, rev
+                '''.stripIndent(),
+                id1, id2
+        )
+        auditRows.size() == 2
+        auditRows*.original_id as Set == [id1, id2] as Set
+        auditRows*.revtype.every { it == 0 }
+
+        and: "revinfo increased by at least one revision per inserted transaction"
+        def revinfoAfter = jdbcTemplate.queryForObject('SELECT COUNT(*) FROM revinfo', Long)
+        revinfoAfter >= revinfoBefore + 2
 
         cleanup:
         SecurityContextHolder.clearContext()

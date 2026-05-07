@@ -1,7 +1,7 @@
 plugins {
     id 'groovy'
-    id 'org.springframework.boot' version '3.2.1'
-    id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.springframework.boot' version '3.4.5'
+    id 'io.spring.dependency-management' version '1.1.7'
 
     // NOWOŚĆ: Analiza statyczna dla Groovy
     id 'codenarc'
@@ -10,7 +10,7 @@ plugins {
     id 'jacoco'
 
     // Budowanie obrazu Dockerowego aplikacji za pomocą Jib
-    id 'com.google.cloud.tools.jib' version '3.4.0'
+    id 'com.google.cloud.tools.jib' version '3.4.4'
 
 }
 
@@ -20,6 +20,13 @@ java {
         languageVersion = JavaLanguageVersion.of(17)
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Spring Boot 3.4.5 → Hibernate ORM 6.6.x
+// HHH-17024 (ClassCastException przy @Audited + @ElementCollection) jest
+// naprawiony w Hibernate 6.5+ / Spring Boot 3.3+.
+// TransactionEntity może teraz mieć @Audited + @NotAudited na tags.
+// ─────────────────────────────────────────────────────────────────────────────
 
 repositories {
     mavenCentral()
@@ -54,7 +61,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
     // Swagger / OpenAPI UI dla Spring Boot 3
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
 
     // Starter do walidacji danych wejściowych REST API
     implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -64,6 +71,8 @@ dependencies {
 
     // Flyway - zarządzanie migracjami bazy danych
     implementation 'org.flywaydb:flyway-core'
+    // Flyway 10.x wymaga jawnego modulu dla PostgreSQL (wylaczono z flyway-core w v10)
+    implementation 'org.flywaydb:flyway-database-postgresql'
 
     // Dodaj Awaitility do testów
     testImplementation('org.awaitility:awaitility-groovy:4.2.0') {
@@ -75,13 +84,12 @@ dependencies {
 
     // Lab52--Wzorzec-Circuit-Breaker--Bezpieczeństwo-w-Mikrousługach
     // Dedykowany starter Resilience4j dla Spring Boot 3
-    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.3.0'
     // WYMAGANE! Bez AOP adnotacja @CircuitBreaker nie zostanie wykryta przez Springa
     implementation 'org.springframework.boot:spring-boot-starter-aop'
 
     // WireMock do symulowania zewnętrznych serwerów REST API
-    // spring-cloud-contract-wiremock dostarcza własny WireMock (wiremock-jre8-standalone)
-    testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock:4.1.0'
+    testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock:4.2.1'
 
     // UWAGA: Testcontainers docker-java nie jest kompatybilny z Docker Desktop 4.67+ (API 1.54)
     // Zamiast Testcontainers używamy Docker CLI bezpośrednio w BaseIntegrationSpec.
@@ -99,6 +107,12 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
+    // Lab88 - Hibernate Envers - wersjonowanie danych
+    implementation 'org.hibernate.orm:hibernate-envers'
+
+    // Lab89 - Spring Batch - Przetwarzanie Wsadowe (Miesięczne Rozliczenia)
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
 }
 
 test {

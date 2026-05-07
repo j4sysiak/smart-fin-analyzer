@@ -26,9 +26,9 @@ class DynamicSearchSpec extends BaseIntegrationSpec {
         def catFood = categoryRepository.save(new CategoryEntity(name: "FOOD", monthlyLimit: 0.0))
         def catWork = categoryRepository.save(new CategoryEntity(name: "WORK", monthlyLimit: 0.0))
 
-        repo.save(new TransactionEntity(originalId: "T1", category: catFood, amountPLN: 100, description: "Pizza"))
-        repo.save(new TransactionEntity(originalId: "T2", category: catFood, amountPLN: 10, description: "Baton"))
-        repo.save(new TransactionEntity(originalId: "T3", category: catWork, amountPLN: 5000, description: "Pensja"))
+        repo.save(new TransactionEntity(originalId: "T1", categoryEntity: catFood, category: catFood.name, amountPLN: 100, description: "Pizza"))
+        repo.save(new TransactionEntity(originalId: "T2", categoryEntity: catFood, category: catFood.name, amountPLN: 10, description: "Baton"))
+        repo.save(new TransactionEntity(originalId: "T3", categoryEntity: catWork, category: catWork.name, amountPLN: 5000, description: "Pensja"))
 
         when: "szukamy kategorii FOOD z kwotą min. 50"
         def response = mvc.perform(get("/api/transactions/search")

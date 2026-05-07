@@ -3,6 +3,7 @@ package pl.edu.praktyki.service
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import groovy.util.logging.Slf4j
 import pl.edu.praktyki.event.TransactionBatchProcessedEvent
@@ -22,6 +23,9 @@ class AsyncNotificationService {
 
     @Autowired
     ThreadTracker threadTracker
+
+    @Value('${app.async.notification.delay-ms:6000}')
+    long notificationDelayMs
 
     // Dodajemy metodę - dzięki niej Proxy będzie wiedziało, skąd wziąć wartość
     int getProcessedCount() {
@@ -80,8 +84,10 @@ class AsyncNotificationService {
                                                                         user: event?.userName,
                                                                         count: event?.transactionsCount])
 
-        // Symulujemy ciężką pracę (np. generowanie PDF i wysyłka maila)
-        sleep(6000)
+        // Symulujemy ciężką pracę (np. generowanie PDF i wysyłka maila).
+        // W testach wartość jest skracana przez application-*.properties,
+        // żeby nie zapychać wspólnej puli bulkTaskExecutor i nie wydłużać suite.
+        sleep(notificationDelayMs)
 
         log.info(">>> [ASYNCHRONICZNY-EVENT] Raport o bilansie {} PLN został pomyślnie przetworzony w tle.", event.totalBalance)
 

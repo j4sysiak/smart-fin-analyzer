@@ -28,7 +28,8 @@ class BigDataSpec extends BaseIntegrationSpec {
         def manyTransactions = (1..50).collect { i ->
             new TransactionEntity(
                     originalId: "ID-$i",
-                    category: catTest,
+                    categoryEntity: catTest,
+                    category: catTest.name,
                     amount: 10.0,
                     date: java.time.LocalDate.now()
             )
@@ -59,7 +60,8 @@ class BigDataSpec extends BaseIntegrationSpec {
         def manyTransactions = (1..50).collect { i ->
             new TransactionEntity(
                     originalId: "ID-$i",
-                    category: catVolume,
+                    categoryEntity: catVolume,
+                    category: catVolume.name,
                     amountPLN: 10.0,
                     date: java.time.LocalDate.now()
             )

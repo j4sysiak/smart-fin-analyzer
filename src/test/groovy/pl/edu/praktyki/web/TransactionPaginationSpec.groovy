@@ -75,7 +75,8 @@ class TransactionPaginationSpec extends BaseIntegrationSpec {
             new TransactionEntity(
                     originalId: "TX-$i",
                     amount: i * 100.0, // Kwoty: 100, 200, 300... 1500
-                    category: catPaginacja,
+                    categoryEntity: catPaginacja,
+                    category: catPaginacja.name,
                     date: LocalDate.now().minusDays(i)
             )
         }

@@ -72,10 +72,10 @@ class TransactionControllerWithJWTSpec extends BaseIntegrationSpec {
         def catJedzenie = categoryRepository.save(new CategoryEntity(name: "Jedzenie", monthlyLimit: 0.0))
 
         repository.save(new TransactionEntity(
-                originalId: "T1", amountPLN: 100.0, category: catTest, description: "Wpływ"
+                originalId: "T1", amountPLN: 100.0, categoryEntity: catTest, category: catTest.name, description: "Wpływ"
         ))
         repository.save(new TransactionEntity(
-                originalId: "T2", amountPLN: -20.0, category: catJedzenie, description: "Pizza"
+                originalId: "T2", amountPLN: -20.0, categoryEntity: catJedzenie, category: catJedzenie.name, description: "Pizza"
         ))
     }
 

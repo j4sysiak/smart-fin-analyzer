@@ -46,7 +46,8 @@ class CategorySpec extends BaseIntegrationSpec {
                 originalId: "REL-1",
                 amount: 150.0,
                 amountPLN: 150.0,
-                category: foodCategory, // Przekazujemy obiekt, a nie String!
+                categoryEntity: foodCategory,
+                category: foodCategory.name,
                 date: LocalDate.now()
         )
 
@@ -55,8 +56,9 @@ class CategorySpec extends BaseIntegrationSpec {
 
         then: "możemy odczytać nazwę kategorii bezpośrednio z obiektu transakcji"
         def savedTx = transactionRepository.findAll()[0]
-        savedTx.category.name == "Jedzenie"
-        savedTx.category.monthlyLimit == 1000.0
+        // categoryEntity jest relacją @ManyToOne — zwraca obiekt CategoryEntity
+        savedTx.categoryEntity.name == "Jedzenie"
+        savedTx.categoryEntity.monthlyLimit == 1000.0
     }
 
     @Transactional // Transactional jest wymagany, aby leniwe ładowanie (LAZY) zadziałało w teście
@@ -69,7 +71,8 @@ class CategorySpec extends BaseIntegrationSpec {
         transactionRepository.save(new TransactionEntity(
                 originalId: "OLD-1",
                 amountPLN: -150.0,
-                category: funCategory,
+                categoryEntity: funCategory,
+                category: funCategory.name,
                 date: LocalDate.now()
         ))
 
@@ -110,15 +113,15 @@ class CategorySpec extends BaseIntegrationSpec {
         def cat1 = categoryRepository.save(new CategoryEntity(name: "C1", monthlyLimit: 100))
         def cat2 = categoryRepository.save(new CategoryEntity(name: "C2", monthlyLimit: 100))
 
-        transactionRepository.save(new TransactionEntity(originalId: "T1", category: cat1, amountPLN: 10, date: LocalDate.now()))
-        transactionRepository.save(new TransactionEntity(originalId: "T2", category: cat2, amountPLN: 20, date: LocalDate.now()))
+        transactionRepository.save(new TransactionEntity(originalId: "T1", categoryEntity: cat1, category: cat1.name, amountPLN: 10, date: LocalDate.now()))
+        transactionRepository.save(new TransactionEntity(originalId: "T2", categoryEntity: cat2, category: cat2.name, amountPLN: 20, date: LocalDate.now()))
 
         when: "pobieramy wszystkie transakcje"
         def allTransactions = transactionRepository.findAll()
 
-        then: "wyciągnięcie nazwy kategorii `tx.category.name` dla każdej transakcji może spowodować dodatkowe zapytania"
+        then: "wyciągnięcie nazwy kategorii `tx.categoryEntity.name` dla każdej transakcji może spowodować dodatkowe zapytania"
         allTransactions.each { tx ->
-            println "Transakcja ${tx.originalId} należy do kategorii: ${tx.category.name}"
+            println "Transakcja ${tx.originalId} należy do kategorii: ${tx.categoryEntity.name}"
         }
         allTransactions.size() == 2
     }

@@ -78,7 +78,8 @@ class TransactionController {
                     amount: entity.amount,
                     currency: entity.currency,
                     amountPLN: entity.amountPLN,
-                    category: (entity.category instanceof pl.edu.praktyki.repository.CategoryEntity) ? entity.category.name : entity.category,
+                    // entity.category to surowa nazwa kategorii z kolumny @Column
+                    category: entity.category,
                     description: entity.description,
                     tags: entity.tags
             )
@@ -113,7 +114,7 @@ class TransactionController {
                 amount: entity.amount,
                 currency: entity.currency,
                 amountPLN: entity.amountPLN,
-                category: (entity.category instanceof pl.edu.praktyki.repository.CategoryEntity) ? entity.category.name : entity.category,
+                category: entity.category,
                 description: entity.description,
                 tags: entity.tags
         )

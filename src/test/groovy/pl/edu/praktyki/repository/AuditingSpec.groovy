@@ -28,7 +28,8 @@ class AuditingSpec extends BaseIntegrationSpec {
                 originalId: "AUDIT-TEST-1",
                 amount: 1000.0,
                 amountPLN: 1000.0,
-                category: catProces,
+                categoryEntity: catProces,
+                category: catProces.name,
                 description: "Test automatycznego audytu"
         )
 
@@ -57,7 +58,7 @@ class AuditingSpec extends BaseIntegrationSpec {
     def "powinien oznaczyć wpis jako SYSTEM gdy brak zalogowanego użytkownika"() {
         given: "transakcja zapisywana bez kontekstu security (np. przez automat)"
         def catSys = categoryRepository.save(new CategoryEntity(name: "SYS", monthlyLimit: 0.0))
-        def entity = new TransactionEntity(originalId: "SYS-1", amount: 10.0, category: catSys)
+        def entity = new TransactionEntity(originalId: "SYS-1", amount: 10.0, categoryEntity: catSys, category: catSys.name)
 
         when:
         def saved = repository.saveAndFlush(entity)

@@ -1,12 +1,11 @@
 package pl.edu.praktyki.aop
 
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.EnableAspectJAutoProxy
 import org.springframework.test.context.ContextConfiguration
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import pl.edu.praktyki.monitoring.FinanceMetrics
 import pl.edu.praktyki.service.TransactionIngesterService
 import pl.edu.praktyki.service.TransactionRuleService
@@ -30,7 +29,7 @@ import org.mockito.Mockito // Użyjemy Mockito, które jest domyślnie w spring-
  * lub możemy użyć Mockito, aby stworzyć "pusty" mock, który nie robi nic
  * (wystarczy, że nie będzie rzucał wyjątków, bo nasz aspekt i tak nie będzie ich używał w tym teście).
  */
-@Configuration
+@TestConfiguration
 
 // opis tej adnotacji: EnableAspectJAutoProxy
 // Hej Spring! Zanim wstrzykniesz mi serwis TransactionIngesterService przez @Autowired w class AopSpec,

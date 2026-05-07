@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import pl.edu.praktyki.repository.TransactionAuditWriter
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.repository.TransactionRepository
 
@@ -18,6 +19,8 @@ import javax.sql.DataSource
 import java.sql.PreparedStatement
 import java.sql.SQLException
 import java.sql.Timestamp
+import java.sql.Types
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Service
@@ -25,6 +28,7 @@ import java.time.LocalDateTime
 class TransactionBulkSaver {
 
     @Autowired TransactionRepository repo
+    @Autowired TransactionAuditWriter transactionAuditWriter
     @PersistenceContext EntityManager em
     @Autowired(required = false) JdbcTemplate jdbcTemplate
     @Autowired(required = false) DataSource dataSource
@@ -52,6 +56,12 @@ class TransactionBulkSaver {
             return auth.name
         } catch (Exception ignored) {
             return 'SYSTEM'
+        }
+    }
+
+    private void writeInsertAudit(List<TransactionEntity> batch) {
+        batch.each { TransactionEntity entity ->
+            transactionAuditWriter.writeRevision(entity, 0)
         }
     }
 
@@ -93,6 +103,7 @@ class TransactionBulkSaver {
                         for (int i = 0; i < batch.size(); i++) {
                             TransactionEntity e = batch.get(i)
                             def id = seqVals.get(i)
+                            e.dbId = id
                             def date = e.date ? e.date.toString() : '\\N'
                             def cat = e.categoryEntity
                             def categoryName = cat?.name ?: (e.categoryName ?: '')
@@ -113,6 +124,7 @@ class TransactionBulkSaver {
                             log.info('>>> [BULK SAVER] Przykładowy wiersz TSV: {}', sw.toString().split('\n')[0])
                         }
                         copyManager.copyIn(copySql, new StringReader(sw.toString()))
+                        writeInsertAudit(batch)
                         startIdx += batch.size()
                     }
                     copySucceeded = true
@@ -130,50 +142,55 @@ class TransactionBulkSaver {
         if (jdbcTemplate) {
             log.info('>>> [BULK SAVER] Używam ścieżki batchUpdate, auditor={}, now={}', auditor, now)
             // Dodano kolumny audytowe i category_id
-            String sql = "insert into transactions (db_id, original_id, date, amount, currency, amountpln, category, description, created_date, last_modified_date, created_by, last_modified_by, category_id) values (nextval('tx_seq'),?,?,?,?,?,?,?,?,?,?,?,?)"
+            String sql = "insert into transactions (db_id, original_id, date, amount, currency, amountpln, category, description, created_date, last_modified_date, created_by, last_modified_by, category_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?)"
             final String _auditor = auditor
             final LocalDateTime _now = now
             entities.collate(chunkSize).each { List<TransactionEntity> batch ->
+                List<Long> seqVals = jdbcTemplate.queryForList("SELECT nextval('tx_seq') FROM generate_series(1, ?)", Long.class, batch.size())
+                batch.eachWithIndex { TransactionEntity e, int idx ->
+                    e.dbId = seqVals[idx]
+                }
                 jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
                     @Override
                     void setValues(PreparedStatement ps, int i) throws SQLException {
                         TransactionEntity e = batch.get(i)
-                        ps.setString(1, e.originalId)
+                        ps.setLong(1, e.dbId)
+                        ps.setString(2, e.originalId)
 
                         if (e.date == null) {
-                            ps.setNull(2, java.sql.Types.DATE)
-                        } else if (e.date instanceof java.time.LocalDate) {
-                            ps.setDate(2, java.sql.Date.valueOf((java.time.LocalDate) e.date))
+                            ps.setNull(3, Types.DATE)
+                        } else if (e.date instanceof LocalDate) {
+                            ps.setDate(3, java.sql.Date.valueOf((LocalDate) e.date))
                         } else {
-                            ps.setDate(2, java.sql.Date.valueOf(e.date.toString()))
+                            ps.setDate(3, java.sql.Date.valueOf(e.date.toString()))
                         }
 
-                        ps.setBigDecimal(3, e.amount)
-                        ps.setString(4, e.currency)
-                        ps.setBigDecimal(5, e.amountPLN)
+                        ps.setBigDecimal(4, e.amount)
+                        ps.setString(5, e.currency)
+                        ps.setBigDecimal(6, e.amountPLN)
 
                         def cat = e.categoryEntity
                         def catStr = e.categoryName
                         if (cat != null) {
-                            ps.setString(6, cat.name)
+                            ps.setString(7, cat.name)
                         } else if (catStr != null) {
-                            ps.setString(6, catStr)
+                            ps.setString(7, catStr)
                         } else {
-                            ps.setNull(6, java.sql.Types.VARCHAR)
+                            ps.setNull(7, Types.VARCHAR)
                         }
-                        ps.setString(7, e.description)
+                        ps.setString(8, e.description)
 
                         // Kolumny audytowe – wypełniane ręcznie (omijamy JPA Auditing)
-                        ps.setTimestamp(8, Timestamp.valueOf(_now))
                         ps.setTimestamp(9, Timestamp.valueOf(_now))
-                        ps.setString(10, _auditor)
+                        ps.setTimestamp(10, Timestamp.valueOf(_now))
                         ps.setString(11, _auditor)
+                        ps.setString(12, _auditor)
 
                         // FK do kategorii
                         if (cat?.id != null) {
-                            ps.setLong(12, cat.id)
+                            ps.setLong(13, cat.id)
                         } else {
-                            ps.setNull(12, java.sql.Types.BIGINT)
+                            ps.setNull(13, Types.BIGINT)
                         }
                     }
 
@@ -182,6 +199,7 @@ class TransactionBulkSaver {
                         return batch.size()
                     }
                 })
+                writeInsertAudit(batch)
             }
             log.info('>>> [BULK SAVER] batchUpdate zakończony sukcesem')
         } else {

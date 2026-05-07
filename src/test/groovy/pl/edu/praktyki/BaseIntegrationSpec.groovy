@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.PessimisticLockingFailureException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import javax.sql.DataSource
 
 /**
  * Bazowa klasa dla testów integracyjnych.
@@ -32,6 +33,9 @@ abstract class BaseIntegrationSpec extends Specification {
 
     @Autowired
     JdbcTemplate jdbcTemplate
+
+    @Autowired
+    DataSource dataSource
 
     // Logger used in static and instance contexts inside this base test class
     private static final Logger log = LoggerFactory.getLogger(BaseIntegrationSpec.class)
@@ -74,8 +78,16 @@ abstract class BaseIntegrationSpec extends Specification {
     private void doTruncateDatabaseOnce() {
         // Acquire an advisory lock to serialize truncation across multiple test JVMs/processes
         // This prevents PostgreSQL deadlocks when concurrent processes attempt TRUNCATE/CASCADE
+        // WAŻNE: nie używamy tu JdbcTemplate powiązanego z bieżącą transakcją testową.
+        // Dla feature'ów @Transactional setup() może działać wewnątrz tej samej transakcji,
+        // a wtedy TRUNCATE trzyma AccessExclusiveLock aż do końca testu i blokuje np.
+        // manualny audit TransactionEntity zapisujący do revinfo na osobnym połączeniu.
+        // Osobne fizyczne połączenie z autocommit=true zwalnia locki natychmiast po setup().
         final long LOCK_KEY = 0xDEADBEEFL // arbitrary numeric key
-        jdbcTemplate.execute({ conn ->
+        def conn = dataSource.getConnection()
+        boolean previousAutoCommit = conn.autoCommit
+        conn.autoCommit = true
+        try {
             def stmt = conn.createStatement()
             try {
                 System.out.println(">>> [BaseIntegrationSpec] Acquiring advisory lock for truncate (key=${LOCK_KEY})")
@@ -84,12 +96,13 @@ abstract class BaseIntegrationSpec extends Specification {
                 System.out.println(">>> [BaseIntegrationSpec] Truncating domain tables before test (RESTART IDENTITY CASCADE)")
                 String truncateSql = '''
             TRUNCATE TABLE 
-                transaction_entity_tags, 
                 transactions, 
                 categories, 
                 counters, 
-                financial_summary 
-            RESTART IDENTITY CASCADE
+                financial_summary,
+                monthly_settlement
+            RESTART IDENTITY CASCADE;
+            TRUNCATE TABLE revinfo CASCADE;
         '''
                 stmt.execute(truncateSql)
 
@@ -114,8 +127,10 @@ abstract class BaseIntegrationSpec extends Specification {
                 }
                 try { stmt.close() } catch (Exception ignored) {}
             }
-            return null
-        } as org.springframework.jdbc.core.ConnectionCallback)
+        } finally {
+            try { conn.autoCommit = previousAutoCommit } catch (Exception ignored) {}
+            try { conn.close() } catch (Exception ignored) {}
+        }
     }
 
     /** Czy uruchomiono z flagą -Dlocal.pg=true (ręczna inspekcja bazy) */
@@ -204,16 +219,42 @@ abstract class BaseIntegrationSpec extends Specification {
      * Próba wyczyszczenia lokalnej bazy (używana w trybie local-pg).
      * Najpierw próbuje wykonać `docker exec smartfin-postgres psql ...`, jeśli to nie zadziała
      * próbuje wykonać lokalne `psql` pod localhost:5432.
+     *
+     * WAŻNE: czyścimy również flyway_schema_history i tabele Envers (revinfo, *_aud),
+     * aby Flyway mógł od nowa wykonać wszystkie migracje przy każdym starcie JVM.
+     * Bez tego: DROP tabel domenowych + zachowanie flyway_schema_history → Flyway
+     * nie ponawia migracji → tabele zniknęły, ale Flyway myśli że wszystko jest OK → błędy.
      */
     private static void cleanupLocalDatabase() {
         System.out.println(">>> [BaseIntegrationSpec] Czyszczenie lokalnej bazy danych (${LOCAL_PG_DB}) dla trybu local-pg...")
-        // Use DROP TABLE IF EXISTS for domain tables only (keep users and flyway_schema_history intact)
+        // Drop all test-managed tables + Flyway history so migrations re-run on next startup.
+        // WAŻNE: schema musi być naprawdę pusta. Jeśli zostaną jakiekolwiek obiekty
+        // (np. users, monthly_settlement albo metadata Spring Batch), Flyway przy
+        // baseline-on-migrate może uznać schemat za "istniejący", zbaseline'ować go
+        // na V1 i pominąć V1__init_schema.sql. Wtedy V3 próbuje ALTER SEQUENCE tx_seq,
+        // którego nikt nie utworzył.
         def sql = "DROP TABLE IF EXISTS transaction_entity_tags CASCADE; " +
                 "DROP TABLE IF EXISTS transactions CASCADE; " +
+                "DROP TABLE IF EXISTS transactions_aud CASCADE; " +
                 "DROP TABLE IF EXISTS categories CASCADE; " +
+                "DROP TABLE IF EXISTS categories_aud CASCADE; " +
                 "DROP TABLE IF EXISTS counters CASCADE; " +
                 "DROP TABLE IF EXISTS financial_summary CASCADE; " +
-                "DROP SEQUENCE IF EXISTS tx_seq; "
+                "DROP TABLE IF EXISTS users CASCADE; " +
+                "DROP TABLE IF EXISTS monthly_settlement CASCADE; " +
+                "DROP TABLE IF EXISTS revinfo CASCADE; " +
+                "DROP TABLE IF EXISTS batch_step_execution_context CASCADE; " +
+                "DROP TABLE IF EXISTS batch_step_execution CASCADE; " +
+                "DROP TABLE IF EXISTS batch_job_execution_context CASCADE; " +
+                "DROP TABLE IF EXISTS batch_job_execution_params CASCADE; " +
+                "DROP TABLE IF EXISTS batch_job_execution CASCADE; " +
+                "DROP TABLE IF EXISTS batch_job_instance CASCADE; " +
+                "DROP SEQUENCE IF EXISTS revinfo_seq; " +
+                "DROP SEQUENCE IF EXISTS tx_seq; " +
+                "DROP SEQUENCE IF EXISTS batch_step_execution_seq; " +
+                "DROP SEQUENCE IF EXISTS batch_job_execution_seq; " +
+                "DROP SEQUENCE IF EXISTS batch_job_seq; " +
+                "DROP TABLE IF EXISTS flyway_schema_history CASCADE; "
 
         // 1) Spróbuj przez docker exec (kontener nazwany smartfin-postgres)
         def dockerCmd = "docker exec -i smartfin-postgres psql -U ${LOCAL_PG_USER} -d ${LOCAL_PG_DB} -c \"${sql}\""
@@ -257,7 +298,14 @@ abstract class BaseIntegrationSpec extends Specification {
                     () -> "jdbc:postgresql://localhost:${LOCAL_PG_PORT}/${LOCAL_PG_DB}")
             registry.add("spring.datasource.username", () -> LOCAL_PG_USER)
             registry.add("spring.datasource.password", () -> LOCAL_PG_PASS)
-            registry.add("spring.jpa.hibernate.ddl-auto", () -> "update")
+            // Gdy Flyway jest włączony, to on zarządza schematem → ddl-auto=none.
+            // Bez tego Hibernate (ddl-auto=update) i Flyway jednocześnie próbują modyfikować
+            // schemat, co może niszczyć sekwencje Envers (revinfo_seq) i inne obiekty DB.
+            if (ENABLE_FLYWAY) {
+                registry.add("spring.jpa.hibernate.ddl-auto", () -> "none")
+            } else {
+                registry.add("spring.jpa.hibernate.ddl-auto", () -> "update")
+            }
             registry.add("spring.jpa.show-sql", () -> "true")
         } else {
             // --- Tryb automatyczny: kontener Docker CLI na localhost:15432 ---

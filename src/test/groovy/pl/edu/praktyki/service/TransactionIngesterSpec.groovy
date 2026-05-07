@@ -2,16 +2,16 @@ package pl.edu.praktyki.service
 
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.test.context.ContextConfiguration // ZMIANA
 import pl.edu.praktyki.domain.Transaction
 import pl.edu.praktyki.monitoring.FinanceMetrics
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 
 // Konfiguracja testowa dostarczająca mock ApplicationEventPublisher i FinanceMetrics
-@Configuration
+@TestConfiguration
 class TransactionIngesterTestConfig {
     @Bean
     ApplicationEventPublisher eventPublisher() {

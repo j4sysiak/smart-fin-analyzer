@@ -127,7 +127,8 @@ class BatchPerformanceSpec extends BaseIntegrationSpec {
                     amount: tx.amount,
                     currency: tx.currency,
                     amountPLN: tx.amountPLN,
-                    category: catEntity,
+                    categoryEntity: catEntity,
+                    category: catEntity?.name,
                     description: tx.description,
                     tags: tx.tags
             )

@@ -1,15 +1,46 @@
-version: '3.8'
 services:
+
+  # ---------------------------------------------------------------
+  # BAZA DANYCH — produkcyjna (smartfin_db) + testowa (smartfin_test)
+  # ---------------------------------------------------------------
   db:
     image: postgres:16-alpine
-    container_name: smartfin-postgres  # profil testowy: local-pg (Inspekcja)
+    container_name: smartfin-postgres
     ports:
-      - "5432:5432" # Lewo: Twój komputer (Host), Prawo: Wnętrze kontenera
+      - "5432:5432"
     environment:
       POSTGRES_USER: finuser
       POSTGRES_PASSWORD: finpass
-      POSTGRES_DB: smartfin_db
+      POSTGRES_DB: smartfin_db          # produkcyjna baza
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data # Opcjonalnie: dane przetrwają restart kontenera
-        # NOWOŚĆ: Montujemy skrypt SQL do folderu startowego Postgresa
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql  # tworzy smartfin_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finuser -d smartfin_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------
+  # APLIKACJA — uruchamiana po starcie bazy (Flyway wykona migracje)
+  # ---------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: smart-fin-analyzer:latest   # nazwa lokalnego obrazu po zbudowaniu
+    container_name: smartfin-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/smartfin_db
+      SPRING_DATASOURCE_USERNAME: finuser
+      SPRING_DATASOURCE_PASSWORD: finpass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none        # Flyway zarządza schematem
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "false"
+      APP_SCHEDULING_ENABLED: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure

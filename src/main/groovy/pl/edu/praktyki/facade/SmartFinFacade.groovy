@@ -140,7 +140,8 @@ class SmartFinFacade {
                     amount: tx.amount,
                     currency: tx.currency,
                     amountPLN: tx.amountPLN,
-                    category: categoryEntity,
+                    categoryEntity: categoryEntity,
+                    category: categoryEntity?.name,
                     description: tx.description,
                     tags: tx.tags
             )

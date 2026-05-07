@@ -58,7 +58,8 @@ Reczna inspekcja z prawdziwym PostgreSQL-em w kontenerze Docker:
         def entity = new TransactionEntity(
                 originalId: "DB-1",
                 amount: 500.0,
-                category: catTest
+                categoryEntity: catTest,
+                category: catTest.name
         )
 
         when: "zapisujemy w prawdziwej bazie"

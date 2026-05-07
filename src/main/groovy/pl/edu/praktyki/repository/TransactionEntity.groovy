@@ -1,16 +1,39 @@
 package pl.edu.praktyki.repository
 
-import jakarta.persistence.*
-import org.hibernate.Hibernate
-import org.springframework.data.annotation.*
+import jakarta.persistence.Access
+import jakarta.persistence.AccessType
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EntityListeners
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.PostPersist
+import jakarta.persistence.PostLoad
+import jakarta.persistence.PostRemove
+import jakarta.persistence.PostUpdate
+import jakarta.persistence.PrePersist
+import jakarta.persistence.PreUpdate
+import jakarta.persistence.SequenceGenerator
+import jakarta.persistence.Table
+import jakarta.persistence.Transient
+import org.hibernate.envers.NotAudited
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.CreatedDate
+import org.springframework.data.annotation.LastModifiedBy
+import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
-@EntityListeners(AuditingEntityListener.class) // <-- KLUCZOWE dla automatycznego zarządzania polami audytu
 @Table(name = "transactions")
+@EntityListeners([AuditingEntityListener, TransactionAuditEntityListener])
+@Access(AccessType.FIELD)
 class TransactionEntity {
 
     @Id
@@ -18,69 +41,110 @@ class TransactionEntity {
     @SequenceGenerator(
             name = "tx_generator",
             sequenceName = "tx_seq",
-            allocationSize = 50 // <--- MUSI SIĘ ZGADZAĆ Z INCREMENT BY W SQL
+            allocationSize = 50
     )
-    Long dbId
+    private Long dbId
 
-    String originalId // Zamiast 'id', żeby nie myliło się z kluczem w bazie
-    LocalDate date
-    BigDecimal amount
-    String currency
-    BigDecimal amountPLN
+    private String originalId
+    private LocalDate date
+    private BigDecimal amount
+    private String currency
+    private BigDecimal amountPLN
 
-    @ManyToOne(fetch = FetchType.LAZY) // LAZY jest kluczowe dla wydajności!
+    @NotAudited
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
-    CategoryEntity categoryEntity
+    private CategoryEntity categoryEntity
 
-    // Pozostawiamy również kolumnę 'category' (stara kolumna String) dla kompatybilności z testami
     @Column(name = "category")
-    String category
+    private String category
 
-    String description
+    private String description
 
     @CreatedDate
     @Column(updatable = false)
-    LocalDateTime createdDate
+    @NotAudited
+    private LocalDateTime createdDate
 
     @LastModifiedDate
-    LocalDateTime lastModifiedDate
+    @NotAudited
+    private LocalDateTime lastModifiedDate
 
     @CreatedBy
     @Column(updatable = false)
-    String createdBy
+    @NotAudited
+    private String createdBy
 
     @LastModifiedBy
-    String lastModifiedBy
+    @NotAudited
+    private String lastModifiedBy
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    List<String> tags = []
+    @Column(name = "tags")
+    @NotAudited
+    private String tagsRaw
 
-    // Wymagany przez Hibernate pusty konstruktor
+    @Transient
+    @NotAudited
+    private List<String> tags = []
+
     TransactionEntity() {}
 
-    // Setter/getter kompatybilnościowy: pozwala przypisać zarówno CategoryEntity jak i String do property 'category'
-    // UWAGA: używamy this.@field (bezpośredni dostęp do pola) żeby uniknąć rekurencji Groovy property dispatch
-    void setCategory(Object c) {
-        if (c instanceof CategoryEntity) {
-            this.@categoryEntity = (CategoryEntity) c
-            this.@category = c?.name   // bezpośredni zapis do pola, bez woławnia setCategory() ponownie
-        } else {
-            this.@category = c?.toString()  // bezpośredni zapis do pola
-        }
+    @PostLoad
+    void syncTagsFromRaw() {
+        this.tags = this.tagsRaw ? this.tagsRaw.split(',').collect { it.trim() }.findAll { it } : []
     }
 
-    // Zwracamy albo encję CategoryEntity (jeśli dostępna i załadowana), albo nazwę kategorii (String)
-    // UWAGA: NIE używamy operator ?: na lazy proxy Hibernate — Groovy wywołałby getMetaClass() na proxy
-    // co triggeruje LazyInitializationException poza sesją JPA.
-    Object getCategory() {
-        if (this.@categoryEntity == null) return this.@category
-        if (!Hibernate.isInitialized(this.@categoryEntity)) return this.@category
-        return this.@categoryEntity
+    @PrePersist
+    @PreUpdate
+    void syncTagsToRaw() {
+        this.tagsRaw = this.tags ? this.tags.findAll { it != null && !it.trim().isEmpty() }.join(',') : null
     }
 
-    /** Zwraca surową nazwę kategorii (String) z pola @Column, bez zwracania encji. Przydatne przy ręcznym zapisie JDBC. */
-    // UWAGA: używamy this.@category (bezpośredni dostęp do pola) żeby uniknąć wywołania getCategory() przez Groovy
-    String getCategoryName() {
-        return this.@category
-    }
+    Long getDbId() { dbId }
+    void setDbId(Long dbId) { this.dbId = dbId }
+
+    String getOriginalId() { originalId }
+    void setOriginalId(String originalId) { this.originalId = originalId }
+
+    LocalDate getDate() { date }
+    void setDate(LocalDate date) { this.date = date }
+
+    BigDecimal getAmount() { amount }
+    void setAmount(BigDecimal amount) { this.amount = amount }
+
+    String getCurrency() { currency }
+    void setCurrency(String currency) { this.currency = currency }
+
+    BigDecimal getAmountPLN() { amountPLN }
+    void setAmountPLN(BigDecimal amountPLN) { this.amountPLN = amountPLN }
+
+    CategoryEntity getCategoryEntity() { categoryEntity }
+    void setCategoryEntity(CategoryEntity categoryEntity) { this.categoryEntity = categoryEntity }
+
+    String getCategory() { category }
+    void setCategory(String category) { this.category = category }
+
+    String getDescription() { description }
+    void setDescription(String description) { this.description = description }
+
+    LocalDateTime getCreatedDate() { createdDate }
+    void setCreatedDate(LocalDateTime createdDate) { this.createdDate = createdDate }
+
+    LocalDateTime getLastModifiedDate() { lastModifiedDate }
+    void setLastModifiedDate(LocalDateTime lastModifiedDate) { this.lastModifiedDate = lastModifiedDate }
+
+    String getCreatedBy() { createdBy }
+    void setCreatedBy(String createdBy) { this.createdBy = createdBy }
+
+    String getLastModifiedBy() { lastModifiedBy }
+    void setLastModifiedBy(String lastModifiedBy) { this.lastModifiedBy = lastModifiedBy }
+
+    String getTagsRaw() { tagsRaw }
+    void setTagsRaw(String tagsRaw) { this.tagsRaw = tagsRaw }
+
+    List<String> getTags() { tags }
+    void setTags(List<String> tags) { this.tags = tags ?: [] }
+
+    @Transient
+    String getCategoryName() { category }
 }

@@ -1,55 +1,59 @@
-# App: Smart-Fin-Analyzer
+# Smart-Fin-Analyzer
 
 
-uruchamianie aplikacji i testów:
---------------------------------
-patrz tutaj: C:\dev\smart-fin-analyzer\scripts\Readme--Uruchamianie-aplikacji-i-testów.md
-lub tutaj: C:\dev\smart-fin-analyzer\scripts\README.md    (to jest wygenerowane przez AI)
------------------------------------------------------------------------------------------
+## Uruchamianie aplikacji i testów
+
+- główna instrukcja: `scripts/Readme--Uruchamianie-aplikacji-i-testów.md`
+- dodatkowy plik pomocniczy: `scripts/README.md`
+
+## Smoke check audytu po uploadzie CSV
+
+Po uploadzie przez `POST /api/transactions/upload?user=admin` warto szybko potwierdzić, że zapis trafił zarówno do tabeli biznesowej, jak i do audytu.
+
+Najprostszy check:
+- użyj w CSV unikalnych `original_id`, np. `MANUAL-AUD-001` i `MANUAL-AUD-002`,
+- sprawdź, czy rekordy są w `transactions`,
+- sprawdź, czy dla tych samych `original_id` są wpisy w `transactions_aud`,
+- sprawdź, czy `revtype = 0` (insert),
+- opcjonalnie potwierdź, że rewizje z `transactions_aud.rev` istnieją też w `revinfo`.
+
+Pełne komendy SQL / `psql` są w `scripts/Readme--Uruchamianie-aplikacji-i-testów.md`, sekcja `Manual audit smoke check po uploadzie CSV`.
 
 
-OPIS PROJEKTU:
---------------
-A modern, multi-threaded, polyglot (Java/Groovy) CLI application for financial transaction analysis, built on top of **Spring Boot 3**.
+## Opis projektu
 
-## 📖 Overview
-Smart-Fin-Analyzer is an enterprise-grade command-line tool designed to ingest, process, and analyze financial data. It demonstrates the powerful synergy between the Java ecosystem (stability, Spring Framework) and Groovy (expressiveness, dynamic rules, fast I/O).
+Smart-Fin-Analyzer to nowoczesna aplikacja CLI do importu, przetwarzania i analizy transakcji finansowych, zbudowana w oparciu o **Spring Boot 3** oraz ekosystem **Java/Groovy**. Projekt łączy stabilność Javy i Springa z ekspresyjnością Groovy'ego, dynamicznymi regułami biznesowymi oraz wygodnym I/O.
 
-## 🛠️ Tech Stack
+## 🛠️ Stos technologiczny
 * **Core:** Java 17, Groovy 4.0
 * **Framework:** Spring Boot 3.2, Spring Data JPA
 * **Concurrency:** GPars (Groovy Parallel Systems)
-* **Database:** H2 (File-based local storage)
-* **Testing:** Spock Framework 2.3 (BDD)
+* **Database:** PostgreSQL
+* **Testing:** Spock Framework 2.3 (BDD), profile `tc` / `local-pg` na PostgreSQL
 * **Build Tool:** Gradle 8.x (with Toolchains)
 * **Integration:** Java `HttpClient` (REST API integration)
 
-## ✨ Key Features
-1. **Multi-threaded Ingestion:** Utilizes `GParsPool` to process large batches of transactions across multiple CPU cores simultaneously.
-2. **Dynamic Rule Engine:** Employs `GroovyShell` with a `SecureASTCustomizer` sandbox to apply user-defined business rules (e.g., tagging transactions) safely at runtime.
-3. **Live Currency Conversion:** Integrates with an external REST API using native Java 11+ `HttpClient` to normalize multi-currency transactions into a base currency (PLN).
-4. **Data Persistence:** Uses Hibernate/JPA to store historical transactions, clearly separating the Domain Model (POGO) from the Database Entities.
-5. **CLI Orchestration:** Implements Groovy's `CliBuilder` (via Picocli) for a professional terminal user experience (flags, default values, error handling).
-6. **Template Reporting:** Generates formatted financial summaries using Groovy's `SimpleTemplateEngine`.
+## ✨ Kluczowe funkcje
+1. **Wielowątkowy import:** równoległe przetwarzanie dużych paczek transakcji przez `GParsPool`.
+2. **Dynamiczne reguły biznesowe:** `GroovyShell` z `SecureASTCustomizer` do bezpiecznego wykonywania reguł w runtime.
+3. **Przeliczanie walut:** integracja z zewnętrznym REST API przez natywne `HttpClient`.
+4. **Trwałość danych:** Hibernate/JPA i czytelny rozdział modelu domenowego od encji bazodanowych.
+5. **CLI i raportowanie:** `CliBuilder` / Picocli oraz `SimpleTemplateEngine`.
 
- 
- 
+## ✨ Najważniejsze elementy architektury
 
-## ✨ Architecture Highlights
------------------------------
-1. **Clean Architecture: Strict separation between the Transaction domain object and TransactionEntity JPA object.
-2. **Traits: Utilizes Groovy Traits for composable, cross-cutting concerns (e.g., AuditLog).
-3. **DSL & Metaprogramming: Custom Object Graph Builders and closures for highly readable data manipulation.
+1. **Clean Architecture:** ścisły rozdział między obiektem domenowym `Transaction` a encją JPA `TransactionEntity`.
+2. **Traits:** wykorzystanie Groovy Traits do realizacji przekrojowych odpowiedzialności, takich jak logowanie audytowe.
+3. **DSL i metaprogramowanie:** własne buildery obiektów oraz closures do czytelnej manipulacji danymi.
 
 ## 🔌 PluginManager
-The `PluginManager` class (`pl.edu.praktyki.utils.PluginManager`) is a lightweight, closure-based plugin system 
-that leverages Groovy's first-class support for closures.
+Klasa `PluginManager` (`pl.edu.praktyki.utils.PluginManager`) jest lekkim, opartym o closures systemem pluginów wykorzystującym natywne wsparcie Groovy'ego dla funkcji wyższego rzędu.
 
-**How it works:**
-- Plugins are registered as Groovy `Closure` objects via `addPlugin(Closure)` and stored in a private list.
-- Calling `runAll(Object data)` executes every registered plugin sequentially, passing the same `data` object to each one.
+**Jak działa:**
+- pluginy są rejestrowane przez `addPlugin(Closure)` i przechowywane na prywatnej liście,
+- `runAll(Object data)` uruchamia je sekwencyjnie dla tego samego obiektu `data`.
 
-**Example usage:**
+**Przykład użycia:**
 ```groovy
 def manager = new PluginManager()
 
@@ -59,8 +63,7 @@ manager.addPlugin { tx -> if (tx.amount < 0) tx.addTag('EXPENSE') }
 manager.runAll(myTransaction)
 ```
 
-This pattern enables a dynamic, extensible pipeline — 
-   new processing steps can be added at runtime without modifying existing code, following the **Open/Closed Principle**.
+Ten wzorzec pozwala budować rozszerzalny pipeline przetwarzania, w którym nowe kroki można dodawać w runtime bez modyfikowania istniejącego kodu, zgodnie z zasadą **Open/Closed Principle**.
 
 
 
@@ -72,21 +75,39 @@ System został zaprojektowany z wykorzystaniem najlepszych praktyk inżynierskic
 * **Facade:** Uproszczony interfejs (`SmartFinFacade`) ukrywający złożoność całego systemu.
 * **Composite:** Rekurencyjne drzewa danych (Portfele inwestycyjne) z zachowaniem zasady Liskov.
 * **Singleton (Spring Scope):** Świadome zarządzanie stanem aplikacji w środowisku wielowątkowym.
-  Czy to wyczerpuje temat?
 
-TAK. Jeśli rozumiesz te wzorce i potrafisz je zaimplementować w Groovym, to jesteś na poziomie,
-który pozwala Ci wejść do dowolnego projektu opartego na JVM i szybko połapać się w jego architekturze.
+Taki zestaw wzorców ułatwia rozwój projektu, utrzymanie kodu i szybkie zrozumienie architektury przez nowych członków zespołu.
 
-## 🧪 Zaawansowana Architektura Testów (Dual-Profile)
-Projekt wykorzystuje profesjonalne podejście do testów integracyjnych, oddzielając środowisko CI/CD 
-od środowiska deweloperskiego za pomocą profili Spring:
-* **Profil domyślny (`Testcontainers`):** Automatycznie podnosi ulotny kontener PostgreSQL w Dockerze. 
-* Gwarantuje to 100% zgodności z produkcją i bezobsługowe działanie na serwerach CI (Jenkins/GitLab CI).
-* **Profil `local-pg`:** Przeznaczony do głębokiego debugowania. Łączy się z lokalną instancją PostgreSQL, 
-* co pozwala na inspekcję danych "na żywo" przy użyciu narzędzi takich jak DBeaver w trakcie wstrzymania (breakpoint) testu.
+## 🧪 Testy integracyjne (`tc` i `local-pg`)
+Projekt rozdziela środowisko CI/CD i debugowanie lokalne za pomocą dwóch profili Spring:
+- **`tc`** — domyślny, powtarzalny profil testowy uruchamiający PostgreSQL automatycznie przez Docker CLI,
+- **`local-pg`** — profil do debugowania i inspekcji danych na lokalnym PostgreSQL (`localhost:5432`).
 
-Testy — dobra praktyka dotycząca asercji JSON
---------------------------------------------------
+### Szybki start testów po poprawce (`local-pg` i `tc`)
+
+Po ostatniej poprawce testy integracyjne czyszczą stan bezpieczniej: w `local-pg` warto wykonać jawny cleanup testowej bazy, a w `tc` zwykle nie jest to potrzebne.
+
+#### `local-pg` — lokalny PostgreSQL do debugowania i podglądu danych
+
+```powershell
+docker compose up -d db
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\clean-db.ps1 -Mode local-pg -Force
+.\gradlew.bat "-Dlocal.pg=true" "-Denable.flyway=true" clean test --no-daemon
+.\gradlew.bat "-Dlocal.pg=true" "-Denable.flyway=true" "-Dlocal.pg.keepdata=true" test --tests "pl.edu.praktyki.repository.CategorySpec" --no-daemon
+```
+
+#### `tc` — profil domyślny do powtarzalnych testów
+
+```powershell
+.\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" clean test --no-daemon
+.\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" test --tests "pl.edu.praktyki.repository.CategorySpec" --no-daemon
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\clean-db.ps1 -Mode tc -Force
+```
+
+Pozostałe warianty uruchomienia, pojedyncze testy i cleanup są opisane w `scripts/Readme--Uruchamianie-aplikacji-i-testów.md`.
+
+## Testy — dobra praktyka dotycząca asercji JSON
+
 - Unikaj polegania na konkretnym porządku elementów w tablicach JSON (np. `content[0]`). API często nie gwarantuje stabilnego sortowania i takie asercje prowadzą do flakiness.
 - Lepiej wyszukiwać elementy po unikalnych polach (np. `id` lub `originalId`) używając filtrów JSONPath: `$.content[?(@.id=='T1')]`.
 - W Groovym, gdy używasz JSONPath w stringu double-quoted, pamiętaj o ucieczce znaku `$` (np. `"\$.content[?(@.id=='T1')]"`) aby uniknąć interpolacji GString.
@@ -95,176 +116,90 @@ Testy — dobra praktyka dotycząca asercji JSON
 
 
 
-//////////////////   Asynchroniczność i Eventy - Przetwarzanie Batchowe (Background Jobs)   //////////////////
---------------------------------------------------------------------------------------------------------------
-Słuchaj, to nie jest „pojbany” opis, tylko po prostu techniczny bełkot. Spróbujmy to napisać tak, żebyś za miesiąc zajrzał do tego pliku i od razu wiedział, o co chodziło, bez drapania się po głowie.
+## ⚡ Asynchroniczność i zdarzenia w Springu
 
-Oto uproszczona i przejrzysta wersja do Twojego README.md:
+W projekcie wykorzystywane są `@Async` oraz zdarzenia aplikacyjne Springa, aby cięższe operacje — np. wysyłka raportów, audyt lub aktualizacja projekcji — mogły odbywać się w tle, bez blokowania głównego przepływu.
 
-⚡ Asynchroniczność w Springu: Jak to działa?
+### `@Async` — podstawy
 
-W tym projekcie używamy adnotacji @Async, aby ciężkie zadania (jak wysyłanie raportów) działy się „w tle”, nie blokując użytkownika.
+Adnotacja `@Async` działa przez proxy Springa. Oznacza to, że:
+- metoda jest wykonywana w osobnym wątku,
+- wywołanie wraca od razu do wywołującego,
+- mechanizm działa poprawnie wtedy, gdy metoda jest wywoływana przez Springa, a nie bezpośrednio z tej samej klasy.
 
-1. Magiczne "Opakowanie" (Proxy)
+W projekcie używana jest własna pula wątków `bulkTaskExecutor`, co pozwala kontrolować liczbę workerów, długość kolejki i nazwy wątków widoczne w logach.
 
-Kiedy dodajesz @Async nad metodą w klasie oznaczonej jako @Service lub @Component, Spring nie uruchamia tej klasy bezpośrednio.
-
-Tworzy „Asystenta” (Proxy): Spring owija Twój serwis w niewidzialne opakowanie.
-
-Przechwytuje wywołanie: Gdy wywołujesz metodę, trafiasz najpierw do „Asystenta”.
-
-Deleguje pracę: Asystent mówi: „Dobra, ja to ogarnę w innym wątku, a ty leć dalej”. Sam wykonuje Twoją metodę na zapleczu.
-
-Ważne: To działa tylko jeśli wywołujesz metodę z innej klasy. Jeśli metoda wewnątrz tej samej klasy wywoła inną swoją metodę z @Async, magia nie zadziała (bo ominiesz „Asystenta”).
-
-2. Konfiguracja "Ekipy Wykonawczej" (Thread Pool)
-
-Aby mieć kontrolę nad tym, ile wątków na raz mieli dane, skonfigurowaliśmy własną pulę wątków o nazwie bulkTaskExecutor (w pliku AsyncConfig.groovy).
-
-Co oznaczają parametry w kodzie?
-
-setCorePoolSize(5): Twoja stała ekipa. 5 wątków zawsze czeka w gotowości.
-
-setQueueCapacity(100): Poczekalnia. Jeśli stała ekipa jest zajęta, 100 kolejnych zadań może czekać w kolejce.
-
-setMaxPoolSize(10): Posiłki. Jeśli ekipa jest zajęta, a poczekalnia (kolejka) jest pełna, Spring zatrudni dodatkowe osoby (max do 10).
-
-setThreadNamePrefix("bulk-"): Identyfikator. W logach zobaczysz nazwę wątku bulk-1, bulk-2, dzięki czemu od razu wiesz, że to zadanie z tej konkretnej puli.
-
-3. Jak używać @Async w kodzie?
-   code
-   Groovy
-   download
-   content_copy
-   expand_less
-   @Async("bulkTaskExecutor") // Mówię Springowi: "Zrób to w tle, używając ekipy 'bulk'"
-   void myHeavyMethod() {
-   // ciężka praca...
-   }
-
-O czym musisz pamiętać?
-
-Musisz mieć @EnableAsync w pliku konfiguracyjnym.
-
-Klasa musi być Beanem Springa (np. mieć @Service).
-
-Jeśli w @Async("nazwa") podasz złą nazwę (taką, której nie ma w AsyncConfig), Spring wywali błąd przy starcie. Jeśli nie podasz nazwy w ogóle (@Async), użyje domyślnego, bardzo prostego mechanizmu, który nie zawsze jest wydajny.
-
-Dlaczego to jest lepsze dla Ciebie?
-
-Używasz porównań (Asystent, Ekipa, Poczekalnia).
-
-Masz jasne punkty (Co robić, a czego nie).
-
-Wygląda to profesjonalnie w portfolio – rekruter zobaczy, że rozumiesz różnicę między "wątkiem" a "pulą wątków".
-
-Wklej to sobie i daj znać, czy teraz ta "asynchroniczna magia" jest dla Ciebie jaśniejsza! 🚀
-
-
-///////////////////////////////////////////////////////////////
-
-
-
-moje pytanie:
--------------
-
-a w tym przypadku, jak mam klasę typu @Service ale metoda jest  @EventListener   ??:
+Przykład:
 
 ```groovy
+@Async("bulkTaskExecutor")
+void myHeavyMethod() {
+    // ciężka praca wykonywana w tle
+}
+```
+
+Warunki działania:
+- w konfiguracji musi być włączone `@EnableAsync`,
+- klasa musi być beanem Springa, np. `@Service`,
+- nazwa executora w `@Async("...")` musi odpowiadać rzeczywiście zdefiniowanemu beanowi.
+
+### Połączenie `@EventListener` + `@Async`
+
+Połączenie `@EventListener` oraz `@Async` pozwala budować taski uboczne wykonywane po publikacji zdarzenia. W takim układzie metoda:
+- nasłuchuje konkretnego zdarzenia opublikowanego przez `ApplicationEventPublisher`,
+- uruchamia się automatycznie po publikacji zdarzenia,
+- wykonuje swoją logikę asynchronicznie, w tle.
+
+To pozwala rozdzielić główny przepływ biznesowy od zadań pobocznych, takich jak notyfikacje, logowanie techniczne, audyt czy aktualizacja read modelu.
+
+Przykład:
+
+```groovy
+import groovy.util.logging.Slf4j
+import org.springframework.scheduling.annotation.Async
+import org.springframework.stereotype.Service
+
 @Service
 @Slf4j
 class AsyncNotificationService {
 
- 
     private final AtomicInteger processedEventsCount = new AtomicInteger(0)
 
-    // Dodajemy metodę - dzięki niej Proxy będzie wiedziało, skąd wziąć wartość
     int getProcessedCount() {
         return processedEventsCount.get()
     }
 
- 
-    @Async("bulkTaskExecutor")  
-    @EventListener
+    @Async("bulkTaskExecutor")
+    @org.springframework.context.event.EventListener
     void handleBatchEvent(TransactionBatchProcessedEvent event) {
-
-        log.info(">>> [ASYNCHRONICZNY-EVENT] Rozpoczynam wysyłkę raportu do systemu zewnętrznego dla: {}", event.userName)
-
-        // Symulujemy ciężką pracę (np. generowanie PDF i wysyłka maila)
+        log.info(">>> [ASYNCHRONICZNY-EVENT] Start przetwarzania raportu dla: {}", event.userName)
         sleep(2000)
-
-        log.info(">>> [ASYNCHRONICZNY-EVENT] Raport o bilansie {} PLN został pomyślnie przetworzony w tle.", event.totalBalance)
-
+        log.info(">>> [ASYNCHRONICZNY-EVENT] Raport dla bilansu {} PLN został przetworzony w tle.", event.totalBalance)
         processedEventsCount.incrementAndGet()
     }
 
-    // Opcjonalnie metoda do resetowania licznika między testami
     void reset() {
         processedEventsCount.set(0)
     }
-
 }
 ```
 
-Odpowiedź:
-----------
+### Jak to działa w praktyce
 
+1. Główna logika publikuje zdarzenie, np. `TransactionBatchProcessedEvent`.
+2. Spring wyszukuje wszystkie metody oznaczone `@EventListener`, które obsługują ten typ zdarzenia.
+3. Ponieważ listener ma również `@Async("bulkTaskExecutor")`, jego wykonanie trafia do puli wątków zamiast blokować główny request lub batch.
+4. Kod publikujący zdarzenie może zakończyć pracę szybciej, a zadanie poboczne wykonuje się niezależnie.
 
-To świetne pytanie! Ten przypadek to wyższy stopień wtajemniczenia, bo łączymy dwa różne mechanizmy Springa: Zdarzenia (Events) oraz Asynchroniczność.
+### Dlaczego w przykładzie używany jest `AtomicInteger`
 
-Oto jak wytłumaczyć to "po ludzku" do Twojego README, aby wyjaśnić tę konkretną klasę:
+Licznik `processedEventsCount` jest aktualizowany z wątków asynchronicznych, więc musi być bezpieczny współbieżnie. `AtomicInteger` gwarantuje poprawne inkrementowanie nawet wtedy, gdy kilka zdarzeń jest obsługiwanych równolegle. Metoda `getProcessedCount()` jest wygodnym punktem odczytu używanym np. w testach integracyjnych.
 
-📡 Architektura Reaktywna: @EventListener + @Async
+### Najważniejsze wnioski
 
-W klasie AsyncNotificationService zastosowaliśmy potężne połączenie dwóch adnotacji. To sprawia, że nasz system jest „rozproszony wewnątrz” i nie blokuje użytkownika.
-
-1. Jak to działa? (Metafora Listonosza i Biura)
-
-Wyobraź sobie, że Twoja aplikacja to wielkie biuro:
-
-Fasada (nadawca): Kończy pracę i krzyczy na całe biuro: "Ej! Właśnie przetworzyłem nową paczkę transakcji!" (to jest wywołanie publishEvent).
-
-Listonosz (Spring Event Bus): Słyszy to i sprawdza, kto w biurze czeka na taką informację.
-
-@EventListener (odbiorca): Adnotacja nad metodą handleBatchEvent działa jak antena. Mówi Springowi: "Ja! Ja chcę o tym wiedzieć! Za każdym razem, gdy padnie takie hasło, uruchom mnie".
-
-2. Rola @Async w tym procesie
-
-Gdybyśmy mieli samo @EventListener, biuro by stanęło. Fasada musiałaby czekać, aż odbiorca (NotificationService) skończy wysyłać maile (co trwa u nas 2 sekundy).
-
-Dzięki dodaniu @Async("bulkTaskExecutor"):
-
-Fasada krzyczy o zdarzeniu i natychmiast wraca do swoich spraw (oddaje raport użytkownikowi).
-
-Listonosz przekazuje informację do AsyncNotificationService.
-
-Serwis ten mówi: "Dzięki! Nie róbmy tego tutaj. Przekażcie to do mojej ekipy pomocniczej bulkTaskExecutor".
-
-Jeden z wolnych wątków z puli "bulk" bierze to zadanie na warsztat i przez 2 sekundy wysyła raport w tle.
-
-3. Dlaczego używamy AtomicInteger?
-
-Ponieważ metoda działa w tle na różnych wątkach, zwykły licznik (int) mógłby się "pogubić" (dwa wątki mogłyby spróbować dodać 1 w tym samym ułamku sekundy i jeden wynik by przepadł).
-AtomicInteger to taki specjalny, "pancerny" licznik, który gwarantuje, że każde dodanie 1 zostanie poprawnie zapisane, nawet jeśli 10 wątków rzuci się na niego naraz.
-
-4. Dlaczego mamy metodę getProcessedCount()?
-
-Pamiętasz "Asystenta" (Proxy)?
-W teście Spocka, kiedy pytasz o stan licznika, rozmawiasz z Asystentem.
-
-Jeśli pole byłoby publiczne, Asystent mógłby pokazać Ci swoją starą wersję (zero).
-
-Gdy pytasz przez metodę, Asystent musi "wejść do środka" prawdziwego serwisu, sprawdzić stan AtomicInteger i podać Ci prawdziwą, aktualną wartość.
-
-Podsumowanie do zapamiętania (Short version):
-
-@EventListener – sprawia, że metoda "słucha" komunikatów w systemie.
-
-@Async – sprawia, że to słuchanie odbywa się na boku, nie opóźniając głównego programu.
-
-To połączenie pozwala budować systemy, które są błyskawiczne dla użytkownika, bo wszystkie "ciężkie" i "nudne" rzeczy (maile, logi, audyt) dzieją się po cichu na zapleczu.
-
-Czy teraz ta "reaktywna" część Twojego serwisu jest już jasna? 🚀
+- `@EventListener` odpowiada za nasłuchiwanie zdarzeń w aplikacji,
+- `@Async` przenosi obsługę zdarzenia do wykonania w tle,
+- połączenie obu mechanizmów dobrze nadaje się do zadań ubocznych, które nie powinny wydłużać głównego przepływu biznesowego.
 
 
 

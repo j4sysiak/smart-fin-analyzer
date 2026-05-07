@@ -1,0 +1,25 @@
+# Gradle cache i pliki tymczasowe
+.gradle/
+build/
+out/
+
+# Dane lokalnej bazy (nie wchodzą do obrazu)
+postgres_data/
+
+# Logi
+*.log
+*.txt
+
+# Pliki IDE
+.idea/
+*.iml
+.vscode/
+
+# Pliki środowiskowe (hasła)
+.env
+*.env
+
+# Git
+.git/
+.gitignore
+
