@@ -25,4 +25,12 @@ class CategoryEntity {
 
     // JPA potrzebuje pustego konstruktora
     CategoryEntity() {}
+
+//    String getName() {
+//        return name
+//    }
+//
+//    void setName(String name) {
+//        this.name = name
+//    }
 }

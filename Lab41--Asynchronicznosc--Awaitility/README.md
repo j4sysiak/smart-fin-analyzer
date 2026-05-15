@@ -154,7 +154,7 @@ package pl.edu.praktyki.service
 import org.springframework.stereotype.Service
 import org.springframework.beans.factory.annotation.Autowired
 import pl.edu.praktyki.repository.TransactionRepository
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 @Service
 class AsyncService {
@@ -187,7 +187,7 @@ package pl.edu.praktyki.service
 
 import spock.lang.Specification
 import pl.edu.praktyki.repository.TransactionRepository
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class AsyncServiceMockSpec extends Specification {
 

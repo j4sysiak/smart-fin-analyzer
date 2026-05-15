@@ -1,6 +1,6 @@
 package pl.edu.praktyki.fraud
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class FraudDetector {
 
@@ -20,7 +20,7 @@ class FraudDetector {
      * Przepuszcza transakcję przez łańcuch.
      * Zwraca komunikat błędu (pierwszy napotkany) lub null, jeśli transakcja jest OK.
      */
-    String detectFraud(Transaction tx) {
+    String detectFraud(TransactionDto tx) {
 
         // Groovy Magic: findResult iteruje po regułach.
         // Jeśli rule.check(tx) zwróci Stringa (nie null), findResult natychmiast

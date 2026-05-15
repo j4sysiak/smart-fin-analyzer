@@ -201,7 +201,7 @@ package pl.edu.praktyki.service
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ContextConfiguration
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 // Ładujemy oba serwisy do jednego kontekstu

@@ -2,7 +2,7 @@ package pl.edu.praktyki.service
 
 import spock.lang.Specification
 import pl.edu.praktyki.repository.TransactionRepository
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class AsyncServiceMockSpec extends Specification {
 
@@ -14,7 +14,7 @@ class AsyncServiceMockSpec extends Specification {
 
     def "powinien wywołać save na repozytorium przy zapisie"() {
         given: "transakcja"
-        def tx = new Transaction(id: "TEST-1", amount: 100)
+        def tx = new TransactionDto(id: "TEST-1", amount: 100)
 
         when: "wywołujemy metodę zapisu"
         service.saveTransaction(tx)

@@ -76,7 +76,7 @@ class TransactionBulkSaver {
         final LocalDateTime now = LocalDateTime.now()
         log.info('>>> [BULK SAVER] auditor={}, now={}', auditor, now)
 
-        // Fastest path for Postgres: use CopyManager (COPY FROM STDIN)
+        // KROK-1: Fastest path for Postgres: use CopyManager (COPY FROM STDIN)
         if (dataSource) {
             def conn = null
             boolean copySucceeded = false
@@ -108,17 +108,25 @@ class TransactionBulkSaver {
                             def cat = e.categoryEntity
                             def categoryName = cat?.name ?: (e.categoryName ?: '')
                             def categoryId = cat?.id != null ? cat.id.toString() : '\\N'
-                            def parts = [id, e.originalId ?: '', date,
+                            def parts = [id,
+                                         e.originalId ?: '',
+                                         date,
                                          e.amount != null ? e.amount : '\\N',
                                          e.currency ?: '',
                                          e.amountPLN != null ? e.amountPLN : '\\N',
-                                         categoryName, e.description ?: '',
-                                         nowStr, nowStr, auditor, auditor, categoryId]
+                                         categoryName,
+                                         e.description ?: '',
+                                         nowStr,
+                                         nowStr,
+                                         auditor,
+                                         auditor,
+                                         categoryId,
+                                         e.ownerUsername ?: '']
                             def line = parts.collect { it.toString().replace('\t', ' ').replace('\n', ' ').replace('\r', ' ') }.join('\t')
                             sw.write(line + '\n')
                         }
                         // Dodano kolumny audytowe i category_id
-                        String copySql = "COPY transactions (db_id, original_id, date, amount, currency, amountpln, category, description, created_date, last_modified_date, created_by, last_modified_by, category_id) FROM STDIN WITH (FORMAT text, DELIMITER E'\\t', NULL '\\N')"
+                        String copySql = "COPY transactions (db_id, original_id, date, amount, currency, amountpln, category, description, created_date, last_modified_date, created_by, last_modified_by, category_id, owner_username) FROM STDIN WITH (FORMAT text, DELIMITER E'\\t', NULL '\\N')"
                         log.info('>>> [BULK SAVER] COPY SQL: {}', copySql)
                         if (sw.toString()) {
                             log.info('>>> [BULK SAVER] Przykładowy wiersz TSV: {}', sw.toString().split('\n')[0])
@@ -138,11 +146,11 @@ class TransactionBulkSaver {
             if (copySucceeded) return
         }
 
-        // Fast path: use JdbcTemplate.batchUpdate
+        // KROK-2: JdbcTemplate.batchUpdate - Fallback dla innych baz lub gdy CopyManager zawiedzie: użyj JdbcTemplate.batchUpdate
         if (jdbcTemplate) {
             log.info('>>> [BULK SAVER] Używam ścieżki batchUpdate, auditor={}, now={}', auditor, now)
             // Dodano kolumny audytowe i category_id
-            String sql = "insert into transactions (db_id, original_id, date, amount, currency, amountpln, category, description, created_date, last_modified_date, created_by, last_modified_by, category_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?)"
+            String sql = "insert into transactions (db_id, original_id, date, amount, currency, amountpln, category, description, created_date, last_modified_date, created_by, last_modified_by, category_id, owner_username) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
             final String _auditor = auditor
             final LocalDateTime _now = now
             entities.collate(chunkSize).each { List<TransactionEntity> batch ->
@@ -169,6 +177,7 @@ class TransactionBulkSaver {
                         ps.setString(5, e.currency)
                         ps.setBigDecimal(6, e.amountPLN)
 
+                        // pole category - obsługa zarówno relacji ManyToOne (categoryEntity), jak i pola tekstowego (categoryName)
                         def cat = e.categoryEntity
                         def catStr = e.categoryName
                         if (cat != null) {
@@ -178,6 +187,7 @@ class TransactionBulkSaver {
                         } else {
                             ps.setNull(7, Types.VARCHAR)
                         }
+
                         ps.setString(8, e.description)
 
                         // Kolumny audytowe – wypełniane ręcznie (omijamy JPA Auditing)
@@ -187,11 +197,14 @@ class TransactionBulkSaver {
                         ps.setString(12, _auditor)
 
                         // FK do kategorii
+                        // pole category_id - obsługa relacji ManyToOne (categoryEntity) - jeśli jest, to bierzemy ID, jeśli nie ma, to null
                         if (cat?.id != null) {
                             ps.setLong(13, cat.id)
                         } else {
                             ps.setNull(13, Types.BIGINT)
                         }
+
+                        ps.setString(14, e.ownerUsername)
                     }
 
                     @Override
@@ -203,7 +216,8 @@ class TransactionBulkSaver {
             }
             log.info('>>> [BULK SAVER] batchUpdate zakończony sukcesem')
         } else {
-            // Fallback: use EntityManager.persist with flush/clear
+            // KROK-3: EntityManager.persist - Ostateczny fallback – użyj `EntityManager.persist` z flush/clear co chunk
+            log.info('>>> [BULK SAVER] Używam ścieżki EntityManager.persist z flush/clear, auditor={}, now={}', auditor, now)
             entities.collate(chunkSize).each { List<TransactionEntity> batch ->
                 batch.each { TransactionEntity ent ->
                     em.persist(ent)

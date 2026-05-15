@@ -1,7 +1,7 @@
 package pl.edu.praktyki.service
 
 import org.springframework.stereotype.Service
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 @Service
 class FinancialAnalyticsService {
@@ -9,7 +9,7 @@ class FinancialAnalyticsService {
     /**
      * Oblicza całkowity bilans (Wpływy - Wydatki) w PLN.
      */
-    BigDecimal calculateTotalBalance(List<Transaction> transactions) {
+    BigDecimal calculateTotalBalance(List<TransactionDto> transactions) {
         // Bezpiecznie obsługujemy null/empty i konwertujemy wynik na BigDecimal
         if (!transactions) {
             return 0.0G
@@ -24,7 +24,7 @@ class FinancialAnalyticsService {
      * Grupuje wydatki według kategorii i sumuje je.
      * Zwraca Mapę: [Kategoria: SumaWydatków]
      */
-    Map<String, BigDecimal> getSpendingByCategory(List<Transaction> transactions) {
+    Map<String, BigDecimal> getSpendingByCategory(List<TransactionDto> transactions) {
         return transactions
                 .findAll { it.isExpense() && it.amountPLN < 0 } // Tylko wydatki (ujemne)
                 .groupBy { it.category }    // Grupowanie w Mapę [Category: List<Transaction>]
@@ -36,7 +36,7 @@ class FinancialAnalyticsService {
     /**
      * Znajduje transakcję o największej kwocie wydatku.
      */
-    Transaction getMostExpensiveTransaction(List<Transaction> transactions) {
+    TransactionDto getMostExpensiveTransaction(List<TransactionDto> transactions) {
         // Szukamy minimum, bo wydatki są ujemne (np. -5000 < -100)
         return transactions
                 .findAll { it.isExpense() }
@@ -46,7 +46,7 @@ class FinancialAnalyticsService {
     /**
      * Podsumowanie dzienne: ile wydano każdego dnia.
      */
-    Map<java.time.LocalDate, BigDecimal> getDailySpending(List<Transaction> transactions) {
+    Map<java.time.LocalDate, BigDecimal> getDailySpending(List<TransactionDto> transactions) {
         return transactions
                 .findAll { it.isExpense() }
                 .groupBy { it.date }
@@ -62,7 +62,7 @@ class FinancialAnalyticsService {
          która zwróci nazwę kategorii (String), na którą wydano najwięcej pieniędzy.
     Podpowiedź: Użyj getSpendingByCategory(transactions).max { it.value }.key.
      */
-    String getTopSpendingCategory(List<Transaction> transactions) {
+    String getTopSpendingCategory(List<TransactionDto> transactions) {
         def spendingByCategory = getSpendingByCategory(transactions)
 
         if ( spendingByCategory.isEmpty ( ) ) return null // Brak wydatków

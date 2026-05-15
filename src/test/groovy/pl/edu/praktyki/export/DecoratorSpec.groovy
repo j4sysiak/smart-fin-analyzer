@@ -1,11 +1,11 @@
 package pl.edu.praktyki.export
 
 import spock.lang.Specification
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class DecoratorSpec extends Specification {
 
-    def tx = new Transaction(id: "T-123", amountPLN: 450.50)
+    def tx = new TransactionDto(id: "T-123", amountPLN: 450.50)
 
     def "powinien użyć podstawowego eksportera"() {
         given:

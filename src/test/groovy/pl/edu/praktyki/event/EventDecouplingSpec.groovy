@@ -4,7 +4,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.facade.SmartFinFacade
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.service.AsyncNotificationService
 import org.springframework.beans.factory.annotation.Autowired
 import static org.awaitility.Awaitility.await
@@ -52,7 +52,7 @@ class EventDecouplingSpec extends BaseIntegrationSpec {
 
     def "powinien zwrócić raport synchronicznie i wysłać powiadomienie asynchronicznie"() {
         given: "transakcja testowa"
-        def data = [new Transaction(id: "ASYNC-TEST-1", amount: 500, currency: "PLN", category: "Test", date: LocalDate.now())]
+        def data = [new TransactionDto(id: "ASYNC-TEST-1", amount: 500, currency: "PLN", category: "Test", date: LocalDate.now())]
 
         // Resetujemy licznik przez metodę
         notificationService.reset()

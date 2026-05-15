@@ -6,7 +6,10 @@ import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.web.servlet.MockMvc
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.security.JwtService
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @AutoConfigureMockMvc
@@ -28,7 +31,7 @@ class RbacSpec extends BaseIntegrationSpec {
                 .file(file)
                 .param("user", "kowalski")
                 .header("Authorization", "Bearer $userToken"))
-                .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print()) // <--- DODAJ TO, aby zobaczyć błąd w konsoli IntelliJ
+                .andDo(print())
 
         then: "zostaje odrzucony błędem 403"
         response.andExpect(status().isForbidden())
@@ -46,9 +49,37 @@ class RbacSpec extends BaseIntegrationSpec {
                 .file(file)
                 .param("user", "boss")
                 .header("Authorization", "Bearer $adminToken"))
-                .andDo(org.springframework.test.web.servlet.result.MockMvcResultHandlers.print()) // <--- DODAJ TO, aby zobaczyć błąd w konsoli IntelliJ
+                .andDo(print())
 
         then: "zostaje wpuszczony"
         response.andExpect(status().isOk())
+    }
+
+    def "zwykły UŻYTKOWNIK nie powinien mieć dostępu do globalnego total-summary (403 Forbidden)"() {
+        given: "token dla zwykłego usera"
+        def userToken = jwtService.generateToken("kowalski", ["ROLE_USER"])
+
+        when: "user odpytuje globalny bilans systemu"
+        def response = mvc.perform(get("/api/transactions/total-summary")
+                .header("Authorization", "Bearer $userToken"))
+                .andDo(print())
+
+        then: "zostaje odrzucony błędem 403"
+        response.andExpect(status().isForbidden())
+    }
+
+    def "ADMINISTRATOR powinien mieć dostęp do globalnego total-summary (200 OK)"() {
+        given: "token dla admina"
+        def adminToken = jwtService.generateToken("boss", ["ROLE_ADMIN"])
+
+        when: "admin odpytuje globalny bilans systemu"
+        def response = mvc.perform(get("/api/transactions/total-summary")
+                .header("Authorization", "Bearer $adminToken"))
+                .andDo(print())
+
+        then: "otrzymuje poprawną odpowiedź 200"
+        response.andExpect(status().isOk())
+                .andExpect(jsonPath('$.globalTotalBalance').exists())
+                .andExpect(jsonPath('$.syncTimestamp').exists())
     }
 }

@@ -52,7 +52,7 @@ Stwórz plik `src/main/groovy/pl/edu/praktyki/service/TransactionRuleService.gro
 package pl.edu.praktyki.service
 
 import org.springframework.stereotype.Service
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import org.codehaus.groovy.control.CompilerConfiguration
 import org.codehaus.groovy.control.customizers.SecureASTCustomizer
 import groovy.lang.Binding

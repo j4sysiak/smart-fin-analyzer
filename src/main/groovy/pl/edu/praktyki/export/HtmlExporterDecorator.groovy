@@ -1,5 +1,5 @@
 package pl.edu.praktyki.export
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 // DEKORATOR 1: Formatuje wszystko jako HTML
 class HtmlExporterDecorator implements TransactionExporter {
@@ -14,7 +14,7 @@ class HtmlExporterDecorator implements TransactionExporter {
 
     // Nadpisujemy TYLKO tę metodę, którą chcemy zmienić (udekorować)
     @Override
-    String exportRow(Transaction tx) {
+    String exportRow(TransactionDto tx) {
         return "<tr><td>${inner.exportRow(tx)}</td></tr>"
     }
 

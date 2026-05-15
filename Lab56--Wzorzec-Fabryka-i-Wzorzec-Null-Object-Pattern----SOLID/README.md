@@ -53,7 +53,7 @@ Stwórz plik` src/main/groovy/pl/edu/praktyki/parser/TransactionParser.groovy`:
 ```groovy
 package pl.edu.praktyki.parser
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 interface TransactionParser {
     List<Transaction> parse(File file)
@@ -76,7 +76,7 @@ Stwórz 2 klasy odpowiadające sposobom parsowania plików wsadowych csv i json:
 ```groovy
 package pl.edu.praktyki.parser
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 // Prawdziwa implementacja
@@ -95,7 +95,7 @@ class CsvTransactionParser implements TransactionParser {
 ```groovy
 package pl.edu.praktyki.parser
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 // Prawdziwa implementacja
@@ -117,7 +117,7 @@ Stwórz plik obslugojący `WZORZEC NULL OBJECT`: Bezpieczna atrapa!
 ```groovy
 package pl.edu.praktyki.parser
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 // WZORZEC NULL OBJECT: Bezpieczna atrapa!

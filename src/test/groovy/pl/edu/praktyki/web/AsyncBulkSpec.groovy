@@ -2,7 +2,7 @@ package pl.edu.praktyki.web
 
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
@@ -67,7 +67,7 @@ class AsyncBulkSpec extends BaseIntegrationSpec {
     def "powinien przyjąć wielką paczkę danych i przetworzyć ją w tle"() {
         given: "1000 transakcji"
         String token = jwtService.generateToken("admin") // <-- KLUCZOWE JWT
-        def data = (1..1000).collect { new Transaction(id: "ASYNC-$it", amount: 10.0, category: "Async") }
+        def data = (1..1000).collect { new TransactionDto(id: "ASYNC-$it", amount: 10.0, category: "Async") }
         String json = groovy.json.JsonOutput.toJson(data)
 
         when: "uderzamy w endpoint /bulk"

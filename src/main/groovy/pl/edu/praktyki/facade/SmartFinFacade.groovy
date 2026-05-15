@@ -7,7 +7,7 @@ import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.repository.CategoryRepository
 import pl.edu.praktyki.repository.CategoryEntity
 import pl.edu.praktyki.repository.TransactionEntity
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import groovy.util.logging.Slf4j
 import org.springframework.scheduling.annotation.Async
 import org.springframework.context.ApplicationEventPublisher // DODAJ IMPORT
@@ -73,7 +73,7 @@ class SmartFinFacade {
     // Ta metoda tylko do wywolań bachowanych z zewnątrz (np. z CLI, REST, GUI)
     // - wewnętrzne wywołania  idą do metody niżej niesynchronizowanej: processAndGenerateReport(...)
     @Async("bulkTaskExecutor") // Używamy puli wątków: `bulkTaskExecutor` to nazwa beana typu Executor/TaskExecutor (czyli puli wątków).
-    void processInBackgroundTask(String userName, List<Transaction> rawTransactions, List<String> rules) {
+    void processInBackgroundTask(String userName, List<TransactionDto> rawTransactions, List<String> rules) {
         log.info(">>> [ASYNC] Rozpoczynam ciężką pracę w tle dla: {}", userName)
 
         // Zapisujemy informacje o wątku/ts i liczbie transakcji — przydatne w testach i diagnostyce
@@ -104,7 +104,7 @@ class SmartFinFacade {
     // UWAGA: nie oznaczamy jej jako @Async, ponieważ zwraca String (asynchroniczne metody
     // powinny zwracać void lub Future/CompletableFuture). Asynchroniczne uruchamianie
     // odbywa się przez metodę processInBackgroundTask, która wywołuje tę metodę wewnętrznie.
-    String processAndGenerateReport(String userName, List<Transaction> rawTransactions, List<String> rules) {
+    String processAndGenerateReport(String userName, List<TransactionDto> rawTransactions, List<String> rules) {
         log.info(">>> [FASADA] Rozpoczynam kompleksowe przetwarzanie dla użytkownika: {}", userName)
         log.info(">>> [ASYNC] Rozpoczynam (dotyczy testu EventDecouplingSpec) ciężką pracę w tle dla: {}", userName)
 
@@ -116,7 +116,7 @@ class SmartFinFacade {
 
 
         // 2. Reguły i Import
-        List<Transaction> flatListOfTransactions = ingester.ingestAndApplyRules([rawTransactions], rules)
+        List<TransactionDto> flatListOfTransactions = ingester.ingestAndApplyRules([rawTransactions], rules)
 
 
         // 3. Zapis do bazy (Mapowanie)
@@ -143,7 +143,8 @@ class SmartFinFacade {
                     categoryEntity: categoryEntity,
                     category: categoryEntity?.name,
                     description: tx.description,
-                    tags: tx.tags
+                    tags: tx.tags,
+                    ownerUsername: userName
             )
         }
         // ... and Delegate to a separate transactional bean so Spring AOP proxy applies
@@ -168,7 +169,7 @@ class SmartFinFacade {
         // ponieważ getCategory() zwraca lazy-proxy Hibernate (CategoryEntity), które nie może
         // być zainicjalizowane poza sesją JPA (LazyInitializationException).
         def allHistory = repo.findAll().collect { ent ->
-            new Transaction(
+            new TransactionDto(
                     id: ent.originalId,
                     date: ent.date,
                     amount: ent.amount,

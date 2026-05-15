@@ -174,7 +174,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.facade.TransactionBulkSaver
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.repository.TransactionEntity

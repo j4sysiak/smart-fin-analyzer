@@ -44,7 +44,7 @@ import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.service.FinancialAnalyticsService
 import pl.edu.praktyki.service.CurrencyService
 import pl.edu.praktyki.service.TransactionRuleService
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -198,7 +198,7 @@ import org.springframework.cache.annotation.EnableCaching
 import groovy.cli.picocli.CliBuilder
 import pl.edu.praktyki.service.*
 import pl.edu.praktyki.repository.TransactionRepository
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 // 1. GŁÓWNA KLASA (Teraz jest czysta, tylko startuje Springa)

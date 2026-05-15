@@ -18,14 +18,16 @@ import javax.sql.DataSource
  *
  * TRYB DOMYŚLNY (profil 'tc'):
  *   Automatycznie uruchamia kontener PostgreSQL przez Docker CLI na porcie 15432.
- *   Schemat tworzony przez Hibernate (ddl-auto=create).
- *   Użycie: ./gradlew test
+ *   Przy domyślnym ENABLE_FLYWAY=true schemat odtwarzają migracje Flyway,
+ *   a Hibernate DDL jest przełączany na `none`.
+ *   Użycie: .\gradlew.bat test
  *
  * TRYB INSPEKCJI (profil 'local-pg'):
- *   Łączy się z ręcznie uruchomionym kontenerem PostgreSQL na porcie 5432.
- *   Schemat aktualizowany (ddl-auto=update) — dane zostają po teście do inspekcji.
- *   Użycie: ./gradlew test --tests "..." -Dlocal.pg=true
- *   (wymaga ręcznego docker run — patrz application-local-pg.properties)
+ *   Łączy się z lokalnym PostgreSQL na porcie 5432 (zwykle przez `docker compose up -d db`).
+ *   Przy włączonym Flyway schemat również tworzą migracje; bez Flyway fallbackiem
+ *   jest Hibernate `ddl-auto=update`.
+ *   Użycie: .\gradlew.bat "-Dlocal.pg=true" test --tests "..."
+ *   Jeśli chcesz zachować dane po teście do inspekcji, dodaj `-Dlocal.pg.keepdata=true`.
  */
 @SpringBootTest(classes = [SmartFinDbApp])
 @ContextConfiguration(classes = [SmartFinDbApp])
@@ -135,10 +137,11 @@ abstract class BaseIntegrationSpec extends Specification {
 
     /** Czy uruchomiono z flagą -Dlocal.pg=true (ręczna inspekcja bazy) */
     static final boolean LOCAL_PG = Boolean.getBoolean("local.pg")
-    // Pozwala włączyć/wyłączyć Flyway dla testów przez -Denable.flyway=true/false
-    // Domyślnie w testach integracyjnych włączamy Flyway (migracje tworzą startowe dane takie jak użytkownik admin)
+    // Pozwala włączyć/wyłączyć Flyway dla testów przez -Denable.flyway=true/false.
+    // Domyślnie Flyway jest włączony, więc standardowy run testów odtwarza schemat
+    // i dane startowe (np. użytkownika admin) z migracji.
     static final boolean ENABLE_FLYWAY = (System.getProperty('enable.flyway') ?: 'true').toBoolean()
-    // If true, keep local-pg data instead of truncating before each test
+    // Jeśli true, nie trunacjuj danych w local-pg przed każdym testem.
     static final boolean KEEP_LOCAL_DATA = Boolean.getBoolean('local.pg.keepdata')
 
     // --- Konfiguracja automatycznego kontenera (tryb 'tc') ---
@@ -323,8 +326,8 @@ abstract class BaseIntegrationSpec extends Specification {
         }
         // Wspólne dla obu trybów
         registry.add("spring.datasource.driverClassName", () -> "org.postgresql.Driver")
-        // Domyślnie w testach Flyway jest wyłączony (schemat tworzony przez Hibernate).
-        // Możesz tymczasowo włączyć Flyway przez przekazanie -Denable.flyway=true
+        // Domyślnie w testach Flyway jest włączony, ale można go wyłączyć przez
+        // przekazanie -Denable.flyway=false.
         registry.add("spring.flyway.enabled", () -> ENABLE_FLYWAY ? "true" : "false")
         registry.add("app.scheduling.enabled", () -> "false")
     }

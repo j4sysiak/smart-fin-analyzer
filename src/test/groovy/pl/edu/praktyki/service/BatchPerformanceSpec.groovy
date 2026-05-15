@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.facade.TransactionBulkSaver
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.repository.TransactionEntity
@@ -72,7 +72,7 @@ class BatchPerformanceSpec extends BaseIntegrationSpec {
     def "powinien zapisać 50000 rekordów w czasie poniżej 2 sekund (Batch Processing)"() {
         given: "5000 transakcji"
         def bankA = (1..50000).collect { i ->
-            new Transaction(
+            new TransactionDto(
                     id: "A${i}",
                     date: LocalDate.now(),
                     amount: (i % 2 == 0 ? -(i * 1.0) : (i * 1.0)),

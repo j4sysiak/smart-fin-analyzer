@@ -167,7 +167,7 @@ package pl.edu.praktyki.event
 import pl.edu.praktyki.BaseIntegrationSpec
 import org.springframework.beans.factory.annotation.Autowired
 import pl.edu.praktyki.facade.SmartFinFacade
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.repository.FinancialSummaryRepository
 import static org.awaitility.Awaitility.await
 import java.util.concurrent.TimeUnit

@@ -1,8 +1,8 @@
 package pl.edu.praktyki.parser
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 interface TransactionParser {
 
-    List<Transaction> parse(File file)
+    List<TransactionDto> parse(File file)
 }

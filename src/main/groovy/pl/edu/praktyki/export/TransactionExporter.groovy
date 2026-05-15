@@ -1,7 +1,7 @@
 package pl.edu.praktyki.export
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 interface TransactionExporter {
-    String exportRow(Transaction tx)
+    String exportRow(TransactionDto tx)
     String exportHeader()
 }

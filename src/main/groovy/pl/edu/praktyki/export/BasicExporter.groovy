@@ -1,11 +1,11 @@
 package pl.edu.praktyki.export
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class BasicExporter implements TransactionExporter {
 
     @Override
-    String exportRow(Transaction tx) {
+    String exportRow(TransactionDto tx) {
         return "TX: ${tx.id} | KWOTA: ${tx.amountPLN}"
     }
 

@@ -1,5 +1,5 @@
 package pl.edu.praktyki.export
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 // DEKORATOR 2: Cenzuruje kwoty (Confidential)
 class ConfidentialExporterDecorator implements TransactionExporter {
@@ -16,7 +16,7 @@ class ConfidentialExporterDecorator implements TransactionExporter {
     // exportHeader() zostanie automatycznie wywołane z obiektu 'inner' (ten obiekt który przekażemy w konstruktorze)
     // dzięki @Delegate!
     @Override
-    String exportRow(Transaction tx) {
+    String exportRow(TransactionDto tx) {
         String raw = inner.exportRow(tx)
         // Podmieniamy liczby na gwiazdki używając regexa
         return raw.replaceAll(/[0-9]+(\.[0-9]+)?/, "***.**")

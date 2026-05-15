@@ -25,7 +25,7 @@ import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import groovy.cli.picocli.CliBuilder
 import pl.edu.praktyki.service.*
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 @Configuration

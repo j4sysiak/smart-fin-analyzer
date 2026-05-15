@@ -1,7 +1,7 @@
 package pl.edu.praktyki.parser
 
 import org.springframework.stereotype.Component
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 // Prawdziwa implementacja
@@ -25,7 +25,7 @@ class CsvTransactionParser implements TransactionParser {
 
     // METODA DLA CLI (zostaje bez zmian)
     @Override
-    List<Transaction> parse(File file) {
+    List<TransactionDto> parse(File file) {
         // Groovy potrafi wyciągnąć InputStream z pliku automatycznie
         return parseFromStream(file.newInputStream())
     }
@@ -88,7 +88,7 @@ class CsvTransactionParser implements TransactionParser {
     } */
 
 
-    List<Transaction> parseFromStream(InputStream is) {
+    List<TransactionDto> parseFromStream(InputStream is) {
         println ">>> [CSV-PARSER] Przetwarzam strumień danych..."
         def transactions = []
 
@@ -132,7 +132,7 @@ class CsvTransactionParser implements TransactionParser {
                     def description = cols[4].trim()
                     def date = LocalDate.parse(cols[5].trim())
 
-                    transactions << new Transaction(
+                    transactions << new TransactionDto(
                             id: id,
                             amount: amountBd,
                             currency: currency,

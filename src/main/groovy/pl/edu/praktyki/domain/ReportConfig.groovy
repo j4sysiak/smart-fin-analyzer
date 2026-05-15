@@ -5,7 +5,7 @@ import groovy.transform.builder.InitializerStrategy // IMPORT!
 import groovy.transform.ToString
 import java.time.LocalDate
 
-// kalsa: ReportConfig1 - z domyślnym builderem, który generuje metodę .build() (jak w Lomboku)
+// klasa: ReportConfig1 - z domyślnym builderem, który generuje metodę .build() (jak w Lomboku)
 // Domyślny builder z metodą .build() (jak w Lomobku)
 @Builder // TA ADNOTACJA GENERUJE CAŁEGO BUILDERA!
 @ToString(includeNames = true)

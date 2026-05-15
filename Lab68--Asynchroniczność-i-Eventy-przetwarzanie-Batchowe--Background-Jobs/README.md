@@ -100,7 +100,7 @@ Utwórz klasę testową: `C:\dev\smart-fin-analyzer\src\test\groovy\pl\edu\prakt
 package pl.edu.praktyki.web
 
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc

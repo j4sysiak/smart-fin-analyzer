@@ -36,7 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import pl.edu.praktyki.service.*
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.repository.TransactionEntity
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import groovy.util.logging.Slf4j
 
 @Service
@@ -151,7 +151,7 @@ package pl.edu.praktyki.facade
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import spock.lang.Specification
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 @SpringBootTest

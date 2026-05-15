@@ -1,7 +1,7 @@
 package pl.edu.praktyki.fraud
 
 import spock.lang.Specification
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class FraudDetectorSpec extends Specification {
 
@@ -9,7 +9,7 @@ class FraudDetectorSpec extends Specification {
 
     def "powinien zidentyfikować zwykłą transakcję jako bezpieczną"() {
         given:
-        def tx = new Transaction(id: "T1", amountPLN: -500.0, description: "Zakupy spożywcze")
+        def tx = new TransactionDto(id: "T1", amountPLN: -500.0, description: "Zakupy spożywcze")
 
         expect: "zwraca null (brak alertu)"
         detector.detectFraud(tx) == null
@@ -17,7 +17,7 @@ class FraudDetectorSpec extends Specification {
 
     def "powinien zablokować transakcję ze względu na zbyt wysoką kwotę"() {
         given:
-        def tx = new Transaction(id: "T2", amountPLN: -20000.0, description: "Kupno samochodu")
+        def tx = new TransactionDto(id: "T2", amountPLN: -20000.0, description: "Kupno samochodu")
 
         when:
         def result = detector.detectFraud(tx)
@@ -31,7 +31,7 @@ class FraudDetectorSpec extends Specification {
         given:
         // Kwota poniżej 15000 (więc AmountFraudRule to zignoruje!),
         // ale powyżej 5000 i w nocy - więc NightTimeFraudRule to złapie!
-        def tx = new Transaction(id: "T3", amountPLN: -6000.0, description: "Przelew NIGHT club")
+        def tx = new TransactionDto(id: "T3", amountPLN: -6000.0, description: "Przelew NIGHT club")
 
         when:
         def result = detector.detectFraud(tx)

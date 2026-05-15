@@ -68,7 +68,7 @@ Stwórz `src/test/groovy/pl/edu/praktyki/plugin/PluginSpec.groovy`:
 package pl.edu.praktyki.plugin
 
 import spock.lang.Specification
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 class PluginSpec extends Specification {
@@ -147,7 +147,7 @@ Nie potrzebujemy do tego żadnych skomplikowanych wzorców (jak Strategy czy Dec
 package pl.edu.praktyki.plugin
 
 import spock.lang.Specification
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class PluginSpec extends Specification {
 

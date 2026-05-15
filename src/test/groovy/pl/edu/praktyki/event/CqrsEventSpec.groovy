@@ -2,7 +2,7 @@ package pl.edu.praktyki.event
 
 import pl.edu.praktyki.BaseIntegrationSpec
 import org.springframework.beans.factory.annotation.Autowired
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.facade.SmartFinFacade
 import pl.edu.praktyki.repository.FinancialSummaryRepository
 
@@ -21,7 +21,7 @@ class CqrsEventSpec extends BaseIntegrationSpec {
                 .orElse(0.0)
 
         when: "importujemy nową paczkę danych przez Fasadę"
-        def data = [new Transaction(id: "CQRS-1", amount: 100, currency: "PLN")]
+        def data = [new TransactionDto(id: "CQRS-1", amount: 100, currency: "PLN")]
         facade.processAndGenerateReport("CqrsUser", data, [])
 
         then: "Czekamy, aż SummaryProjectionListener złapie event i zaktualizuje tabelę"

@@ -117,7 +117,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import groovy.cli.picocli.CliBuilder
 import pl.edu.praktyki.service.*
 import pl.edu.praktyki.repository.TransactionRepository
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 @SpringBootApplication

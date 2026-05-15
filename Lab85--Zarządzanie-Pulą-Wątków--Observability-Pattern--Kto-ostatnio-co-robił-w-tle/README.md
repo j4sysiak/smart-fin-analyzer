@@ -352,7 +352,7 @@ package pl.edu.praktyki.facade
 
 import org.springframework.beans.factory.annotation.Autowired
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.service.ThreadTracker
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit

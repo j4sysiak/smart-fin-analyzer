@@ -2,7 +2,7 @@ package pl.edu.praktyki.facade
 
 import org.springframework.beans.factory.annotation.Autowired
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.service.ThreadTracker
 
 import java.time.LocalDate
@@ -19,7 +19,7 @@ class SmartFinFacadeAsyncSpec extends BaseIntegrationSpec {
         given: "przygotowane dane wejściowe"
         def user = "FacadeAsyncTester"
         def transactions = [
-                new Transaction(id: "T-ASYNC-1",
+                new TransactionDto(id: "T-ASYNC-1",
                                 amount: 1000.0,
                                 category: "Test",
                                 date: LocalDate.now())]

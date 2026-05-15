@@ -31,7 +31,8 @@ class BigDataSpec extends BaseIntegrationSpec {
                     categoryEntity: catTest,
                     category: catTest.name,
                     amount: 10.0,
-                    date: java.time.LocalDate.now()
+                    date: java.time.LocalDate.now(),
+                    ownerUsername: "user"
             )
         }
         repo.saveAll(manyTransactions)
@@ -63,7 +64,8 @@ class BigDataSpec extends BaseIntegrationSpec {
                     categoryEntity: catVolume,
                     category: catVolume.name,
                     amountPLN: 10.0,
-                    date: java.time.LocalDate.now()
+                    date: java.time.LocalDate.now(),
+                    ownerUsername: "user"
             )
         }
         repo.saveAll(manyTransactions)

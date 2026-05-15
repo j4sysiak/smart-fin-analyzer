@@ -2,12 +2,9 @@ package pl.edu.praktyki.service
 
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Service
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import org.codehaus.groovy.control.CompilerConfiguration
 import org.codehaus.groovy.control.customizers.SecureASTCustomizer
-import groovy.lang.Binding
-import groovy.lang.GroovyShell
-import groovy.lang.Closure
 
 @Service
 @Slf4j
@@ -39,7 +36,7 @@ class TransactionRuleService {
      * Aplikuje zestaw reguł/rul tekstowych na transakcji.
      * Przykład reguły/roli: "if (amount < -500) addTag('BIG_EXPENSE')"
      */
-    void applyRules(Transaction tx, List<String> rules) {
+    void applyRules(TransactionDto tx, List<String> rules) {
 
         // mapa bindingu
         Binding binding = new Binding([
@@ -82,7 +79,7 @@ class TransactionRuleService {
                     BigDecimal val = new BigDecimal(m1[0][2])
                     String tag = m1[0][3]
                     double cmp = val.doubleValue()
-                    return { Transaction tx ->
+                    return { TransactionDto tx ->
                         double a = tx.amount ? tx.amount.doubleValue() : 0.0d
                         boolean ok = false
                         if (op == '>') ok = a > cmp
@@ -98,7 +95,7 @@ class TransactionRuleService {
                 if (m2.find()) {
                     String needle = m2[0][1]
                     String tag = m2[0][2]
-                    return { Transaction tx -> if (tx.description && tx.description.indexOf(needle) >= 0) tx.addTag(tag) } as Closure
+                    return { TransactionDto tx -> if (tx.description && tx.description.indexOf(needle) >= 0) tx.addTag(tag) } as Closure
                 }
 
                 // Fallback: compile using GroovyShell into a closure that accepts tx
@@ -116,7 +113,7 @@ class TransactionRuleService {
      * Apply precompiled closures to a transaction. Closure is invoked with
      * values and an addTag closure that mutates the transaction.
      */
-    void applyCompiledRules(Transaction tx, List<Closure> compiled) {
+    void applyCompiledRules(TransactionDto tx, List<Closure> compiled) {
         if (!compiled) return
         compiled.each { Closure cl ->
             try {
@@ -131,7 +128,7 @@ class TransactionRuleService {
      * Vectorized application of simple rules to a whole list of transactions.
      * Recognizes a few common patterns and applies them in tight loops (much faster).
      */
-    void applyRulesToList(List<Transaction> txs, List<String> rules) {
+    void applyRulesToList(List<TransactionDto> txs, List<String> rules) {
         if (!txs || !rules) return
 
         // Collect recognized patterns
@@ -155,7 +152,7 @@ class TransactionRuleService {
         int size = txs.size()
         boolean parallel = size > 1000
 
-        def applyAmountChecks = { Transaction tx ->
+        def applyAmountChecks = { TransactionDto tx ->
             double a = tx.amount ? tx.amount.doubleValue() : 0.0d
             for (int i = 0; i < amountChecks.size(); i++) {
                 def c = amountChecks[i]
@@ -170,7 +167,7 @@ class TransactionRuleService {
             }
         }
 
-        def applyDescChecks = { Transaction tx ->
+        def applyDescChecks = { TransactionDto tx ->
             if (!tx.description) return
             for (int i = 0; i < descChecks.size(); i++) {
                 def c = descChecks[i]

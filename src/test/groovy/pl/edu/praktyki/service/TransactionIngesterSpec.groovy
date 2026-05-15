@@ -5,8 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.annotation.Bean
-import org.springframework.test.context.ContextConfiguration // ZMIANA
-import pl.edu.praktyki.domain.Transaction
+import org.springframework.test.context.ContextConfiguration
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.monitoring.FinanceMetrics
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 
@@ -38,7 +38,7 @@ class TransactionIngesterSpec extends Specification {
         ingesterService != null
 
         when: "tworzymy transakcję"
-        def tx = new Transaction(id: "1", amount: -50.0, amountPLN: -50.0, category: "Kawa")
+        def tx = new TransactionDto(id: "1", amount: -50.0, amountPLN: -50.0, category: "Kawa")
 
         then: "logika domeny działa"
         tx.isExpense()
@@ -46,8 +46,8 @@ class TransactionIngesterSpec extends Specification {
 
     def "powinien zwrócić nienaruszoną listę transakcji (Test ingestTransactions)"() {
         given: "lista przykładowych transakcji"
-        def tx1 = new Transaction(id: "TX1", amount: 150.0, category: "Zakupy", description: "Biedronka")
-        def tx2 = new Transaction(id: "TX2", amount: -40.0, category: "Rozrywka", description: "Kino")
+        def tx1 = new TransactionDto(id: "TX1", amount: 150.0, category: "Zakupy", description: "Biedronka")
+        def tx2 = new TransactionDto(id: "TX2", amount: -40.0, category: "Rozrywka", description: "Kino")
         def inputList = [tx1, tx2]
 
         when: "wywołujemy metodę ingestTransactions"
@@ -69,8 +69,8 @@ class TransactionIngesterSpec extends Specification {
 
     def "powinien połączyć dane z wielu list w jedną płaską listę (Test Kontraktu)"() {
         given: "dwie paczki danych"
-        def pack1 = [new Transaction(id: "A1", amount: 100.0)]
-        def pack2 = [new Transaction(id: "B1", amount: 200.0)]
+        def pack1 = [new TransactionDto(id: "A1", amount: 100.0)]
+        def pack2 = [new TransactionDto(id: "B1", amount: 200.0)]
         def input = [pack1, pack2]
 
         when: "wywołujemy nową metodę, której jeszcze nie zaimplementowaliśmy"
@@ -85,15 +85,15 @@ class TransactionIngesterSpec extends Specification {
     def "powinien przetworzyć wiele źródeł równolegle i połączyć wyniki w jedną listę"() {
         given: "trzy niezależne paczki danych (np. dane z 3 różnych plików)"
         def pack1 = [
-                new Transaction(id: "S1-1", amount: 1000.0, category: "Pensja"),
-                new Transaction(id: "S1-2", amount: -200.0, category: "Zakupy")
+                new TransactionDto(id: "S1-1", amount: 1000.0, category: "Pensja"),
+                new TransactionDto(id: "S1-2", amount: -200.0, category: "Zakupy")
         ]
         def pack2 = [
-                new Transaction(id: "S2-1", amount: -50.0, category: "Paliwo")
+                new TransactionDto(id: "S2-1", amount: -50.0, category: "Paliwo")
         ]
         def pack3 = [
-                new Transaction(id: "S3-1", amount: -300.0, category: "Czynsz"),
-                new Transaction(id: "S3-2", amount: 50.0, category: "Zwrot")
+                new TransactionDto(id: "S3-1", amount: -300.0, category: "Czynsz"),
+                new TransactionDto(id: "S3-2", amount: 50.0, category: "Zwrot")
         ]
 
         def allInput = [pack1, pack2, pack3]

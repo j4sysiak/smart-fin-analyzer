@@ -25,7 +25,7 @@ Stwórz plik `src/main/groovy/pl/edu/praktyki/export/TransactionExporter.groovy`
 
 ```groovy
 package pl.edu.praktyki.export
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 interface TransactionExporter {
     String exportRow(Transaction tx)
@@ -40,7 +40,7 @@ Stwórz plik `src/main/groovy/pl/edu/praktyki/export/BasicExporter.groovy`:
 ```groovy
 package pl.edu.praktyki.export
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class BasicExporter implements TransactionExporter {
 
@@ -73,7 +73,7 @@ Stwórz plik `src/main/groovy/pl/edu/praktyki/export/HtmlExporterDecorator.groov
 ```groovy
 package pl.edu.praktyki.export
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import groovy.transform.Delegate
 
 // DEKORATOR 1: Formatuje wszystko jako HTML
@@ -107,7 +107,7 @@ Stwórz plik `src/main/groovy/pl/edu/praktyki/export/ConfidentialExporterDecorat
 ```groovy
 package pl.edu.praktyki.export
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import groovy.transform.Delegate
 
 // DEKORATOR 2: Cenzuruje kwoty (Confidential)
@@ -142,7 +142,7 @@ Stwórz plik `src/test/groovy/pl/edu/praktyki/export/DecoratorSpec.groovy`:
 package pl.edu.praktyki.export
 
 import spock.lang.Specification
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class DecoratorSpec extends Specification {
 

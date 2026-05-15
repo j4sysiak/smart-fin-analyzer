@@ -36,7 +36,7 @@ Stwórz plik `src/main/groovy/pl/edu/praktyki/fraud/FraudRule.groovy`:
 ```groovy
 package pl.edu.praktyki.fraud
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 interface FraudRule {
 /**
@@ -58,7 +58,7 @@ Reguła 1: `src/main/groovy/pl/edu/praktyki/fraud/AmountFraudRule.groovy`
 ```groovy
 package pl.edu.praktyki.fraud
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class AmountFraudRule implements FraudRule {
     
@@ -77,7 +77,7 @@ Reguła 2: `src/main/groovy/pl/edu/praktyki/fraud/NightTimeFraudRule.groovy`
 
 ```groovy
 package pl.edu.praktyki.fraud
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class AmountFraudRule implements FraudRule {
     @Override
@@ -105,7 +105,7 @@ od razu przerywa pętlę i zwraca ten komunikat.
 ```groovy
 package pl.edu.praktyki.fraud
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class FraudDetector {
 
@@ -149,7 +149,7 @@ Stwórz `src/test/groovy/pl/edu/praktyki/fraud/FraudDetectorSpec.groovy`:
 package pl.edu.praktyki.fraud
 
 import spock.lang.Specification
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class FraudDetectorSpec extends Specification {
 

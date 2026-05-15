@@ -4,7 +4,7 @@ import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
 import org.springframework.stereotype.Component
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 @Aspect
 @Component
@@ -17,7 +17,7 @@ class SecurityAspect {
         def args = joinPoint.args
 
         if (args && args[0] instanceof List) {
-            List<Transaction> transactions = args[0]
+            List<TransactionDto> transactions = args[0]
 
             // Logika bezpieczeństwa: sprawdzamy każdą transakcję
             transactions.each { tx ->

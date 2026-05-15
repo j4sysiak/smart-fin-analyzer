@@ -20,7 +20,7 @@ Stwórz plik `src/main/groovy/pl/edu/praktyki/service/FinancialAnalyticsService.
 package pl.edu.praktyki.service
 
 import org.springframework.stereotype.Service
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 @Service
 class FinancialAnalyticsService {
@@ -79,7 +79,7 @@ package pl.edu.praktyki.service
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ContextConfiguration
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 @ContextConfiguration(classes = [FinancialAnalyticsService])
@@ -173,7 +173,7 @@ Dopisz ten przypadek do FinancialAnalyticsSpec.groovy:
 ```groovy
 package pl.edu.praktyki.service
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import spock.lang.Specification
 
 import java.time.LocalDate

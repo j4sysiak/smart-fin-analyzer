@@ -11,7 +11,7 @@ Stwórz nowy plik `src/main/groovy/pl/edu/praktyki/event/TransactionImportedEven
 ```groovy
 package pl.edu.praktyki.event
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class TransactionImportedEvent {
     Transaction transaction
@@ -55,7 +55,7 @@ package pl.edu.praktyki.service
 import org.springframework.stereotype.Service
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher // <-- Import
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.event.TransactionImportedEvent // <-- Import
 import groovyx.gpars.GParsPool
 

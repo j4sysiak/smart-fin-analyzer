@@ -3,7 +3,7 @@ package pl.edu.praktyki.event
 import pl.edu.praktyki.BaseIntegrationSpec
 import org.springframework.beans.factory.annotation.Autowired
 import pl.edu.praktyki.facade.SmartFinFacade
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.repository.FinancialSummaryRepository
 import static org.awaitility.Awaitility.await
 import java.util.concurrent.TimeUnit
@@ -21,7 +21,7 @@ class CqrsSpec extends BaseIntegrationSpec {
         def initialBalance = stats.totalBalance
 
         and: "nowa paczka danych na 1000 PLN"
-        def data = [new Transaction(id: "CQRS-TEST", amount: 1000, currency: "PLN", category: "Test", date: LocalDate.now())]
+        def data = [new TransactionDto(id: "CQRS-TEST", amount: 1000, currency: "PLN", category: "Test", date: LocalDate.now())]
 
         when: "wykonujemy proces"
         facade.processAndGenerateReport("CqrsTester", data, [])

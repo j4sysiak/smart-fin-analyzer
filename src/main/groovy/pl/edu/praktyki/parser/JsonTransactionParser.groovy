@@ -1,13 +1,13 @@
 package pl.edu.praktyki.parser
 
 import groovy.json.JsonSlurper
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 // Prawdziwa implementacja
 class JsonTransactionParser implements TransactionParser {
     @Override
-    List<Transaction> parse(File file) {
+    List<TransactionDto> parse(File file) {
         println ">>> [JSON PARSER] Czytam plik: ${file.name}"
 
         def slurper = new JsonSlurper()
@@ -22,7 +22,7 @@ class JsonTransactionParser implements TransactionParser {
         // (zakładamy, że jest w formacie: id,amount,currency,category,description,date)
         // Pomijamy nagłówek (pierwsza linia) i symulujemy parsowanie]
         return json.collect { map ->
-            new Transaction(
+            new TransactionDto(
                     id:          map.id as String,
                     amount:      map.amount as BigDecimal,
                     currency:    map.currency as String,

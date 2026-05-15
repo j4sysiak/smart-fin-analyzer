@@ -77,7 +77,8 @@ class TransactionPaginationSpec extends BaseIntegrationSpec {
                     amount: i * 100.0, // Kwoty: 100, 200, 300... 1500
                     categoryEntity: catPaginacja,
                     category: catPaginacja.name,
-                    date: LocalDate.now().minusDays(i)
+                    date: LocalDate.now().minusDays(i),
+                    ownerUsername: "admin"
             )
         }
         bulkSaver.saveAllInTransaction(testData)

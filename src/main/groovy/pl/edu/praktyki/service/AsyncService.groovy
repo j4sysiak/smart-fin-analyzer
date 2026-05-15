@@ -2,7 +2,7 @@ package pl.edu.praktyki.service
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.repository.TransactionRepository
 
 import java.util.concurrent.ConcurrentHashMap
@@ -33,7 +33,7 @@ class AsyncService {
         return db.containsKey(id)
     }
 
-    void saveTransaction(Transaction tx) {
+    void saveTransaction(TransactionDto tx) {
         // Logika biznesowa
         transactionRepository.save(tx)
     }

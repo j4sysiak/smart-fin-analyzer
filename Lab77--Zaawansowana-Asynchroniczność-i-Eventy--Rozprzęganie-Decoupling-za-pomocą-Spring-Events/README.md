@@ -194,7 +194,7 @@ class CqrsEventSpec extends BaseIntegrationSpec {
         def startBalance = summaryRepo.findById("GLOBAL").map{it.totalBalance}.orElse(0.0)
 
         when: "importujemy nową paczkę danych przez Fasadę"
-        def data = [new pl.edu.praktyki.domain.Transaction(id: "CQRS-1", amount: 100, currency: "PLN")]
+        def data = [new pl.edu.praktyki.domain.TransactionDto(id: "CQRS-1", amount: 100, currency: "PLN")]
         facade.processAndGenerateReport("CqrsUser", data, [])
 
         then: "Czekamy, aż SummaryProjectionListener złapie event i zaktualizuje tabelę"

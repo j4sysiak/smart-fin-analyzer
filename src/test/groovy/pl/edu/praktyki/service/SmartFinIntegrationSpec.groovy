@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.repository.TransactionRepository
 
 import java.time.LocalDate
@@ -58,13 +58,13 @@ class SmartFinIntegrationSpec extends BaseIntegrationSpec {
     def "powinien zaimportować transakcje wielowątkowo i natychmiast oznaczyć je dynamicznymi tagami"() {
         given: "dwie paczki transakcji (np. z dwóch różnych banków)"
         def bankA = [
-                new Transaction(id: "A1", date: LocalDate.now(), amount: 5000.0, category: "Praca", description: "Wypłata"),
-                new Transaction(id: "A2", date: LocalDate.now(), amount: -15.0, category: "Jedzenie", description: "Kawa")
+                new TransactionDto(id: "A1", date: LocalDate.now(), amount: 5000.0, category: "Praca", description: "Wypłata"),
+                new TransactionDto(id: "A2", date: LocalDate.now(), amount: -15.0, category: "Jedzenie", description: "Kawa")
         ]
 
         def bankB = [
-                new Transaction(id: "B1", date: LocalDate.now(), amount: -2500.0, category: "Dom", description: "Czynsz"),
-                new Transaction(id: "B2", date: LocalDate.now(), amount: -45.0, category: "Rozrywka", description: "Netflix")
+                new TransactionDto(id: "B1", date: LocalDate.now(), amount: -2500.0, category: "Dom", description: "Czynsz"),
+                new TransactionDto(id: "B2", date: LocalDate.now(), amount: -45.0, category: "Rozrywka", description: "Netflix")
         ]
 
         and: "zestaw reguł biznesowych zdefiniowanych przez użytkownika"

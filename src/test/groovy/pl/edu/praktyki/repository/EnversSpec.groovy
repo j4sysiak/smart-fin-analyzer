@@ -15,9 +15,20 @@ import pl.edu.praktyki.BaseIntegrationSpec
 // Historia audytu weryfikowana przez bezpośrednie SQL (jdbcTemplate) — bez AuditReaderFactory.
 class EnversSpec extends BaseIntegrationSpec {
 
-    @Autowired CategoryRepository categoryRepository
-    @Autowired TransactionRepository transactionRepository
-    @Autowired PlatformTransactionManager transactionManager
+    @Autowired
+    CategoryRepository categoryRepository
+
+    @Autowired
+    TransactionRepository transactionRepository
+
+    @Autowired
+    PlatformTransactionManager transactionManager
+
+    def setup() {
+        // Przed każdym testem czyścimy bazę
+        transactionRepository.deleteAll()
+        categoryRepository.deleteAll()
+    }
 
     def "powinien zachować historię zmian limitu kategorii"() {
         given: "kategoria z limitem 500 zapisana w osobnej transakcji (rewizja #1)"
@@ -66,6 +77,8 @@ class EnversSpec extends BaseIntegrationSpec {
         given: "transakcja zapisana w osobnej transakcji (rewizja #1)"
         def txTemplate = new TransactionTemplate(transactionManager)
         def uniqueId = "ENVERS-TX-${System.nanoTime()}"
+        def initialOwner = "audit_owner_A"
+        def updatedOwner = "audit_owner_B"
 
         Long dbId = txTemplate.execute {
             def tx = new TransactionEntity(
@@ -75,33 +88,37 @@ class EnversSpec extends BaseIntegrationSpec {
                 currency: "PLN",
                 amountPLN: 100.0,
                 description: "test audytu",
-                category: "TEST"
+                category: "TEST",
+                ownerUsername: initialOwner
             )
             tx = transactionRepository.saveAndFlush(tx)
             tx.dbId
         }
 
-        when: "zmieniamy kwotę na 200 w NOWEJ transakcji (rewizja #2)"
+        when: "zmieniamy kwotę na 200 i ownera w NOWEJ transakcji (rewizja #2)"
         txTemplate.execute {
             def tx = transactionRepository.findById(dbId).get()
             tx.amount = 200.0
             tx.amountPLN = 200.0
+            tx.ownerUsername = updatedOwner
             transactionRepository.saveAndFlush(tx)
         }
 
         then: "Envers zapisał dokładnie 2 rewizje w tabeli transactions_aud"
         def auditRows = jdbcTemplate.queryForList(
-            "SELECT rev, amount, revtype FROM transactions_aud WHERE db_id = ? ORDER BY rev",
+            "SELECT rev, amount, revtype, owner_username FROM transactions_aud WHERE db_id = ? ORDER BY rev",
             dbId)
         auditRows.size() == 2
 
-        and: "pierwsza rewizja (INSERT, revtype=0) zawiera kwotę 100"
+        and: "pierwsza rewizja (INSERT, revtype=0) zawiera kwotę 100 i ownera z insertu"
         (auditRows[0].amount as BigDecimal) == 100.0G
         auditRows[0].revtype == 0  // ADD
+        auditRows[0].owner_username == initialOwner
 
-        and: "druga rewizja (UPDATE, revtype=1) zawiera zaktualizowaną kwotę 200"
+        and: "druga rewizja (UPDATE, revtype=1) zawiera zaktualizowaną kwotę 200 i nowego ownera"
         (auditRows[1].amount as BigDecimal) == 200.0G
         auditRows[1].revtype == 1  // MOD
+        auditRows[1].owner_username == updatedOwner
 
         cleanup: "usuwamy dane testowe"
         txTemplate.execute {

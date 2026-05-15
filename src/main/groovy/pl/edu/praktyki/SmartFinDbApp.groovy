@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Profile
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.stereotype.Component
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.facade.SmartFinFacade
 import pl.edu.praktyki.parser.ParserFactory
 import pl.edu.praktyki.parser.TransactionParser
@@ -103,13 +103,13 @@ class SmartFinCliRunner implements CommandLineRunner {
         // Wzorzec Strategy + DIP: fabryka dobiera parser (CSV/JSON) na podstawie rozszerzenia
         TransactionParser parser = ParserFactory.getParserForFile(myFile)
 
-        List<Transaction> rawData = parser.parse(myFile)
+        List<TransactionDto> rawData = parser.parse(myFile)
         println ">>> Zaimportowano ${rawData.size()} transakcji z pliku."
         /*
         def rawData = [
-                new Transaction(id: "1", amount: 100, currency: "EUR", category: "Jedzenie", description: "Obiad", date: LocalDate.now()),
-                new Transaction(id: "2", amount: -50, currency: "USD", category: "Rozrywka", description: "Kino", date: LocalDate.now()),
-                new Transaction(id: "3", amount: 2000, currency: "PLN", category: "Praca", description: "Bonus", date: LocalDate.now())
+                new TransactionDto(id: "1", amount: 100, currency: "EUR", category: "Jedzenie", description: "Obiad", date: LocalDate.now()),
+                new TransactionDto(id: "2", amount: -50, currency: "USD", category: "Rozrywka", description: "Kino", date: LocalDate.now()),
+                new TransactionDto(id: "3", amount: 2000, currency: "PLN", category: "Praca", description: "Bonus", date: LocalDate.now())
         ] */
 
         rawData.each { tx ->

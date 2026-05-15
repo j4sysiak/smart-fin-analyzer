@@ -2,7 +2,7 @@ package pl.edu.praktyki.service
 
 import groovy.util.logging.Slf4j
 import org.springframework.stereotype.Service
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import groovyx.gpars.GParsPool
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -49,7 +49,7 @@ class TransactionIngesterService {
      * Docelowo ta metoda będzie przyjmować listę ścieżek do plików
      * i przetwarzać je równolegle.
      */
-    List<Transaction> ingestTransactions(List<Transaction> rawData) {
+    List<TransactionDto> ingestTransactions(List<TransactionDto> rawData) {
         // Na razie tylko zwracamy dane - logikę GPars dodamy w następnym kroku
         return rawData
     }
@@ -58,7 +58,7 @@ class TransactionIngesterService {
      * KROK-3: Przyjmuje listę list transakcji.
      * Przetwarza każdą wewnętrzną listę w osobnym wątku i zwraca jedną, płaską listę transakcji.
      */
-    List<Transaction> ingestFromMultipleSources(List<List<Transaction>> allSources) {
+    List<TransactionDto> ingestFromMultipleSources(List<List<TransactionDto>> allSources) {
         // Sprawdzenie krawędziowe
         if (!allSources) return []
 
@@ -66,7 +66,7 @@ class TransactionIngesterService {
         GParsPool.withPool {
             // collectParallel sprawia, że każda paczka (source)
             // jest przetwarzana równolegle na innym rdzeniu procesora
-            def parallelResults = allSources.collectParallel { List<Transaction> source ->
+            def parallelResults = allSources.collectParallel { List<TransactionDto> source ->
                 log.info('[GPars] Przetwarzam paczkę danych ({} szt.) w wątku: {}', source.size(), Thread.currentThread().name)
 
                 // Tutaj mogłaby być dodatkowa logika, np. filtrowanie duplikatów wewnątrz paczki
@@ -76,7 +76,7 @@ class TransactionIngesterService {
             // Ponieważ collectParallel zwraca List<List<Transaction>>,
             // używamy flatten(), aby otrzymać jedną, płaską listę transakcji.
             return parallelResults.flatten()
-        } as List<Transaction>
+        } as List<TransactionDto>
     }
 
     /**
@@ -86,7 +86,7 @@ class TransactionIngesterService {
 
     Opis co robi ta metoda:
     -------------------------------
-    Metoda ta przyjmuje List<List<Transaction>> allSources i listę nazw reguł rules.
+    Metoda ta przyjmuje List<List<TransactionDto>> allSources i listę nazw reguł rules.
     Jeśli allSources jest puste — zwraca pustą listę.
     potem:
     Uruchamia wielowątkowe przetwarzanie przez GParsPool.withPool i collectParallel
@@ -106,7 +106,7 @@ class TransactionIngesterService {
     //      2. Reguły
     //      3. Eventy
     //      4. Metryki
-    List<Transaction> ingestAndApplyRules(List<List<Transaction>> allSources, List<String> rules) {
+    List<TransactionDto> ingestAndApplyRules(List<List<TransactionDto>> allSources, List<String> rules) {
         if (!allSources) return[]
 
         // Precompile rules once per pipeline run (costly parsing avoided)
@@ -124,12 +124,12 @@ class TransactionIngesterService {
             }
             metrics.recordTransactions(source.size())
             eventPublisher.publishEvent(new TransactionImportedBatchEvent(transactions: source))
-            return source as List<Transaction>
+            return source as List<TransactionDto>
         }
 
         // W przypadku wielu źródeł używamy GPars do rozdzielenia pracy na wątki
         return GParsPool.withPool {
-            def parallelResults = allSources.collectParallel { List<Transaction> source ->
+            def parallelResults = allSources.collectParallel { List<TransactionDto> source ->
                 log.info('Analizuję paczkę ({} szt.) w wątku: {}', source.size(), Thread.currentThread().name)
 
                 // Apply rules in a vectorized manner to whole source
@@ -139,6 +139,6 @@ class TransactionIngesterService {
                 return source
             }
             return parallelResults.flatten()
-        } as List<Transaction>
+        } as List<TransactionDto>
     }
 }

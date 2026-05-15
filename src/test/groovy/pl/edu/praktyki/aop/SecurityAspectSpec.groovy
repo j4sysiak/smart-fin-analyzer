@@ -9,7 +9,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy
 import org.springframework.test.context.ContextConfiguration
 import pl.edu.praktyki.monitoring.FinanceMetrics
 import pl.edu.praktyki.service.TransactionIngesterService
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.service.TransactionRuleService
 import spock.lang.Specification
 
@@ -47,7 +47,7 @@ class SecurityAspectSpec extends Specification {
 
     def "powinien zablokować transakcję powyżej 100 000 zł"() {
         given: "transakcja z gigantyczną kwotą"
-        def tx = new Transaction(id: "HACKER-1", amount: 999_999.0)
+        def tx = new TransactionDto(id: "HACKER-1", amount: 999_999.0)
 
         when: "próbujemy zaimportować taką transakcję"
         service.ingestTransactions([tx])
@@ -58,7 +58,7 @@ class SecurityAspectSpec extends Specification {
 
     def "powinien przepuścić transakcję bezpieczną"() {
         given: "transakcja w limicie"
-        def tx = new Transaction(id: "OK-1", amount: 500.0)
+        def tx = new TransactionDto(id: "OK-1", amount: 500.0)
 
         when:
         service.ingestTransactions([tx])

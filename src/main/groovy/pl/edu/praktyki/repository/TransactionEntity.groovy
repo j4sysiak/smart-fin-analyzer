@@ -1,25 +1,6 @@
 package pl.edu.praktyki.repository
 
-import jakarta.persistence.Access
-import jakarta.persistence.AccessType
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.EntityListeners
-import jakarta.persistence.FetchType
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
-import jakarta.persistence.PostPersist
-import jakarta.persistence.PostLoad
-import jakarta.persistence.PostRemove
-import jakarta.persistence.PostUpdate
-import jakarta.persistence.PrePersist
-import jakarta.persistence.PreUpdate
-import jakarta.persistence.SequenceGenerator
-import jakarta.persistence.Table
-import jakarta.persistence.Transient
+import jakarta.persistence.*
 import org.hibernate.envers.NotAudited
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.CreatedDate
@@ -87,17 +68,28 @@ class TransactionEntity {
     @NotAudited
     private List<String> tags = []
 
+    //@Audited
+    @Column(name = "owner_username")
+    private String ownerUsername // Właściciel biznesowy rekordu
+
     TransactionEntity() {}
 
     @PostLoad
     void syncTagsFromRaw() {
-        this.tags = this.tagsRaw ? this.tagsRaw.split(',').collect { it.trim() }.findAll { it } : []
+        this.tags = this.tagsRaw ?
+                this.tagsRaw.split(',')
+                        .collect { it.trim() }
+                        .findAll { it }
+                : []
     }
 
     @PrePersist
     @PreUpdate
     void syncTagsToRaw() {
-        this.tagsRaw = this.tags ? this.tags.findAll { it != null && !it.trim().isEmpty() }.join(',') : null
+        this.tagsRaw = this.tags ?
+                this.tags.findAll { it != null && !it.trim().isEmpty() }
+                        .join(',')
+                : null
     }
 
     Long getDbId() { dbId }
@@ -144,6 +136,9 @@ class TransactionEntity {
 
     List<String> getTags() { tags }
     void setTags(List<String> tags) { this.tags = tags ?: [] }
+
+    String getOwnerUsername() { ownerUsername }
+    void setOwnerUsername(String ownerUsername) { this.ownerUsername = ownerUsername }
 
     @Transient
     String getCategoryName() { category }

@@ -67,7 +67,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import pl.edu.praktyki.repository.TransactionRepository
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 @RestController
 @RequestMapping("/api/transactions")

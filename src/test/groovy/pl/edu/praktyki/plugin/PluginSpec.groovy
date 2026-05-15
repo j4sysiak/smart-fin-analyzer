@@ -1,7 +1,7 @@
 package pl.edu.praktyki.plugin
 
 import spock.lang.Specification
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 class PluginSpec extends Specification {
@@ -50,14 +50,14 @@ class PluginSpec extends Specification {
         def pm = new PluginManager()
 
         and: "dane transakcji"
-        def tx = new Transaction(id: "TX-99", amount: 200.0, category: "IT", description: "Monitor")
+        def tx = new TransactionDto(id: "TX-99", amount: 200.0, category: "IT", description: "Monitor")
 
         and: "dodajemy wtyczki (logika przekazana jako Closure)"
-        pm.addPlugin { Transaction t ->
+        pm.addPlugin { TransactionDto t ->
             println "PLUGIN 1: Wysyłam maila o transakcji: ${t.id}"
         }
 
-        pm.addPlugin { Transaction t ->
+        pm.addPlugin { TransactionDto t ->
             if (t.amount > 100) println "PLUGIN 2: Alarm! Wysoki wydatek: ${t.amount}"
         }
 
@@ -71,10 +71,10 @@ class PluginSpec extends Specification {
     def "Wyzwanie: Wtyczka filtrująca powinna modyfikować transakcję (dodać tag TECH)"() {
         given: "Manager wtyczek i transakcja z kategorii IT"
         def pm = new PluginManager()
-        def tx = new Transaction(id: "TX-100", amount: 500.0, category: "IT", description: "Monitor")
+        def tx = new TransactionDto(id: "TX-100", amount: 500.0, category: "IT", description: "Monitor")
 
         and: "Wtyczka, która sprawdza kategorię i dodaje tag"
-        pm.addPlugin { Transaction t ->
+        pm.addPlugin { TransactionDto t ->
             if (t.category == "IT") {
                 t.addTag("TECH")
             }
@@ -87,7 +87,7 @@ class PluginSpec extends Specification {
         tx.tags.contains("TECH")
 
         and: "transakcja z innej kategorii NIE powinna mieć tego tagu"
-        def otherTx = new Transaction(id: "TX-200", amount: 50.0, category: "Dom")
+        def otherTx = new TransactionDto(id: "TX-200", amount: 50.0, category: "Dom")
         pm.runAll(otherTx)
         !otherTx.tags.contains("TECH")
     }

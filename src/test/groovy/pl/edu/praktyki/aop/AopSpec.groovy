@@ -9,7 +9,7 @@ import org.springframework.test.context.ContextConfiguration
 import pl.edu.praktyki.monitoring.FinanceMetrics
 import pl.edu.praktyki.service.TransactionIngesterService
 import pl.edu.praktyki.service.TransactionRuleService
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import spock.lang.Specification
 import org.mockito.Mockito // Użyjemy Mockito, które jest domyślnie w spring-boot-starter-test
 
@@ -71,7 +71,7 @@ class AopSpec extends Specification {
 
     def "powinien uruchomić aspekt logujący przy wywołaniu metody serwisu"() {
         given: "transakcja"
-        def tx = new Transaction(id: "T1", amount: 100.0)
+        def tx = new TransactionDto(id: "T1", amount: 100.0)
 
         when: "wywołujemy metodę serwisu"
         // Logika serwisu (ingestTransactions) uruchomi się, a AOP "podepnie" się w tle

@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.repository.TransactionRepository
 
 import java.time.LocalDate
@@ -64,12 +64,12 @@ class SmartFinFinalReportSpec extends BaseIntegrationSpec {
     def "powinien przeprowadzić pełny proces: od surowych danych do gotowego raportu"() {
         given: "1. Lista surowych transakcji (już po przeliczeniu na PLN)"
         def transactions = [
-                new Transaction(id: "T1", amountPLN: 6000.0, category: "Praca", description: "Wypłata", date: LocalDate.now()),
-                new Transaction(id: "T2", amountPLN: -2200.0, category: "Dom", description: "Czynsz i media", date: LocalDate.now()),
-                new Transaction(id: "T3", amountPLN: -450.0, category: "Jedzenie", description: "Zakupy tydzień 1", date: LocalDate.now()),
-                new Transaction(id: "T4", amountPLN: -300.0, category: "Jedzenie", description: "Restauracja", date: LocalDate.now()),
-                new Transaction(id: "T5", amountPLN: -150.0, category: "Rozrywka", description: "Kino i popcorn", date: LocalDate.now()),
-                new Transaction(id: "T6", amountPLN: -120.0, category: "Zdrowie", description: "Apteka", date: LocalDate.now())
+                new TransactionDto(id: "T1", amountPLN: 6000.0, category: "Praca", description: "Wypłata", date: LocalDate.now()),
+                new TransactionDto(id: "T2", amountPLN: -2200.0, category: "Dom", description: "Czynsz i media", date: LocalDate.now()),
+                new TransactionDto(id: "T3", amountPLN: -450.0, category: "Jedzenie", description: "Zakupy tydzień 1", date: LocalDate.now()),
+                new TransactionDto(id: "T4", amountPLN: -300.0, category: "Jedzenie", description: "Restauracja", date: LocalDate.now()),
+                new TransactionDto(id: "T5", amountPLN: -150.0, category: "Rozrywka", description: "Kino i popcorn", date: LocalDate.now()),
+                new TransactionDto(id: "T6", amountPLN: -120.0, category: "Zdrowie", description: "Apteka", date: LocalDate.now())
         ]
 
         when: "2. Wykorzystujemy FinancialAnalyticsService do wyciągnięcia statystyk"

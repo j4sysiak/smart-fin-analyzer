@@ -24,8 +24,8 @@ class TransactionAuditWriter {
                 INSERT INTO transactions_aud (
                     db_id, rev, revtype,
                     original_id, date, amount, currency, amountpln,
-                    category, description, category_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    category, description, category_id, owner_username
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 '''.stripIndent(),
                 entity.dbId,
                 rev,
@@ -37,7 +37,8 @@ class TransactionAuditWriter {
                 entity.amountPLN,
                 entity.category,
                 entity.description,
-                entity.categoryEntity?.id
+                entity.categoryEntity?.id,
+                entity.ownerUsername
         )
     }
 }

@@ -1,7 +1,7 @@
 package pl.edu.praktyki.event
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class TransactionImportedEvent {
-    Transaction transaction
+    TransactionDto transaction
 }

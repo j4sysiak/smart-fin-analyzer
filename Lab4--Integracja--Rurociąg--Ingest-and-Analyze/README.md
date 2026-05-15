@@ -19,7 +19,7 @@ package pl.edu.praktyki.service
 
 import org.springframework.stereotype.Service
 import org.springframework.beans.factory.annotation.Autowired // DODANE
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import groovyx.gpars.GParsPool
 
 @Service
@@ -68,7 +68,7 @@ package pl.edu.praktyki.service
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ContextConfiguration
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import java.time.LocalDate
 
 // Ładujemy OBA serwisy do kontekstu Springa

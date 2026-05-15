@@ -148,7 +148,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import pl.edu.praktyki.monitoring.FinanceMetrics
 import pl.edu.praktyki.service.TransactionIngesterService
 import pl.edu.praktyki.service.TransactionRuleService
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import spock.lang.Specification
 import org.mockito.Mockito // Użyjemy Mockito, które jest domyślnie w spring-boot-starter-test
 
@@ -323,7 +323,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ContextConfiguration
 import pl.edu.praktyki.service.TransactionIngesterService
 import pl.edu.praktyki.service.TransactionRuleService
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 // Ładujemy tylko to, co jest nam potrzebne. To jest potęga lekkich testów Springa!
 @ContextConfiguration(classes =[
@@ -582,7 +582,7 @@ import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
 import org.springframework.stereotype.Component
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 @Aspect
 @Component
@@ -628,7 +628,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy
 import org.springframework.test.context.ContextConfiguration
 import pl.edu.praktyki.monitoring.FinanceMetrics
 import pl.edu.praktyki.service.TransactionIngesterService
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.service.TransactionRuleService
 import spock.lang.Specification
 

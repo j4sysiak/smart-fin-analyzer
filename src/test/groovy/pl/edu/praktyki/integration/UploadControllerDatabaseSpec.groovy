@@ -11,6 +11,8 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.access.AccessDeniedException
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 // awaiting async projections
 import static org.awaitility.Awaitility.await
 import java.util.concurrent.TimeUnit
@@ -25,6 +27,9 @@ class UploadControllerDatabaseSpec extends BaseIntegrationSpec {
 
     @Autowired
     FinancialSummaryRepository summaryRepo
+
+    @Autowired
+    PlatformTransactionManager transactionManager
 
     def setup() {
         // ensure clean DB before each test
@@ -80,7 +85,7 @@ TJ36,5000.00,PLN,Praca,Wypłata,2026-04-12
         SecurityContextHolder.clearContext()
     }
 
-    def "upload CSV creates audit rows in transactions_aud"() {
+    def "upload CSV creates audit rows with owner_username in transactions_aud"() {
         given: "a CSV with 2 transactions uploaded as admin"
         String id1 = "AUD-UP-${System.nanoTime()}-1"
         String id2 = "AUD-UP-${System.nanoTime()}-2"
@@ -101,10 +106,24 @@ ${id2},-25.50,PLN,Jedzenie,Kawa,2026-04-12
         then: "HTTP response is OK"
         resp.statusCode.value() == 200
 
-        and: "manual audit rows were created for both uploaded transactions"
+        and: "business rows were created with expected owner_username"
+        def businessRows = jdbcTemplate.queryForList(
+                '''
+                SELECT original_id, owner_username
+                FROM transactions
+                WHERE original_id IN (?, ?)
+                ORDER BY original_id
+                '''.stripIndent(),
+                id1, id2
+        )
+        businessRows.size() == 2
+        businessRows*.original_id as Set == [id1, id2] as Set
+        businessRows*.owner_username.every { it == 'AUDIT_TEST_USER' }
+
+        and: "manual audit rows were created for both uploaded transactions with expected owner_username"
         def auditRows = jdbcTemplate.queryForList(
                 '''
-                SELECT original_id, revtype
+                SELECT original_id, revtype, owner_username
                 FROM transactions_aud
                 WHERE original_id IN (?, ?)
                 ORDER BY original_id, rev
@@ -114,10 +133,76 @@ ${id2},-25.50,PLN,Jedzenie,Kawa,2026-04-12
         auditRows.size() == 2
         auditRows*.original_id as Set == [id1, id2] as Set
         auditRows*.revtype.every { it == 0 }
+        auditRows*.owner_username.every { it == 'AUDIT_TEST_USER' }
 
         and: "revinfo increased by at least one revision per inserted transaction"
         def revinfoAfter = jdbcTemplate.queryForObject('SELECT COUNT(*) FROM revinfo', Long)
         revinfoAfter >= revinfoBefore + 2
+
+        cleanup:
+        SecurityContextHolder.clearContext()
+    }
+
+    def "upload CSV update of same transaction keeps owner_username in revtype 1 audit row"() {
+        given: "a CSV with 1 transaction uploaded as admin"
+        String id = "AUD-UP-UPD-${System.nanoTime()}"
+        String csv = """id,amount,currency,category,description,date
+${id},120.00,PLN,Zakupy,Myszka,2026-04-12
+"""
+        def multipart = new MockMultipartFile('file', 'transactions_upload.csv', 'text/csv', csv.getBytes('UTF-8'))
+        def txTemplate = new TransactionTemplate(transactionManager)
+
+        when: "we execute upload and then update the same transaction in a new transaction"
+        def auth = new UsernamePasswordAuthenticationToken('admin', null, [new SimpleGrantedAuthority('ROLE_ADMIN')])
+        SecurityContextHolder.context.authentication = auth
+        def resp = uploadController.uploadCsv(multipart, 'AUDIT_TEST_USER')
+
+        Long dbId = txTemplate.execute {
+            def matches = transactionRepository.findByOriginalId(id)
+            assert matches.size() == 1
+
+            def tx = matches.first()
+            tx.description = 'Myszka po update'
+            tx.amount = 130.00G
+            tx.amountPLN = 130.00G
+            tx = transactionRepository.saveAndFlush(tx)
+            tx.dbId
+        }
+
+        then: "HTTP response is OK"
+        resp.statusCode.value() == 200
+
+        and: "business row still belongs to the same owner after update"
+        def businessRow = jdbcTemplate.queryForMap(
+                '''
+                SELECT db_id, original_id, owner_username, amount, description
+                FROM transactions
+                WHERE db_id = ?
+                '''.stripIndent(),
+                dbId
+        )
+        businessRow.original_id == id
+        businessRow.owner_username == 'AUDIT_TEST_USER'
+        (businessRow.amount as BigDecimal) == 130.00G
+        businessRow.description == 'Myszka po update'
+
+        and: "manual audit contains insert and update revision with preserved owner_username"
+        def auditRows = jdbcTemplate.queryForList(
+                '''
+                SELECT revtype, owner_username, amount, description
+                FROM transactions_aud
+                WHERE db_id = ?
+                ORDER BY rev
+                '''.stripIndent(),
+                dbId
+        )
+        auditRows.size() == 2
+        auditRows*.revtype == [0, 1]
+        auditRows*.owner_username == ['AUDIT_TEST_USER', 'AUDIT_TEST_USER']
+        (auditRows[0].amount as BigDecimal) == 120.00G
+        auditRows[0].description == 'Myszka'
+        (auditRows[1].amount as BigDecimal) == 130.00G
+        auditRows[1].description == 'Myszka po update'
 
         cleanup:
         SecurityContextHolder.clearContext()

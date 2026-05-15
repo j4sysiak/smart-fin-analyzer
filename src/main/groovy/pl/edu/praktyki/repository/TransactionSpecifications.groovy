@@ -4,6 +4,13 @@ import org.springframework.data.jpa.domain.Specification
 
 class TransactionSpecifications {
 
+
+
+    // NOWOŚĆ: Filtr właściciela
+    static Specification<TransactionEntity> isOwnedBy(String username) {
+        return (root, query, cb) -> cb.equal(root.get("ownerUsername"), username)
+    }
+
     static Specification<TransactionEntity> hasCategory(String category) {
 
         /*

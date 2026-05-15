@@ -3,7 +3,7 @@ package pl.edu.praktyki.service
 import spock.lang.Specification
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ContextConfiguration
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 @ContextConfiguration(classes = [TransactionRuleService])
 class TransactionRuleSpec extends Specification {
@@ -13,7 +13,7 @@ class TransactionRuleSpec extends Specification {
 
     def "powinien nadać tagi na podstawie dynamicznych reguł"() {
         given: "transakcja i zestaw reguł"
-        def tx = new Transaction(id: "T1", amount:  1500.0, category: "Dom", description: "Czynsz za luty")
+        def tx = new TransactionDto(id: "T1", amount:  1500.0, category: "Dom", description: "Czynsz za luty")
         def rules = [
                 "if (amount < -1000) addTag('HIGH_PRIORITY')",
                 "if (category == 'Dom') addTag('HOUSING')",

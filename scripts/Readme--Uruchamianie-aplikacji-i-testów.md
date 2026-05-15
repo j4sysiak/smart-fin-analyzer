@@ -8,15 +8,15 @@ Aplikacja: `src\main\groovy\pl\edu\praktyki\SmartFinDbApp.groovy`
 │                                                                            │
 │  Produkcja — TRYB DEV (zalecany lokalnie):                                │
 │             docker compose up -d          ← tylko baza (smartfin-postgres) │
-│             ./gradlew runSmartFinDb       ← aplikacja przez Gradle/JVM    │
+│             .\gradlew.bat runSmartFinDb  ← aplikacja przez Gradle/JVM    │
 │             baza: smartfin_db, port 5432, finuser/finpass                 │
 │             schemat: Flyway (ddl-auto=none)                               │
 │                                                                            │
 │  Produkcja — TRYB DOCKER (pełny kontener):                                │
-│             ./gradlew jibDockerBuild      ← zbuduj obraz raz              │
+│             .\gradlew.bat jibDockerBuild ← zbuduj obraz raz              │
 │             docker compose up -d          ← baza + aplikacja w Dockerze   │
 │                                                                            │
-│  Testy      (./gradlew test):           PostgreSQL via Docker CLI          │
+│  Testy      (.\gradlew.bat test):      PostgreSQL via Docker CLI          │
 │             ├─ tryb 'tc'       (domyślny) — auto-kontener, port 15432     │
 │             └─ tryb 'local-pg' (inspekcja) — ręczny kontener, port 5432   │
 └────────────────────────────────────────────────────────────────────────────┘
@@ -55,6 +55,16 @@ Zalety: szybki restart, hot-reload, pełna widoczność logów, debugger działa
 ### Krok 1 — Uruchom **tylko bazę** (`docker compose`, bez serwisu `app`)
 
 ```powershell
+Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,StartTime
+
+   Id ProcessName StartTime
+   -- ----------- ---------
+   25352 java        9.05.2026 21:24:25
+   28332 java        10.05.2026 10:45:09
+
+Stop-Process -Id 25352 -Force
+Stop-Process -Id 28332 -Force
+
 cd C:\dev\smart-fin-analyzer
 docker compose up -d db
 ```
@@ -81,11 +91,12 @@ docker exec smartfin-postgres pg_isready -U finuser
 **Sposób 1: Gradle task `runSmartFinDb` (zalecany)**
 
 ```powershell
-./gradlew runSmartFinDb -PappArgs="-u Jacek -f transactions_upload.csv"   # full wypas (import CSV)
-./gradlew runSmartFinDb -PappArgs="-u Jacek"                              # bez importu CSV
+.\gradlew.bat runSmartFinDb -PappArgs="-u Jacek"    # start aplikacji bez importu CSV
 
-- to doda brakujace migracje Flayway (V1→V14) i wystartuje aplikację:
-./gradlew runSmartFinDb "-Denable.flyway=true" "-Dlogging.level.org.flywaydb=DEBUG" -PappArgs="-u Jacek"
+.\gradlew.bat runSmartFinDb -PappArgs="-u Jacek -f transactions_upload.csv"     # start aplikacji + import CSV
+
+# jeśli chcesz tylko więcej logów Flyway przy starcie aplikacji:
+.\gradlew.bat runSmartFinDb "-Dlogging.level.org.flywaydb=DEBUG" -PappArgs="-u Jacek -f transactions_upload.csv"
 ```
 
 Gdy zobaczysz `80% EXECUTING [39s]` — aplikacja działa:
@@ -116,7 +127,7 @@ W tym trybie zarówno baza jak i aplikacja działają w Dockerze (izolacja jak n
 
 ```powershell
 # Opcja A: Jib (szybszy, nie wymaga Dockerfile)
-./gradlew jibDockerBuild
+.\gradlew.bat jibDockerBuild
 
 # Opcja B: `docker compose` z Dockerfile (automatyczna pełna budowa)
 docker compose build app
@@ -132,7 +143,7 @@ docker compose up --build -d
 
 Docker automatycznie:
 1. Czeka aż PostgreSQL będzie gotowy (healthcheck)
-2. Startuje aplikację — Flyway wykona migracje V1→V14
+2. Startuje aplikację — Flyway wykona migracje V1→V15
 
 Sprawdzenie logów aplikacji:
 ```powershell
@@ -435,14 +446,14 @@ Ten fragment może być skopiowany do `scripts/Readme--Odpalanie-RESTów-z-Postm
 | Co chcesz zrobić                          | Komenda                                                                   |
 |-------------------------------------------|---------------------------------------------------------------------------|
 | **[DEV]** Uruchomić tylko bazę            | `docker compose up -d db`                                                 |
-| **[DEV]** Uruchomić aplikację (Gradle)    | `./gradlew runSmartFinDb -PappArgs="-u Jacek -f transakcje.csv"`          |
-| **[DOCKER]** Zbuduj obraz aplikacji       | `./gradlew jibDockerBuild`                                                |
+| **[DEV]** Uruchomić aplikację (Gradle)    | `.\gradlew.bat runSmartFinDb -PappArgs="-u Jacek -f transactions_upload.csv"` |
+| **[DOCKER]** Zbuduj obraz aplikacji       | `.\gradlew.bat jibDockerBuild`                                           |
 | **[DOCKER]** Uruchomić bazę + aplikację   | `docker compose up -d`                                                    |
 | **[DOCKER]** Przebuduj i uruchom          | `docker compose up --build -d`                                            |
-| Uruchomić testy (automatyczny PG) z Flyway | `./gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" clean test --no-daemon` |
-| Uruchomić wszystkie testy w `local-pg` (pełny run) | `docker compose up -d db; powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\clean-db.ps1 -Mode local-pg -Force; ./gradlew.bat "-Dlocal.pg=true" "-Denable.flyway=true" clean test --no-daemon` |
-| Uruchomić test z inspekcją bazy           | `./gradlew.bat "-Dlocal.pg=true" test --tests "..."`                     |
-| Uruchomić test z inspekcją bazy (z zachowaniem danych) | `./gradlew.bat "-Dlocal.pg=true" "-Denable.flyway=true" "-Dlocal.pg.keepdata=true" test --tests "..." --no-daemon` |
+| Uruchomić testy (automatyczny PG) z Flyway | `.\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" clean test --no-daemon` |
+| Uruchomić wszystkie testy w `local-pg` (pełny run) | `docker compose up -d db; powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\clean-db.ps1 -Mode local-pg -Force; .\gradlew.bat "-Dlocal.pg=true" "-Denable.flyway=true" clean test --no-daemon` |
+| Uruchomić test z inspekcją bazy           | `.\gradlew.bat "-Dlocal.pg=true" test --tests "..."`                     |
+| Uruchomić test z inspekcją bazy (z zachowaniem danych) | `.\gradlew.bat "-Dlocal.pg=true" "-Denable.flyway=true" "-Dlocal.pg.keepdata=true" test --tests "..." --no-daemon` |
 | Sprawdzić dane w bazie produkcyjnej       | `docker exec -it smartfin-postgres psql -U finuser -d smartfin_db`        |
 | Smoke check audytu po uploadzie CSV       | `docker exec -it smartfin-postgres psql -U finuser -d smartfin_db -c "SELECT original_id, rev, revtype FROM transactions_aud WHERE original_id IN ('...','...') ORDER BY original_id, rev;"` |
 | Sprawdzić dane w bazie testowej           | `docker exec -it smartfin-postgres psql -U finuser -d smartfin_test`      |
@@ -453,7 +464,7 @@ Ten fragment może być skopiowany do `scripts/Readme--Odpalanie-RESTów-z-Postm
 
 ## 6. Dodatkowe informacje — migracje Flyway i helpery
 
-- Migracje Flyway są w `src/main/resources/db/migration`; aktualny stan repo to **V1–V14**.
+- Migracje Flyway są w `src/main/resources/db/migration`; aktualny stan repo to **V1–V15**.
 - W testach najlepiej uruchamiać migracje przez standardowe komendy z sekcji `## 2` (`-Denable.flyway=true`), bo pełna logika profili i cleanupu siedzi w `BaseIntegrationSpec`.
 - Dla ręcznego sprawdzenia migracji poza testami jest helper `src/main/groovy/tools/RunFlyway.groovy` i task Gradle `runFlywayLocal`:
   ```powershell
@@ -463,3 +474,4 @@ Ten fragment może być skopiowany do `scripts/Readme--Odpalanie-RESTów-z-Postm
   .\gradlew.bat --no-daemon runFlywayLocal
   ```
 - Helper uruchamia `migrate` na katalogu `src/main/resources/db/migration` i wypisuje podsumowanie zastosowanych migracji.
+- Uwaga: helper `runFlywayLocal` ma w kodzie `baselineOnMigrate(true)`, więc traktuj go jako narzędzie pomocnicze do ręcznej inspekcji / awaryjnego uruchomienia migracji, a nie jako główne źródło prawdy dla standardowych runów aplikacji i testów.

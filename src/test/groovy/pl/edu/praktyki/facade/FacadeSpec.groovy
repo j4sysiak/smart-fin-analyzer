@@ -3,7 +3,7 @@ package pl.edu.praktyki.facade
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import pl.edu.praktyki.BaseIntegrationSpec
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.repository.TransactionRepository
 
 import java.time.LocalDate
@@ -40,7 +40,7 @@ class FacadeSpec extends BaseIntegrationSpec {
         given: "dane wejściowe od użytkownika (np. z CLI lub z REST Controller)"
         def userName = "Testowy Użytkownik"
         def data =[
-                new Transaction(id: "F1", amount: 100.0, currency: "PLN", category: "Test", date: LocalDate.now())
+                new TransactionDto(id: "F1", amount: 100.0, currency: "PLN", category: "Test", date: LocalDate.now())
         ]
         def rules =["if (amountPLN < -100) addTag('BIG_SPENDER')"]
 

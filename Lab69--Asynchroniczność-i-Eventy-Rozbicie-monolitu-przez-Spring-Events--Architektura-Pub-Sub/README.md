@@ -30,7 +30,7 @@ Zdarzenie będzie teraz zawierać gotowy raport i dane, aby słuchacze nie musie
 ```groovy
 package pl.edu.praktyki.event
 
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 
 class TransactionBatchProcessedEvent {
     String userName
@@ -51,7 +51,7 @@ import org.springframework.context.ApplicationEventPublisher
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.repository.TransactionEntity
 import pl.edu.praktyki.event.TransactionBatchProcessedEvent
 import groovy.util.logging.Slf4j
@@ -187,7 +187,7 @@ package pl.edu.praktyki.event
 
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.facade.SmartFinFacade
-import pl.edu.praktyki.domain.Transaction
+import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.service.AsyncNotificationService
 import org.springframework.beans.factory.annotation.Autowired
 import static org.awaitility.Awaitility.await
