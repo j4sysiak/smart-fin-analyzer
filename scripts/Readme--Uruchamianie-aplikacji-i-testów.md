@@ -55,7 +55,9 @@ Zalety: szybki restart, hot-reload, pełna widoczność logów, debugger działa
 ### Krok 1 — Uruchom **tylko bazę** (`docker compose`, bez serwisu `app`)
 
 ```powershell
-Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,StartTime
+PS C:\dev\smart-fin-analyzer> docker compose stop
+PS C:\dev\smart-fin-analyzer> docker compose down -v
+PS C:\dev\smart-fin-analyzer> Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,StartTime
 
    Id ProcessName StartTime
    -- ----------- ---------
@@ -65,8 +67,8 @@ Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessNa
 Stop-Process -Id 25352 -Force
 Stop-Process -Id 28332 -Force
 
-cd C:\dev\smart-fin-analyzer
-docker compose up -d db
+PS C:\dev\smart-fin-analyzer> cd C:\dev\smart-fin-analyzer
+PS C:\dev\smart-fin-analyzer> docker compose up -d db
 ```
 
 > `up -d db` — startuje tylko serwis `db` (kontener `smart-fin-analyzer` a w nim kontener bazy: smartfin-postgres), pomijając serwis `app`.

@@ -14,6 +14,7 @@ import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.repository.TransactionSpecifications
 import pl.edu.praktyki.security.UserContextService
 import groovy.util.logging.Slf4j
+import java.time.LocalDateTime
 
 @Service
 @Slf4j
@@ -176,5 +177,27 @@ class TransactionService {
                 tags: ent.tags,
                 ownerUsername: ent.ownerUsername
         )
+    }
+
+    @Transactional
+    boolean deleteMyTransaction(Long dbId) {
+        String currentUser = userContextService.getCurrentUsername()
+
+        def entity = repo.findByDbIdAndOwnerUsername(dbId, currentUser)
+                .orElse(null)
+
+        if (entity == null) {
+            log.warn("Nie znaleziono transakcji do usunięcia. dbId: {}, użytkownik: {}", dbId, currentUser)
+            return false
+        }
+
+        entity.deleted = true
+        entity.deletedAt = LocalDateTime.now()
+        entity.deletedBy = currentUser
+
+        repo.saveAndFlush(entity)
+
+        log.info(">>> [SOFT-DELETE] Użytkownik {} logicznie usunął transakcję dbId={}", currentUser, dbId)
+        return true
     }
 }

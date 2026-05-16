@@ -8,12 +8,23 @@ import org.springframework.data.annotation.LastModifiedBy
 import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 
+import org.hibernate.annotations.SQLDelete
+import org.hibernate.annotations.Where
+
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
 @Table(name = "transactions")
+
+// Ta adnotacja rejestruje klasy nasłuchujące na cykl życia encji JPA dla TransactionEntity.
+//  - AuditingEntityListener - listener Spring Data, który automatycznie uzupełnia pola audytowe, np.: - createdDate - lastModifiedDate - createdBy - lastModifiedBy
+//  - TransactionAuditEntityListener - własny listener aplikacji. Zwykle służy do wykonania dodatkowej logiki przy zdarzeniach encji, np.: - przed zapisem - po odczycie - przed aktualizacją - przed usunięciem
+// W praktyce oznacza to, że przy operacjach na TransactionEntity JPA wywoła metody oznaczone np.: - @PrePersist - @PreUpdate - @PostLoad - @PreRemove
 @EntityListeners([AuditingEntityListener, TransactionAuditEntityListener])
+
+@SQLDelete(sql = "UPDATE transactions SET deleted = true, deleted_at = CURRENT_TIMESTAMP WHERE db_id = ?")
+@Where(clause = "deleted = false")
 @Access(AccessType.FIELD)
 class TransactionEntity {
 
@@ -68,9 +79,17 @@ class TransactionEntity {
     @NotAudited
     private List<String> tags = []
 
-    //@Audited
     @Column(name = "owner_username")
     private String ownerUsername // Właściciel biznesowy rekordu
+
+    @Column(name = "deleted", nullable = false)
+    private boolean deleted = false
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt
+
+    @Column(name = "deleted_by")
+    private String deletedBy
 
     TransactionEntity() {}
 
@@ -142,4 +161,14 @@ class TransactionEntity {
 
     @Transient
     String getCategoryName() { category }
+
+    boolean isDeleted() { deleted }
+    void setDeleted(boolean deleted) { this.deleted = deleted }
+
+    LocalDateTime getDeletedAt() { deletedAt }
+    void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt }
+
+    String getDeletedBy() { deletedBy }
+    void setDeletedBy(String deletedBy) { this.deletedBy = deletedBy }
+
 }

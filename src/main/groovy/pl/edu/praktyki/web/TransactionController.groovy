@@ -94,6 +94,17 @@ class TransactionController {
         return tx
     }
 
+    @DeleteMapping("/{dbId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Usuń własną transakcję (Soft Delete)")
+    void deleteTransaction(@PathVariable("dbId") Long dbId) {
+        boolean deleted = transactionService.deleteMyTransaction(dbId)
+
+        if (!deleted) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Transakcja nie istnieje lub brak uprawnień")
+        }
+    }
+
     @PostMapping("/bulk")
     @ResponseStatus(HttpStatus.ACCEPTED)
     @Operation(summary = "Masowy import asynchroniczny")
