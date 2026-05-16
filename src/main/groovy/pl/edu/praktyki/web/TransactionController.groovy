@@ -19,6 +19,12 @@ import pl.edu.praktyki.repository.FinancialSummaryEntity
 import pl.edu.praktyki.repository.FinancialSummaryRepository
 import pl.edu.praktyki.service.FinancialAnalyticsService
 import pl.edu.praktyki.service.TransactionService
+import pl.edu.praktyki.service.ExportService
+import jakarta.servlet.http.HttpServletResponse
+import java.io.OutputStreamWriter
+import java.io.ByteArrayOutputStream
+import java.time.LocalDateTime
+import java.nio.charset.StandardCharsets
 
 @Slf4j
 @RestController
@@ -26,10 +32,13 @@ import pl.edu.praktyki.service.TransactionService
 @Tag(name = "Transactions", description = "Zarządzanie operacjami finansowymi z izolacją danych")
 class TransactionController {
 
+    private static final byte[] UTF8_BOM = [0xEF, 0xBB, 0xBF] as byte[]
+
     @Autowired TransactionService transactionService
     @Autowired FinancialAnalyticsService analyticsService
     @Autowired SmartFinFacade facade
     @Autowired FinancialSummaryRepository summaryRepo
+    @Autowired ExportService exportService
 
     @GetMapping
     @Operation(summary = "Pobierz transakcje zalogowanego użytkownika")
@@ -49,16 +58,51 @@ class TransactionController {
 
     @GetMapping("/stats")
     @Operation(summary = "Pobierz statystyki finansowe zalogowanego użytkownika - a nie globalne statystyki systemu")
-    Map<String, Object> getStats() {
+    def getStats() {
         // Pobieramy dane użytkownika (pierwsze 100 sztuk do statystyk)
         def page = transactionService.getMyTransactions(PageRequest.of(0, 100))
-        def list = page.content
+        List<TransactionDto> list = page.content
 
-        return [
-                balance: analyticsService.calculateTotalBalance(list),
-                topCategory: analyticsService.getTopSpendingCategory(list),
-                count: page.totalElements
-        ]
+        Map<String, Object> result = new LinkedHashMap<>()
+        result.balance = analyticsService.calculateTotalBalance(list)
+        result.topCategory = analyticsService.getTopSpendingCategory(list)
+        result.count = page.totalElements
+
+        return result
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Eksportuj moje transakcje do pliku CSV")
+    void exportCsv(HttpServletResponse response) {
+        String filename = exportService.buildDownloadFilename()
+
+        // Przygotowujemy CSV w buforze przed wysłaniem do klienta
+        ByteArrayOutputStream baos = new ByteArrayOutputStream()
+        baos.write(UTF8_BOM)
+
+        def writer = new OutputStreamWriter(baos, StandardCharsets.UTF_8)
+        Map<String, Object> exportStats = exportService.exportToCsv(writer)
+        writer.flush()
+        writer.close()
+
+        byte[] csvData = baos.toByteArray()
+        long contentLength = csvData.length
+
+        // Ustawienie nagłówków HTTP
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name())
+        response.setContentType("text/csv; charset=UTF-8")
+        response.setHeader("Content-Disposition", "attachment; filename=\"${filename}\"")
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        response.setHeader("Pragma", "no-cache")
+        response.setHeader("Expires", "0")
+        response.setContentLength(contentLength as int)
+
+        log.info(">>> [EXPORT-HTTP] Nagłówki odpowiedzi ustawione. Plik: {}, rozmiar: {} bajtów",
+                 filename, contentLength)
+
+        // Wysłanie danych do klienta
+        response.outputStream.write(csvData)
+        response.outputStream.flush()
     }
 
     @GetMapping("/{dbId}")
@@ -133,11 +177,13 @@ class TransactionController {
     @GetMapping("/total-summary")
     @Operation(summary = "Globalny bilans systemu (CQRS). Endpoint administracyjny, nie dla zwykłego użytkownika")
     @PreAuthorize("hasRole('ADMIN')")
-    Map<String, Object> getGlobalSummary() {
+    def getGlobalSummary() {
         def summary = summaryRepo.findById("GLOBAL").orElse(new FinancialSummaryEntity())
-        return [
-                globalTotalBalance: summary.totalBalance,
-                syncTimestamp: java.time.LocalDateTime.now().toString()
-        ]
+
+        Map<String, Object> result = new LinkedHashMap<>()
+        result.globalTotalBalance = summary.totalBalance
+        result.syncTimestamp = LocalDateTime.now().toString()
+
+        return result
     }
 }

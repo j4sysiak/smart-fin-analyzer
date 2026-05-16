@@ -5,7 +5,10 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.util.stream.Stream
 
 @Repository
 interface TransactionRepository extends JpaRepository<TransactionEntity, Long>, JpaSpecificationExecutor<TransactionEntity> {
@@ -38,8 +41,15 @@ interface TransactionRepository extends JpaRepository<TransactionEntity, Long>, 
     Page<TransactionEntity> findByCategoryEntity(CategoryEntity category, Pageable pageable)
 
 
-    // Ta metoda jest kluczowa dla izolacji danych - Lab89--Izolacja-Danych--Spring-Data-Repository-Methods
+    // Ta metoda jest kluczowa dla izolacji danych
+    // Lab89--Izolacja-Danych--Spring-Data-Repository-Methods
     Page<TransactionEntity> findAllByOwnerUsername(String ownerUsername, Pageable pageable)
 
+
     Optional<TransactionEntity> findByDbIdAndOwnerUsername(Long dbId, String ownerUsername)
+
+    //Lab91--Streaming Data Export -- Eksport CSV bez obciążania RAM-u
+    @Query("SELECT t FROM TransactionEntity t WHERE t.ownerUsername = :username")
+    Stream<TransactionEntity> streamAllByOwnerUsername(@Param("username") String username)
+
 }

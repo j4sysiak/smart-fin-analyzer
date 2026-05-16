@@ -55,9 +55,9 @@ Zalety: szybki restart, hot-reload, pełna widoczność logów, debugger działa
 ### Krok 1 — Uruchom **tylko bazę** (`docker compose`, bez serwisu `app`)
 
 ```powershell
-PS C:\dev\smart-fin-analyzer> docker compose stop
-PS C:\dev\smart-fin-analyzer> docker compose down -v
-PS C:\dev\smart-fin-analyzer> Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,StartTime
+docker compose stop
+docker compose down -v
+Get-Process java,javaw,gradle -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Format-Table -AutoSize | Out-String
 
    Id ProcessName StartTime
    -- ----------- ---------
@@ -67,8 +67,8 @@ PS C:\dev\smart-fin-analyzer> Get-Process -Name java -ErrorAction SilentlyContin
 Stop-Process -Id 25352 -Force
 Stop-Process -Id 28332 -Force
 
-PS C:\dev\smart-fin-analyzer> cd C:\dev\smart-fin-analyzer
-PS C:\dev\smart-fin-analyzer> docker compose up -d db
+cd C:\dev\smart-fin-analyzer
+docker compose up -d db
 ```
 
 > `up -d db` — startuje tylko serwis `db` (kontener `smart-fin-analyzer` a w nim kontener bazy: smartfin-postgres), pomijając serwis `app`.
@@ -115,7 +115,7 @@ Gdy zobaczysz `80% EXECUTING [39s]` — aplikacja działa:
 
 > **Uwaga:** Jeśli pojawi się błąd o zablokowanym pliku — sprawdź procesy Javy:
 > ```powershell
-> Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,StartTime
+> Get-Process java,javaw,gradle -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Format-Table -AutoSize | Out-String
 > Stop-Process -Id <PID> -Force
 > ```
 
@@ -169,7 +169,7 @@ docker logs -f smartfin-app
 
 ```powershell
 # Zatrzymaj aplikację (Ctrl+C lub:)
-Get-Process -Name java -ErrorAction SilentlyContinue | Format-Table Id,ProcessName,StartTime
+Get-Process java,javaw,gradle -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Format-Table -AutoSize | Out-String
 Stop-Process -Id <PID> -Force
 
 # Zatrzymaj bazę (dane zostaną w wolumenie postgres_data):
