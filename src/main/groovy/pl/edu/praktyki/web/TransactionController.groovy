@@ -25,6 +25,7 @@ import java.io.OutputStreamWriter
 import java.io.ByteArrayOutputStream
 import java.time.LocalDateTime
 import java.nio.charset.StandardCharsets
+import org.springframework.dao.DataIntegrityViolationException
 
 @Slf4j
 @RestController
@@ -122,8 +123,19 @@ class TransactionController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Dodaj nową transakcję", description = "System automatycznie przypisze Cię jako właściciela.")
     TransactionDto addTransaction(@Valid @RequestBody TransactionDto dto) {
-        // Serwis zajmie się walutami, regułami i ustawieniem ownerUsername
-        return transactionService.createTransaction(dto)
+        try {
+            // Serwis zajmie się walutami, regułami i ustawieniem ownerUsername
+            return transactionService.createTransaction(dto)
+        } catch (DataIntegrityViolationException ex) {
+            // Konflikt unique może wystąpić przy równoległych requestach tego samego originalId.
+            // Tu jesteśmy już poza nieudanej transakcji createTransaction().
+            def existing = transactionService.getMyTransactionByOriginalId(dto.id)
+            if (existing != null) {
+                log.warn(">>> [IDEMPOTENCY-RACE] Duplicate submit dla id={}, zwracam istniejący rekord", dto.id)
+                return existing
+            }
+            throw ex
+        }
     }
 
     @PutMapping("/{dbId}")

@@ -15,13 +15,14 @@ import pl.edu.praktyki.facade.SmartFinFacade
 import pl.edu.praktyki.parser.ParserFactory
 import pl.edu.praktyki.parser.TransactionParser
 import pl.edu.praktyki.service.CurrencyService
-
+import org.springframework.retry.annotation.EnableRetry
 
 // 1. GŁÓWNA KLASA (Tylko startuje Spring Boota, nic więcej)
 @SpringBootApplication
 @EnableJpaAuditing // <-- DODAJ TO, ABY WŁĄCZYĆ AUTOMATYCZNE UZUPEŁNIANIE POL AUDYTU (createdBy, createdDate, itp.)
 @EnableCaching
 @EnableScheduling
+@EnableRetry  // Lab91 -- Spring Retry -- Bezpieczeństwo operacji (np. ponawianie próby po deadlocku w bazie danych)
 class SmartFinDbApp {
     static void main(String[] args) {
         def ctx = SpringApplication.run(SmartFinDbApp, args)

@@ -9,6 +9,8 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.retry.annotation.Retryable
+import org.springframework.retry.annotation.Backoff
 
 @Service
 @Slf4j
@@ -37,6 +39,22 @@ class CurrencyService {
     @Cacheable("exchangeRates") // Spring zapamięta wynik dla każdego unikalnego 'fromCurrency'
     // Jeśli metoda wybuchnie 3 razy pod rząd, wyłącznik się "otworzy"
     @CircuitBreaker(name = "currencyApi", fallbackMethod = "fallbackRate")
+    // Adnotacja @Retryable sprawia, że jeśli metoda rzuci wyjątek,
+    // Spring automatycznie spróbuje ją ponownie wykonać (do 3 razy, z 1 sekundą przerwy między próbami).
+    // ponowienie nastąpi dla Exception
+    // Czyli:
+    //    - 1 próba podstawowa,
+    //    - potem do 2 kolejnych prób, jeśli wystąpi błąd.
+
+    // UWAGA: Ważny szczegół:
+    // w tej metodzie wyjątki są łapane wewnątrz try/catch i od razu zwracany jest fallback.
+    // W takiej formie @Retryable zwykle nie zadziała, bo wyjątek nie wychodzi na zewnątrz metody.
+    // Retry działa wtedy, gdy metoda faktycznie rzuci wyjątek.
+    @Retryable(
+            retryFor = [Exception.class],
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     BigDecimal getExchangeRate(String fromCurrency) {
 
         if (fromCurrency == "PLN") return 1.0  // easy case: PLN -> PLN
@@ -52,7 +70,7 @@ class CurrencyService {
                     .GET()
                     .build()
 
-            try {
+            //try {
                 def response = client.send(request, HttpResponse.BodyHandlers.ofString())
                 def json = slurper.parseText(response.body())
 
@@ -66,11 +84,11 @@ class CurrencyService {
                 }
 
                 return rateToPln ? (1.0 / rateToPln).toBigDecimal() : 1.0
-            } catch (Exception e) {
-                // Jeśli cokolwiek pójdzie nie tak (błąd sieci, parsing), zwracamy bezpieczny fallback
-                log.warn('>>> [CURRENCY] Błąd pobierania kursu dla {}: {}. Zwracam fallback.', fromCurrency, e.message)
-                return fallbackRate(fromCurrency, e)
-            }
+            //} catch (Exception e) {
+            //    // Jeśli cokolwiek pójdzie nie tak (błąd sieci, parsing), zwracamy bezpieczny fallback
+            //    log.warn('>>> [CURRENCY] Błąd pobierania kursu dla {}: {}. Zwracam fallback.', fromCurrency, e.message)
+            //    return fallbackRate(fromCurrency, e)
+            //}
 
         //} catch (Exception e) {
         //    // Logowanie błędu ze stacktracem

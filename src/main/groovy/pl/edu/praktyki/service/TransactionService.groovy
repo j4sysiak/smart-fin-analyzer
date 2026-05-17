@@ -15,6 +15,7 @@ import pl.edu.praktyki.repository.TransactionSpecifications
 import pl.edu.praktyki.security.UserContextService
 import groovy.util.logging.Slf4j
 import java.time.LocalDateTime
+import org.springframework.dao.DataIntegrityViolationException
 
 @Service
 @Slf4j
@@ -48,6 +49,14 @@ class TransactionService {
                 .orElse(null) // Kontroler zamieni to na 404
     }
 
+    @Transactional(readOnly = true)
+    TransactionDto getMyTransactionByOriginalId(String originalId) {
+        String currentUser = userContextService.getCurrentUsername()
+        return repo.findByOriginalIdAndOwnerUsername(originalId, currentUser)
+                .map { this.mapToDto(it) }
+                .orElse(null)
+    }
+
     /**
      * Dynamiczne wyszukiwanie ograniczone do właściciela.
      */
@@ -67,9 +76,22 @@ class TransactionService {
     /**
      * Procesuje i zapisuje nową transakcję z przypisaniem właściciela.
      */
+    // @Transactional oznacza, że metoda wykona się w ramach transakcji bazy danych.
+    // W tym miejscu jest użyta po to, aby createTransaction(...) było atomowe:
+    //           - odczyt kategorii
+    //           - ewentualne utworzenie CategoryEntity
+    //           - zapis TransactionEntity
+    // Jeśli coś się wywali po drodze, Spring wycofa zmiany i nie zostawi częściowo zapisanych danych.
+    // W tym serwisie ma to sens szczególnie dlatego, że: - toCategoryEntity(...) może robić saveAndFlus
     @Transactional
     TransactionDto createTransaction(TransactionDto dto) {
         String currentUser = userContextService.getCurrentUsername()
+        def existing = repo.findByOriginalIdAndOwnerUsername(dto.id, currentUser)
+        if (existing.isPresent()) {
+            log.warn(">>> [IDEMPOTENCY] Transakcja {} już istnieje dla użytkownika {}. Pomijam duplikat.", dto.id, currentUser)
+            return mapToDto(existing.get())  // zwracamy istniejącą transakcję zamiast tworzyć duplikat
+        }
+
         String normalizedCategoryName = normalizeCategoryName(dto.category)
 
         // 1. Logika walut i reguł (przeniesiona z kontrolera)
@@ -97,8 +119,19 @@ class TransactionService {
                 ownerUsername: currentUser // <--- KLUCZOWE: Przypisanie właściciela
         )
 
-        def saved = repo.saveAndFlush(entity)
-        return mapToDto(saved)
+        try {
+            def saved = repo.saveAndFlush(entity)
+            return mapToDto(saved)
+        } catch (DataIntegrityViolationException ex) {
+            // Drugi request mógł wygrać wyścig między check a save()
+            //     def existingAfterConflict = repo.findByOriginalIdAndOwnerUsername(dto.id, currentUser)
+            //     if (existingAfterConflict.isPresent()) {
+            //         log.warn(">>> [IDEMPOTENCY-RACE] Wykryto konflikt unique dla id={} user={}, zwracam istniejący rekord.",
+            //                 dto.id, currentUser)
+            //         return mapToDto(existingAfterConflict.get())
+            //     }
+            throw ex
+        }
     }
 
     /**
@@ -150,11 +183,21 @@ class TransactionService {
             return null
         }
 
-        return categoryRepository.findByName(categoryName)
-                .orElseGet {
-                    // saveAndFlush daje od razu ID (ważne dla FK category_id przy tej samej transakcji)
-                    categoryRepository.saveAndFlush(new CategoryEntity(name: categoryName, monthlyLimit: 0.0G))
-                }
+        def existing = categoryRepository.findByName(categoryName)
+        if (existing.isPresent()) {
+            return existing.get()
+        }
+
+        try {
+            // saveAndFlush daje od razu ID (ważne dla FK category_id przy tej samej transakcji)
+            return categoryRepository.saveAndFlush(
+                    new CategoryEntity(name: categoryName, monthlyLimit: 0.0G)
+            )
+        } catch (DataIntegrityViolationException ex) {
+            // Ktoś równolegle utworzył kategorię o tej samej nazwie.
+            return categoryRepository.findByName(categoryName)
+                    .orElseThrow { ex }
+        }
     }
 
     private static String normalizeCategoryName(String category) {

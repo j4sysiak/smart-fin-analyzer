@@ -11,6 +11,7 @@ plugins {
 
     // Budowanie obrazu Dockerowego aplikacji za pomocą Jib
     id 'com.google.cloud.tools.jib' version '3.4.4'
+    id 'org.jetbrains.kotlin.jvm'
 
 }
 
@@ -80,7 +81,7 @@ dependencies {
     }
 
     // Lab50--AOP--Aspect-Oriented-Programming
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    // implementation 'org.springframework.boot:spring-boot-starter-aop'
 
     // Lab52--Wzorzec-Circuit-Breaker--Bezpieczeństwo-w-Mikrousługach
     // Dedykowany starter Resilience4j dla Spring Boot 3
@@ -113,6 +114,10 @@ dependencies {
 
     // Lab89 - Spring Batch - Przetwarzanie Wsadowe (Miesięczne Rozliczenia)
     implementation 'org.springframework.boot:spring-boot-starter-batch'
+
+    // Lab92--Spring Retry and Idempotency -- Bezpieczeństwo operacji
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework:spring-aspects'
 }
 
 test {

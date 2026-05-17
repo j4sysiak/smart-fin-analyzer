@@ -6,7 +6,8 @@ Lab85--Zarządzanie-Pulą-Wątków--Observability-Pattern--Kto-ostatnio-co-robi�
 
 
 Tak mi poradzil ChatGpt, jeżeli chodzi o logowanie wątków:
-w Klasach, gdzie używam metod z adnotacj @Async wstrzyknij obiekt klasy ThreadTracker:  @Autowired ThreadTracker threadTracker.
+w Klasach, gdzie używam metod z adnotacj @Async wstrzyknij obiekt klasy ThreadTracker:  
+`@Autowired ThreadTracker threadTracker`.
 to jest cialo tej klasy:
 
 ```groovy

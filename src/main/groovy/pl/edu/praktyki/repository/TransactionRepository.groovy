@@ -45,11 +45,14 @@ interface TransactionRepository extends JpaRepository<TransactionEntity, Long>, 
     // Lab89--Izolacja-Danych--Spring-Data-Repository-Methods
     Page<TransactionEntity> findAllByOwnerUsername(String ownerUsername, Pageable pageable)
 
-
     Optional<TransactionEntity> findByDbIdAndOwnerUsername(Long dbId, String ownerUsername)
 
     //Lab91--Streaming Data Export -- Eksport CSV bez obciążania RAM-u
     @Query("SELECT t FROM TransactionEntity t WHERE t.ownerUsername = :username")
     Stream<TransactionEntity> streamAllByOwnerUsername(@Param("username") String username)
+
+    // Lab92--Spring Retry -- Bezpieczeństwo operacji (np. ponawianie próby po deadlocku w bazie danych)
+    // „czy ten user ma już transakcję o tym samym business ID (originalId)”
+    Optional<TransactionEntity> findByOriginalIdAndOwnerUsername(String originalId, String ownerUsername)
 
 }
