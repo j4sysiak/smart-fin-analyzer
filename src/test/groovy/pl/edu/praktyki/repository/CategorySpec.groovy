@@ -61,7 +61,8 @@ class CategorySpec extends BaseIntegrationSpec {
         savedTx.categoryEntity.monthlyLimit == 1000.0
     }
 
-    @Transactional // Transactional jest wymagany, aby leniwe ładowanie (LAZY) zadziałało w teście
+    // Transactional jest wymagany, aby leniwe ładowanie (LAZY) zadziałało w teście
+    @Transactional
     def "powinien wykryć przekroczenie budżetu w kategorii"() {
         given: "kategoria z małym limitem"
         def funCategory = new CategoryEntity(name: "Rozrywka", monthlyLimit: 200.0)

@@ -5,17 +5,20 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import pl.edu.praktyki.repository.CategoryEntity
 import pl.edu.praktyki.repository.TransactionRepository
+import java.time.Clock
 import java.time.LocalDate
 
 @Service
 @Slf4j
 class BudgetService {
+
+    @Autowired Clock clock
     @Autowired TransactionRepository txRepo
 
     boolean isOverBudget(CategoryEntity category, BigDecimal newAmount) {
 
         // 1. Zawsze wyliczaj zakres dat wewnątrz metody (Mid-level Best Practice)
-        def today = LocalDate.now()
+        def today = LocalDate.now(clock)
         def start = today.withDayOfMonth(1)
         def end = today.withDayOfMonth(today.lengthOfMonth())
 
