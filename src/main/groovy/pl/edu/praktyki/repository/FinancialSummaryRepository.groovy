@@ -12,7 +12,7 @@ interface FinancialSummaryRepository extends JpaRepository<FinancialSummaryEntit
 
     // Lab 87: Dodajemy metodę z blokadą pesymistyczną.
     // Ta metoda będzie próbowała pobrać wiersz z blokadą, co oznacza, że jeśli inny wątek już trzyma tę blokadę,
-    // ten wątek będzie czekał, aż się zwolni.
+    // to ten wątek będzie czekał, aż się zwolni.
     // To jest właśnie magia blokady pesymistycznej!
     @Lock(LockModeType.PESSIMISTIC_WRITE) // <-- KLUCZ: Postgres blokuje wiersz dla innych
     @Query("SELECT s FROM FinancialSummaryEntity s WHERE s.id = :id")

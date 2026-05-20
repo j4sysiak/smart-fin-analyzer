@@ -101,7 +101,7 @@ class TransactionIngesterService {
     -------
     Zwraca jedną, spłaszczoną listę wszystkich transakcji (flatten()), rzutowaną na List<Transaction>.
     */
-    // to jest nasz docelowy pipeline, który będzie wywoływany z fasady (SmartFinFacade) i będzie łączył wszystkie elementy:
+    // to jest nasz docelowy pipeline, który będzie wywoływany z fasady (SmartFinReportOrchestrator) i będzie łączył wszystkie elementy:
     //      1. GPars
     //      2. Reguły
     //      3. Eventy

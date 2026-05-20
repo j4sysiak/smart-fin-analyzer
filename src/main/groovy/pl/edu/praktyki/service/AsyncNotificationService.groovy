@@ -1,6 +1,5 @@
 package pl.edu.praktyki.service
 
-import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -8,6 +7,8 @@ import org.springframework.stereotype.Service
 import groovy.util.logging.Slf4j
 import pl.edu.praktyki.event.TransactionBatchProcessedEvent
 import java.util.concurrent.atomic.AtomicInteger
+import org.springframework.transaction.event.TransactionalEventListener
+import org.springframework.transaction.event.TransactionPhase
 
 @Service
 @Slf4j
@@ -74,7 +75,7 @@ class AsyncNotificationService {
     // albo użyć domyślnego executor`a (albo usunąć nazwę z @Async).
 
     @Async("bulkTaskExecutor") // Używamy puli wątków: `bulkTaskExecutor` to nazwa beana typu Executor/TaskExecutor (czyli puli wątków).
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     void handleBatchEvent(TransactionBatchProcessedEvent event) {
 
         log.info(">>> [ASYNCHRONICZNY-EVENT] Rozpoczynam wysyłkę raportu do systemu zewnętrznego dla: {}", event.userName)

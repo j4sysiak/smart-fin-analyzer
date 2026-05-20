@@ -1,11 +1,12 @@
 package pl.edu.praktyki.service
 
-import org.springframework.context.event.EventListener
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import pl.edu.praktyki.event.TransactionBatchProcessedEvent
 import groovy.util.logging.Slf4j
+import org.springframework.transaction.event.TransactionalEventListener
+import org.springframework.transaction.event.TransactionPhase
 
 @Service
 @Slf4j
@@ -17,17 +18,17 @@ class AuditEventListener {
 
 
     // Metoda jest wywoływana przez Springa jako słuchacz zdarzeń.
-    // Adnotacja @EventListener oznacza, że gdy w kontekście aplikacji zostanie opublikowane zdarzenie typu TransactionBatchProcessedEvent,
+    // Adnotacja @EventListener lub @TransactionalEventListener oznacza, że gdy w kontekście aplikacji zostanie opublikowane zdarzenie typu TransactionBatchProcessedEvent,
     // Spring wywoła onBatchProcessed.
     // Adnotacja @Async("bulkTaskExecutor") powoduje wykonanie wątku z beana bulkTaskExecutor.
-    //Zdarzenie jest publikowane zwykle przez:
-    // - ApplicationEventPublisher.publishEvent(...)
-    // - ApplicationContext.publishEvent(...)
+    // Zdarzenie jest publikowane zwykle przez:
+    //   - ApplicationEventPublisher.publishEvent(...)
+    //   - ApplicationContext.publishEvent(...)
     // Przyklad: kalasa testowa AuditEventListenerSpec, która publikuje zdarzenie w teście integracyjnym.
 
 
     @Async("bulkTaskExecutor") // Używamy puli wątków: `bulkTaskExecutor` to nazwa beana typu Executor/TaskExecutor (czyli puli wątków).
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     void onBatchProcessed(TransactionBatchProcessedEvent event) {
         log.info(">>> [AUDIT] Użytkownik {} właśnie zaimportował {} transakcji.",
                 event.userName, event.transactionsCount)
