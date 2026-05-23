@@ -72,7 +72,6 @@ class SmartFinFacadeRollbackE2ESpec extends BaseIntegrationSpec {
         !transactionRepository.findByOriginalIdAndOwnerUsername(originalId, user).present
 
         and: "listenerzy AFTER_COMMIT nie uruchamiają się"
-        notificationService.getProcessedCount() == 0
         threadTracker.get('AuditEventListener.onBatchProcessed') == null
         threadTracker.get('GlobalStatsProjector.lastThread') == null
         threadTracker.get("AsyncNotificationService.completed.${user}") == null

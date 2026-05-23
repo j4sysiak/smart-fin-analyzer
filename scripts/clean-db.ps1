@@ -46,7 +46,7 @@ function Invoke-LocalPsql {
     }
 }
 
-$sql = 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+$sql = "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid(); DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
 if (-not $Force) {
     Write-Host 'WARNING: this will remove ALL data in the test database!' -ForegroundColor Yellow

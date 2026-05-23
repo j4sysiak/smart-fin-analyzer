@@ -1,6 +1,6 @@
 package pl.edu.praktyki.web
 
-import org.springframework.web.bind.MethodArgumentNotValidException // <- dodaj import na górze
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ControllerAdvice
@@ -50,7 +50,7 @@ class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error)
     }
 
-    // NOWOŚĆ: Przechwytujemy błędy z @Valid z @PostMapping z transactionController::addTransaction
+    // Przechwytujemy błędy z @Valid z @PostMapping z transactionController::addTransaction
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiError> handleValidationException(MethodArgumentNotValidException ex) {
 

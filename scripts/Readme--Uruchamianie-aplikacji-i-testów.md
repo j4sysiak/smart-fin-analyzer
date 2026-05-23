@@ -214,6 +214,9 @@ Opcjonalny ręczny cleanup (zwykle niepotrzebny):
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\clean-db.ps1 -Mode tc -Force
 ```
 
+
+
+
 ### `local-pg` — profil do debugowania i inspekcji danych
 
 W tym trybie testy łączą się z lokalnym PostgreSQL na `localhost:5432` / baza `smartfin_test`.

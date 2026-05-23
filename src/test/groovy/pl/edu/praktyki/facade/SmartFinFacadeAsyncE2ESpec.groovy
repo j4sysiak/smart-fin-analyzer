@@ -95,4 +95,3 @@ class SmartFinFacadeAsyncE2ESpec extends BaseIntegrationSpec {
         facadeAsyncStats.thread?.startsWith("bulkTaskExecutorZapierdala--")
     }
 }
-

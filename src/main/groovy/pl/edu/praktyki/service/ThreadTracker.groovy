@@ -25,8 +25,11 @@ class ThreadTracker {
         map.remove(key)
     }
 
+    void clear() {
+        map.clear()
+    }
+
     Map<String, Object> snapshot() {
         return new HashMap<>(map)
     }
 }
-

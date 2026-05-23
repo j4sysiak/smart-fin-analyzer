@@ -12,6 +12,7 @@ import org.springframework.dao.PessimisticLockingFailureException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import javax.sql.DataSource
+import pl.edu.praktyki.service.ThreadTracker
 
 /**
  * Bazowa klasa dla testów integracyjnych.
@@ -39,6 +40,9 @@ abstract class BaseIntegrationSpec extends Specification {
     @Autowired
     DataSource dataSource
 
+    @Autowired(required = false)
+    ThreadTracker threadTracker
+
     // Logger used in static and instance contexts inside this base test class
     private static final Logger log = LoggerFactory.getLogger(BaseIntegrationSpec.class)
 
@@ -54,6 +58,9 @@ abstract class BaseIntegrationSpec extends Specification {
             // In tc (testcontainer) profile we truncate before each test to ensure isolation
             doTruncateDatabase()
         }
+
+        // Czyścimy globalny tracker asynchroniczny, aby testy nie dziedziczyły stanu między sobą.
+        threadTracker?.clear()
     }
 
     private void doTruncateDatabase() {
@@ -236,7 +243,8 @@ abstract class BaseIntegrationSpec extends Specification {
         // baseline-on-migrate może uznać schemat za "istniejący", zbaseline'ować go
         // na V1 i pominąć V1__init_schema.sql. Wtedy V3 próbuje ALTER SEQUENCE tx_seq,
         // którego nikt nie utworzył.
-        def sql = "DROP TABLE IF EXISTS transaction_entity_tags CASCADE; " +
+        def sql = "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${LOCAL_PG_DB}' AND pid <> pg_backend_pid(); " +
+                "DROP TABLE IF EXISTS transaction_entity_tags CASCADE; " +
                 "DROP TABLE IF EXISTS transactions CASCADE; " +
                 "DROP TABLE IF EXISTS transactions_aud CASCADE; " +
                 "DROP TABLE IF EXISTS categories CASCADE; " +

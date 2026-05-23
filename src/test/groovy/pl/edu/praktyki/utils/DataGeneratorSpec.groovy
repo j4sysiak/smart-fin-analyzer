@@ -9,7 +9,7 @@ class DataGeneratorSpec extends Specification {
     def "Generuj plik CSV z przykładowymi transakcjami"() {
         given: "Ścieżka do pliku"
         File outputFile = new File("build/tmp/test_transactions.csv")
-        int rowCount = 10000
+        int rowCount = 12000
 
         when: "Generuję plik"
         generateCsv(outputFile, rowCount) // Teraz typy się zgadzają: (File, Integer)

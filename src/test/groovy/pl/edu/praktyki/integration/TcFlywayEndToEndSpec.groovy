@@ -262,4 +262,3 @@ class TcFlywayEndToEndSpec extends BaseIntegrationSpec {
         )
     }
 }
-
