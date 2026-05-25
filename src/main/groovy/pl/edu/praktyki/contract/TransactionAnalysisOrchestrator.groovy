@@ -6,6 +6,7 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import pl.edu.praktyki.contract.idempotency.IdempotencyKeyEntity
 import pl.edu.praktyki.contract.idempotency.IdempotencyKeyRepository
+import org.springframework.context.ApplicationEventPublisher      // ← NOWY IMPORT part3
 
 @Service
 class TransactionAnalysisOrchestrator {
@@ -16,15 +17,18 @@ class TransactionAnalysisOrchestrator {
     private final TransactionAnalyzer analyzer
     private final TransactionDecisionPolicy decisionPolicy
     private final IdempotencyKeyRepository idempotencyKeyRepository
+    private final ApplicationEventPublisher eventPublisher           // ← NOWE POLE part3
 
     TransactionAnalysisOrchestrator(
             TransactionAnalyzer analyzer,
             TransactionDecisionPolicy decisionPolicy,
-            IdempotencyKeyRepository idempotencyKeyRepository
+            IdempotencyKeyRepository idempotencyKeyRepository,
+            ApplicationEventPublisher eventPublisher                 // ← NOWY PARAMETR part3
     ) {
-        this.analyzer = analyzer
-        this.decisionPolicy = decisionPolicy
+        this.analyzer                 = analyzer
+        this.decisionPolicy           = decisionPolicy
         this.idempotencyKeyRepository = idempotencyKeyRepository
+        this.eventPublisher           = eventPublisher               // ← PRZYPISANIE part3
     }
 
     TransactionDecision process(TransactionIngressRequest request) {
@@ -36,18 +40,24 @@ class TransactionAnalysisOrchestrator {
 
         // Jeśli brak korelacji, działamy "legacy" (bez idempotencji)
         if (correlationId == null) {
-            return computeDecision(request)
+            TransactionDecision computed = computeDecision(request)
+            eventPublisher.publishEvent(new TransactionDecisionEvent(computed, false))  // ← NOWE WYWOŁANIE part3
+            return computed
         }
 
+        // Sprawdzamy czy decyzja dla tego correlationId już istnieje (idempotency store)
         def existing = idempotencyKeyRepository.findByCorrelationId(correlationId)
         if (existing.present) {
-            return toDecision(existing.get())
+            TransactionDecision replayed = toDecision(existing.get())
+            eventPublisher.publishEvent(new TransactionDecisionEvent(replayed, true))   // ← NOWE (replay!) part3
+            return replayed
         }
 
         TransactionDecision computed = computeDecision(request)
 
         try {
             idempotencyKeyRepository.saveAndFlush(toEntity(correlationId, computed))
+            eventPublisher.publishEvent(new TransactionDecisionEvent(computed, false))  // ← NOWE WYWOŁANIE part3
             return computed
         } catch (DataIntegrityViolationException ex) {
             // race condition: równoległy request zapisał ten sam correlationId chwilę wcześniej
@@ -55,7 +65,9 @@ class TransactionAnalysisOrchestrator {
             entityManager.clear()
             def afterRace = idempotencyKeyRepository.findByCorrelationId(correlationId)
             if (afterRace.present) {
-                return toDecision(afterRace.get())
+                TransactionDecision replayed = toDecision(afterRace.get())
+                eventPublisher.publishEvent(new TransactionDecisionEvent(replayed, true)) // ← NOWE (race replay)
+                return replayed
             }
             throw ex
         }

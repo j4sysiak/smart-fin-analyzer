@@ -37,9 +37,9 @@ class TransactionAnalysisControllerSpec extends BaseIntegrationSpec {
     def "POST /api/transactions/analyze zwraca #expectedDecision dla amount=#amount"() {
         given:
         def payload = [
-                transactionId: "TX-REST-001",
+                transactionId: transactionId,
                 accountId    : "ACC-REST-001",
-                correlationId: "CORR-REST-001",
+                correlationId: correlationId,
                 timestamp    : "2026-05-23T16:00:00Z",
                 amount       : amount,
                 payload      : [:]
@@ -52,17 +52,17 @@ class TransactionAnalysisControllerSpec extends BaseIntegrationSpec {
                 .contentType(APPLICATION_JSON)
                 .content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath('$.transactionId').value("TX-REST-001"))
-                .andExpect(jsonPath('$.correlationId').value("CORR-REST-001"))
+                .andExpect(jsonPath('$.transactionId').value(transactionId))
+                .andExpect(jsonPath('$.correlationId').value(correlationId))
                 .andExpect(jsonPath('$.decision').value(expectedDecision))
                 .andExpect(jsonPath('$.reason').value(expectedReason))
                 .andExpect(jsonPath('$.decidedAt').exists())
 
         where:
-        amount   || expectedDecision       | expectedReason
-        9999.99  || "ACCEPT"              | "Status OK - transaction accepted"
-        10000.01 || "ACCEPT_WITH_WARNING" | "Transaction flagged - manual review required"
-        null     || "REJECT"              | "Processing failed - transaction rejected"
+        transactionId | correlationId    | amount   || expectedDecision       | expectedReason
+        "TX-REST-001" | "CORR-REST-001" | 9999.99  || "ACCEPT"              | "Status OK - transaction accepted"
+        "TX-REST-002" | "CORR-REST-002" | 10000.01 || "ACCEPT_WITH_WARNING" | "Transaction flagged - manual review required"
+        "TX-REST-003" | "CORR-REST-003" | null     || "REJECT"              | "Processing failed - transaction rejected"
     }
 
     def "POST /api/transactions/analyze zwraca 400 gdy transactionId jest pusty"() {

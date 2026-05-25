@@ -1,5 +1,8 @@
 package pl.edu.praktyki.contract
 
+import org.springframework.context.ApplicationEventPublisher
+import pl.edu.praktyki.contract.idempotency.IdempotencyKeyEntity
+import pl.edu.praktyki.contract.idempotency.IdempotencyKeyRepository
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -15,19 +18,35 @@ import java.time.Instant
    - każdy test buduje TransactionIngressRequest przez builder
    - wywołuje orchestrator.process(request)
    - sprawdza decision oraz że correlationId i transactionId przechodzą przez cały łańcuch (są takie same w TransactionDecision).
-*/
+ */
 
 
 class TransactionAnalysisOrchestratorSpec extends Specification {
 
     private TransactionAnalyzer analyzer
     private TransactionDecisionPolicy decisionPolicy
+    private IdempotencyKeyRepository idempotencyKeyRepository
+    private ApplicationEventPublisher eventPublisher
     private TransactionAnalysisOrchestrator orchestrator
 
     def setup() {
         analyzer = new InMemoryTransactionAnalyzer()
         decisionPolicy = new DefaultTransactionDecisionPolicy()
-        orchestrator = new TransactionAnalysisOrchestrator(analyzer, decisionPolicy)
+
+        // Ten spec testuje mapowanie status -> decision, a nie trwałą idempotencję.
+        // Dlatego repo zawsze mówi "brak wpisu" i Orchestrator liczy decyzję od zera.
+        idempotencyKeyRepository = Stub(IdempotencyKeyRepository) {
+            findByCorrelationId(_ as String) >> java.util.Optional.empty()
+            saveAndFlush(_ as IdempotencyKeyEntity) >> { IdempotencyKeyEntity entity -> entity }
+        }
+        eventPublisher = Stub(ApplicationEventPublisher)
+
+        orchestrator = new TransactionAnalysisOrchestrator(
+                analyzer,
+                decisionPolicy,
+                idempotencyKeyRepository,
+                eventPublisher
+        )
     }
 
     @Unroll
@@ -105,15 +124,14 @@ class TransactionAnalysisOrchestratorSpec extends Specification {
         ex.message == "request cannot be null"
     }
 
-    @Unroll
-    def "powinien zwrócić ACCEPT gdy payload jest #caseName (brak analysisStatus)"() {
+    def "powinien zwrócić ACCEPT gdy payload jest null (brak analysisStatus)"() {
         given:
         def request = TransactionIngressRequest.builder()
                 .transactionId("TX-003")
                 .accountId("ACC-999")
                 .correlationId("CORR-555")
                 .timestamp(Instant.parse("2026-05-23T12:00:00Z"))
-                .payload(payloadValue)
+                .payload(null)
                 .build()
 
         when:
@@ -126,12 +144,28 @@ class TransactionAnalysisOrchestratorSpec extends Specification {
         decision.decision == "ACCEPT"
         decision.reason == "Status OK - transaction accepted"
         decision.decidedAt != null
+    }
 
-        // - caseName = opis przypadku do raportu, - payloadValue = faktyczna wartość używana w teście.
-        where:
-        caseName     | payloadValue
-        "null"       | null
-        "pusty map"  | [:]
+    def "powinien zwrócić ACCEPT gdy payload jest pustym mapem (brak analysisStatus)"() {
+        given:
+        def request = TransactionIngressRequest.builder()
+                .transactionId("TX-003")
+                .accountId("ACC-999")
+                .correlationId("CORR-555")
+                .timestamp(Instant.parse("2026-05-23T12:00:00Z"))
+                .payload([:])
+                .build()
+
+        when:
+        def decision = orchestrator.process(request)
+
+        then:
+        decision != null
+        decision.transactionId == request.transactionId
+        decision.correlationId == request.correlationId
+        decision.decision == "ACCEPT"
+        decision.reason == "Status OK - transaction accepted"
+        decision.decidedAt != null
     }
 
     def "powinien obscurity analysisStatus przekazany jako enum i zwrócić ACCEPT_WITH_WARNING"() {

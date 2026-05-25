@@ -81,10 +81,17 @@ To będzie naturalny temat na part-3 (pełne domknięcie Ingress / Processing / 
 
 ---
 
-## Szybkie uruchomienie testów (tc + Flyway)
+## Testy part-2
+
+### Pełny zakres testów idempotency
+
+```powershell
+.\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" test --tests "pl.edu.praktyki.contract.TransactionAnalysisOrchestratorPersistentIdempotencySpec" --no-daemon
+```
+
+### Wszystkie testy (`tc` + Flyway)
 
 ```powershell
 .\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" clean test --no-daemon
 ```
 
-Możesz też uruchomić pojedynczy spec idempotency, aby szybciej weryfikować zmiany.

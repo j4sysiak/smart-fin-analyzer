@@ -6,6 +6,12 @@
 - główna instrukcja: `scripts/Readme--Uruchamianie-aplikacji-i-testów.md`
 - dodatkowy plik pomocniczy: `scripts/README.md`
 
+## Status: part-2 i part-3 zamknięte
+
+- `Lab97--Symulacja-Systemów--Ingress--Processing--Egress--part-2`: zakończone (persisted idempotency + testy replay/race/stress).
+- `Lab97--Symulacja-Systemów--Ingress--Processing--Egress--part-3`: zakończone (egress event/listener, `decision_log`, metryki i runbook smoke).
+- Szczegóły: `Lab97--Symulacja-Systemów--Ingress--Processing--Egress--part-2/README.md` oraz `Lab97--Symulacja-Systemów--Ingress--Processing--Egress--part-3/README.md`.
+
 ## Smoke check audytu po uploadzie CSV
 
 Po uploadzie przez `POST /api/transactions/upload?user=admin` warto szybko potwierdzić, że zapis trafił zarówno do tabeli biznesowej, jak i do audytu.
@@ -112,6 +118,37 @@ Pozostałe warianty uruchomienia, pojedyncze testy i cleanup są opisane w `scri
 - Lepiej wyszukiwać elementy po unikalnych polach (np. `id` lub `originalId`) używając filtrów JSONPath: `$.content[?(@.id=='T1')]`.
 - W Groovym, gdy używasz JSONPath w stringu double-quoted, pamiętaj o ucieczce znaku `$` (np. `"\$.content[?(@.id=='T1')]"`) aby uniknąć interpolacji GString.
 - Alternatywnie możesz użyć `$.content[*].category` razem z Hamcrest `hasItem(...)` jeśli wystarczy sprawdzić tylko obecność wartości.
+
+
+## Uwaga: `Flyway checksum mismatch` przy starcie produkcji lokalnie
+
+Jeśli `./gradlew.bat runSmartFinDb -PappArgs="-u Jacek"` zatrzymuje się na błędzie typu:
+
+- `Migration checksum mismatch for migration version 1`
+- `Migration checksum mismatch for migration version 2`
+
+to oznacza, że lokalna baza PostgreSQL ma zapisane stare checksumy dla migracji, które zostały później zmienione w repozytorium.
+
+Najbezpieczniejsza naprawa dla środowiska developerskiego to jednorazowy `flyway repair` na lokalnej bazie:
+
+```powershell
+docker run --rm -v "C:/dev/smart-fin-analyzer/src/main/resources/db/migration:/flyway/sql" flyway/flyway:latest `
+  -url=jdbc:postgresql://host.docker.internal:5432/smartfin_db `
+  -user=finuser -password=finpass repair
+```
+
+Po tym ponownie uruchom aplikację:
+
+```powershell
+./gradlew.bat runSmartFinDb -PappArgs="-u Jacek"
+```
+
+Jeśli wolisz zacząć od zera, możesz też zresetować lokalny kontener bazy:
+
+```powershell
+docker compose down -v
+docker compose up -d db
+```
 
 
 

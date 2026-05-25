@@ -32,7 +32,7 @@ Aplikacja: `src\main\groovy\pl\edu\praktyki\SmartFinDbApp.groovy`
 .\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" test --tests "pl.edu.praktyki.repository.CategorySpec" --no-daemon
 
 # local-pg — start bazy + cleanup
-docker compose up -d db
+WAŻNE:  docker compose up -d db
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\clean-db.ps1 -Mode local-pg -Force
 
 # local-pg — pełny run
@@ -119,6 +119,36 @@ Gdy zobaczysz `80% EXECUTING [39s]` — aplikacja działa:
 > Stop-Process -Id <PID> -Force
 > ```
 
+### Typowy problem: `Flyway checksum mismatch`
+
+Jeśli przy starcie przez `runSmartFinDb` pojawi się błąd:
+
+- `Migration checksum mismatch for migration version 1`
+- `Migration checksum mismatch for migration version 2`
+
+to zwykle oznacza, że lokalna baza `smartfin_db` ma stare checksumy zapisane w `flyway_schema_history`, a pliki migracji w repo zostały później zmienione.
+
+Najmniej inwazyjna naprawa (bez kasowania danych) to jednorazowy `repair`:
+
+```powershell
+docker run --rm -v "C:/dev/smart-fin-analyzer/src/main/resources/db/migration:/flyway/sql" flyway/flyway:latest `
+  -url=jdbc:postgresql://host.docker.internal:5432/smartfin_db `
+  -user=finuser -password=finpass repair
+```
+
+Po naprawie uruchom aplikację ponownie:
+
+```powershell
+.\gradlew.bat runSmartFinDb -PappArgs="-u Jacek"
+```
+
+Jeśli chcesz całkiem czystą bazę lokalną, możesz zresetować kontener danych:
+
+```powershell
+docker compose down -v
+docker compose up -d db
+```
+
 ---
 
 ## TRYB DOCKER — pełne środowisko produkcyjne w kontenerach
@@ -145,7 +175,7 @@ docker compose up --build -d
 
 Docker automatycznie:
 1. Czeka aż PostgreSQL będzie gotowy (healthcheck)
-2. Startuje aplikację — Flyway wykona migracje V1→V15
+2. Startuje aplikację — Flyway wykona migracje V1→V19
 
 Sprawdzenie logów aplikacji:
 ```powershell
@@ -469,7 +499,9 @@ Ten fragment może być skopiowany do `scripts/Readme--Odpalanie-RESTów-z-Postm
 
 ## 6. Dodatkowe informacje — migracje Flyway i helpery
 
-- Migracje Flyway są w `src/main/resources/db/migration`; aktualny stan repo to **V1–V15**.
+- Migracje Flyway są w `src/main/resources/db/migration`; aktualny stan repo to **V1–V19**.
+- `V18` — `idempotency_keys` (persisted idempotency).
+- `V19` — `decision_log` (egress audit trail).
 - W testach najlepiej uruchamiać migracje przez standardowe komendy z sekcji `## 2` (`-Denable.flyway=true`), bo pełna logika profili i cleanupu siedzi w `BaseIntegrationSpec`.
 - Dla ręcznego sprawdzenia migracji poza testami jest helper `src/main/groovy/tools/RunFlyway.groovy` i task Gradle `runFlywayLocal`:
   ```powershell
