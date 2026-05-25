@@ -1,4 +1,4 @@
-# Lab97 - Symulacja Systemów: Ingress / Processing / Egress - part 3
+# Lab98 - Symulacja Systemów: Ingress / Processing / Egress - part 3
 
 ## Cel tej części
 W tej części domykamy pełny przepływ **Ingress / Processing / Egress** przez dodanie warstwy wyjściowej (Egress).
