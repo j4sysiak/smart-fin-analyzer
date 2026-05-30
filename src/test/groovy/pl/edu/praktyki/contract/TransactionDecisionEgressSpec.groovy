@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ActiveProfiles
 import pl.edu.praktyki.BaseIntegrationSpec
 import pl.edu.praktyki.contract.egress.DecisionLogRepository
+import pl.edu.praktyki.contract.egress.outbox.EgressOutboxDispatcher
 import pl.edu.praktyki.contract.idempotency.IdempotencyKeyRepository
 import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
@@ -18,6 +19,7 @@ class TransactionDecisionEgressSpec extends BaseIntegrationSpec {
 
     @Autowired TransactionAnalysisOrchestrator orchestrator
     @Autowired DecisionLogRepository           decisionLogRepository
+    @Autowired EgressOutboxDispatcher          outboxDispatcher
     @Autowired IdempotencyKeyRepository        idempotencyKeyRepository
 
     def setup() {
@@ -25,34 +27,62 @@ class TransactionDecisionEgressSpec extends BaseIntegrationSpec {
         idempotencyKeyRepository.deleteAll()
     }
 
+    private void dispatchOutbox() {
+        outboxDispatcher.dispatch()
+    }
+
+    private static TransactionIngressRequest ingressRequest(
+            String transactionId,
+            String accountId,
+            String correlationId,
+            Instant timestamp,
+            BigDecimal amount,
+            Map payload
+    ) {
+        TransactionIngressRequest.builder()
+                .transactionId(transactionId)
+                .accountId(accountId)
+                .correlationId(correlationId)
+                .timestamp(timestamp)
+                .amount(amount)
+                .payload(payload)
+                .build()
+    }
+
+    private def assertLoggedDecision(String correlationId, def expectedDecision) {
+        def logged = decisionLogRepository.findFirstByCorrelationIdOrderByLoggedAtAsc(correlationId).orElse(null)
+        assert logged != null
+        assert logged.transactionId == expectedDecision.transactionId
+        assert logged.correlationId == expectedDecision.correlationId
+        assert logged.decision == expectedDecision.decision
+        assert logged.reason == expectedDecision.reason
+        assert logged.loggedAt != null
+        logged
+    }
+
     // =========================================================================
     // Scenariusz 1: Nowa decyzja → 1 wpis w decision_log
     // =========================================================================
     def "nowa decyzja powinna trafić do decision_log dokładnie raz"() {
         given:
-        def request = TransactionIngressRequest.builder()
-                .transactionId("TX-EGRESS-001")
-                .accountId("ACC-EGRESS-001")
-                .correlationId("CORR-EGRESS-001")
-                .timestamp(Instant.parse("2026-05-25T10:00:00Z"))
-                .amount(9999.99)   // → ACCEPT
-                .payload([:])
-                .build()
+        def request = ingressRequest(
+                "TX-EGRESS-001",
+                "ACC-EGRESS-001",
+                "CORR-EGRESS-001",
+                Instant.parse("2026-05-25T10:00:00Z"),
+                9999.99G,
+                [:]
+        )
 
         when:
         def decision = orchestrator.process(request)
+        dispatchOutbox()
 
         then: "decision_log ma dokładnie 1 rekord"
         decisionLogRepository.countByCorrelationId("CORR-EGRESS-001") == 1
 
         and: "rekord w decision_log zgadza się z decyzją"
-        def logged = decisionLogRepository.findFirstByCorrelationIdOrderByLoggedAtAsc("CORR-EGRESS-001").orElse(null)
-        logged != null
-        logged.transactionId == decision.transactionId
-        logged.correlationId == decision.correlationId
-        logged.decision      == decision.decision
-        logged.reason        == decision.reason
-        logged.loggedAt      != null
+        assertLoggedDecision("CORR-EGRESS-001", decision)
     }
 
     // =========================================================================
@@ -60,38 +90,38 @@ class TransactionDecisionEgressSpec extends BaseIntegrationSpec {
     // =========================================================================
     def "replay nie powinien dodawać kolejnego wpisu do decision_log"() {
         given:
-        def request = TransactionIngressRequest.builder()
-                .transactionId("TX-EGRESS-002")
-                .accountId("ACC-EGRESS-002")
-                .correlationId("CORR-EGRESS-002")
-                .timestamp(Instant.parse("2026-05-25T10:01:00Z"))
-                .amount(9999.99)
-                .payload([:])
-                .build()
+        def request = ingressRequest(
+                "TX-EGRESS-002",
+                "ACC-EGRESS-002",
+                "CORR-EGRESS-002",
+                Instant.parse("2026-05-25T10:01:00Z"),
+                9999.99G,
+                [:]
+        )
 
         when: "pierwszy request — nowa decyzja"
-        orchestrator.process(request)
+        def firstDecision = orchestrator.process(request)
+        dispatchOutbox()
 
         and: "drugi request — ten sam correlationId (replay z innym danymi)"
-        def replayRequest = TransactionIngressRequest.builder()
-                .transactionId("TX-EGRESS-002-B")   // inne TX-ID
-                .accountId("ACC-EGRESS-002")
-                .correlationId("CORR-EGRESS-002")    // TEN SAM correlationId!
-                .timestamp(Instant.parse("2026-05-25T10:02:00Z"))
-                .amount(50000.00)                     // inne amount (normalnie FLAGGED)
-                .payload([retry: true])
-                .build()
+        def replayRequest = ingressRequest(
+                "TX-EGRESS-002-B",   // inne TX-ID
+                "ACC-EGRESS-002",
+                "CORR-EGRESS-002",    // TEN SAM correlationId!
+                Instant.parse("2026-05-25T10:02:00Z"),
+                50000.00G,             // inne amount (normalnie FLAGGED)
+                [retry: true]
+        )
         orchestrator.process(replayRequest)
+        dispatchOutbox()
 
         then: "decision_log nadal ma dokładnie 1 rekord (replay nie duplikuje)"
         decisionLogRepository.countByCorrelationId("CORR-EGRESS-002") == 1
 
         and: "rekord pochodzi z PIERWSZEGO requestu"
-        def logged = decisionLogRepository
-                .findFirstByCorrelationIdOrderByLoggedAtAsc("CORR-EGRESS-002")
-                .orElse(null)
+        def logged = assertLoggedDecision("CORR-EGRESS-002", firstDecision)
         logged.transactionId == "TX-EGRESS-002"     // TX-ID z pierwszego requestu
-        logged.decision      == "ACCEPT"             // wynik pierwszego requestu
+        logged.decision == "ACCEPT"                 // wynik pierwszego requestu
     }
 
     // =========================================================================
@@ -99,17 +129,18 @@ class TransactionDecisionEgressSpec extends BaseIntegrationSpec {
     // =========================================================================
     def "decyzja bez correlationId powinna trafić do decision_log"() {
         given:
-        def request = TransactionIngressRequest.builder()
-                .transactionId("TX-EGRESS-003")
-                .accountId("ACC-EGRESS-003")
-                .correlationId("   ")   // pusty → legacy path
-                .timestamp(Instant.parse("2026-05-25T10:03:00Z"))
-                .amount(500.00)
-                .payload([:])
-                .build()
+        def request = ingressRequest(
+                "TX-EGRESS-003",
+                "ACC-EGRESS-003",
+                "   ",   // pusty → legacy path
+                Instant.parse("2026-05-25T10:03:00Z"),
+                500.00G,
+                [:]
+        )
 
         when:
         orchestrator.process(request)
+        dispatchOutbox()
 
         then: "decision_log ma 1 rekord (correlationId jest null)"
         decisionLogRepository.findAll().size() == 1
@@ -135,14 +166,14 @@ class TransactionDecisionEgressSpec extends BaseIntegrationSpec {
                 ready.countDown()
                 start.await(10, TimeUnit.SECONDS)
 
-                def req = TransactionIngressRequest.builder()
-                        .transactionId("TX-EGRESS-RACE-${String.format('%03d', idx)}")
-                        .accountId("ACC-EGRESS-RACE")
-                        .correlationId(correlationId)
-                        .timestamp(Instant.parse("2026-05-25T11:00:00Z"))
-                        .amount(9999.99)  // → ACCEPT
-                        .payload([thread: idx])
-                        .build()
+                def req = ingressRequest(
+                        "TX-EGRESS-RACE-${String.format('%03d', idx)}",
+                        "ACC-EGRESS-RACE",
+                        correlationId,
+                        Instant.parse("2026-05-25T11:00:00Z"),
+                        9999.99G,  // → ACCEPT
+                        [thread: idx]
+                )
 
                 try {
                     orchestrator.process(req)
@@ -156,6 +187,7 @@ class TransactionDecisionEgressSpec extends BaseIntegrationSpec {
         start.countDown()
 
         futures.each { f -> f.get(10, TimeUnit.SECONDS) }
+        dispatchOutbox()
 
         then: "brak wyjątków"
         errors.isEmpty()

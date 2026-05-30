@@ -9,4 +9,9 @@ interface DecisionLogRepository extends JpaRepository<DecisionLogEntity, Long> {
 
     // pomocnicze do e2e inspekcji w teście
     Optional<DecisionLogEntity> findFirstByCorrelationIdOrderByLoggedAtAsc(String correlationId)
+
+    // sprawdzenie, czy istnieje już zapis dla danego correlationId (np. w przypadku replaya)
+    boolean existsByCorrelationId(String correlationId)
 }
+
+

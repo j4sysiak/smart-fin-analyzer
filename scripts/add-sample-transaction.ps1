@@ -12,7 +12,7 @@ Usage (PowerShell):
 Parameters:
  -Host (default: http://localhost:8080)
  -UserName (default: dev)
- -TransactionId (default: TX-PS-001)
+ -TransactionId (optional; when omitted, generated uniquely each run)
  -Amount (default: 150.00)
  -Currency (default: PLN)
  -Category (default: Jedzenie)
@@ -23,7 +23,7 @@ Parameters:
 param(
     [string]$ApiHost = 'http://localhost:8080',
     [string]$UserName = 'dev',
-    [string]$TransactionId = 'TX-PS-001',
+    [string]$TransactionId = $null,
     [decimal]$Amount = 150.00,
     [string]$Currency = 'PLN',
     [string]$Category = 'Jedzenie',
@@ -31,6 +31,16 @@ param(
     [switch]$MakeBigSpender = $false,
     [string]$Token = $null
 )
+
+function New-UniqueTransactionId {
+    $stamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $suffix = ([guid]::NewGuid().ToString('N')).Substring(0, 6).ToUpperInvariant()
+    return "TX-PS-$stamp-$suffix"
+}
+
+if (-not $PSBoundParameters.ContainsKey('TransactionId') -or [string]::IsNullOrWhiteSpace($TransactionId)) {
+    $TransactionId = New-UniqueTransactionId
+}
 
 function Write-ErrAndExit($msg) {
     Write-Host "ERROR: $msg" -ForegroundColor Red
@@ -124,4 +134,3 @@ try {
 }
 
 Write-Host "Done." -ForegroundColor Green
-

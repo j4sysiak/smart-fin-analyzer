@@ -1,4 +1,4 @@
-# Lab97 - Symulacja Systemów: Ingress / Processing / Egress - part 2
+# Lab97 - Symulacja Systemów: Ingress / Processing / Egress  -  part 2
 
 ## Cel tej części
 W tej części domknęliśmy **Ingress + Processing** o trwałą idempotencję w bazie danych.

@@ -5,6 +5,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import pl.edu.praktyki.contract.TransactionDecisionEvent
+import pl.edu.praktyki.contract.egress.outbox.EgressOutboxPublisher
 
 /**
  * Warstwa EGRESS — nasłuchuje na TransactionDecisionEvent i:
@@ -36,15 +37,18 @@ Dlaczego tak?
 
  */
 
-    private final DecisionLogRepository decisionLogRepository
+    //private final DecisionLogRepository decisionLogRepository
+    private final EgressOutboxPublisher outboxPublisher
     private final MeterRegistry meterRegistry
 
     TransactionDecisionListener(
-            DecisionLogRepository decisionLogRepository,
+            //DecisionLogRepository decisionLogRepository,
+            EgressOutboxPublisher outboxPublisher,
             MeterRegistry meterRegistry
     ) {
-        this.decisionLogRepository = decisionLogRepository
-        this.meterRegistry         = meterRegistry
+        //this.decisionLogRepository = decisionLogRepository
+        this.outboxPublisher = outboxPublisher
+        this.meterRegistry   = meterRegistry
     }
 
     @EventListener
@@ -91,9 +95,10 @@ Po co inkrementujemy
         meterRegistry.counter(
                 "egress.decisions.count",
                 "decision", d.decision ?: "UNKNOWN",
-                "replay",   String.valueOf(event.replay)
+                "replay", String.valueOf(event.replay)
         ).increment()
 
+        /*   To było w Part 3 (Lab98) — teraz przeniesione do EgressOutboxPublisher i EgressDecisionDeliveryService
         // 3. Utrwal TYLKO nowe decyzje (replay nie duplikuje wpisu w decision_log)
         if (!event.replay) {
             def entity = new DecisionLogEntity(
@@ -107,6 +112,41 @@ Po co inkrementujemy
             log.debug("EGRESS | decision_log saved | correlationId={}", d.correlationId)
         } else {
             log.debug("EGRESS | replay detected, decision_log skipped | correlationId={}", d.correlationId)
+        }*/
+
+
+
+
+
+/*
+- Pojęcie:  „side-effect” => to dodatkowy skutek uboczny obsługi zdarzenia, poza samym odczytaniem decyzji.
+- W tym przypadku takim skutkiem ubocznym byłoby dodanie rekordu do outboxa, który później uruchomi dalszą wysyłkę/processing.
+
+W praktyce:
+  - dla nowej decyzji można zrobić enqueue, czyli zapisać wiadomość do outboxa,
+  - dla replay nie powinno się tego robić ponownie, żeby nie tworzyć duplikatów dalszych działań.
+
+Czyli komentarz mówi, że:
+  - replay ma być tylko ponownym odtworzeniem już znanej decyzji,
+  - ale nie ma ponownie wywoływać efektów zewnętrznych, takich jak zapis do outboxa, publikacja wiadomości, integracja z innym systemem itp.
+
+W tym fragmencie side-effect outboxa to dokładnie:
+  - outboxPublisher.enqueue(event)
+  - oraz pośrednio późniejsza dostawa wiadomości z outboxa.
+
+Cel:
+  - zachować idempotencję,
+  - uniknąć podwójnego wysłania tego samego zdarzenia dalej.
+*/
+        // Replay nie tworzy side-effectu outbox.
+        // Part 4 (Lab99)
+        // 4. Enqueue do outboxa — niezależnie od replay, bo idempotency store już gwarantuje trwałość decyzji
+        if (event.replay) {
+            log.debug("EGRESS-OUTBOX | replay detected, enqueue skipped | correlationId={}", d.correlationId)
+            return
         }
+        /*else: pierwszy zapis o takim correlationId*/
+        outboxPublisher.enqueue(event)
+        meterRegistry.counter("egress.outbox.enqueued.count").increment()
     }
 }

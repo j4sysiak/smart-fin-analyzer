@@ -1,4 +1,4 @@
-# Lab98 - Symulacja Systemów: Ingress / Processing / Egress - part 3
+# Lab98 - Symulacja Systemów: Ingress / Processing / Egress  -  part 3
 
 ## Cel tej części
 W tej części domykamy pełny przepływ **Ingress / Processing / Egress** przez dodanie warstwy wyjściowej (Egress).
@@ -70,8 +70,8 @@ W part-3 dokładamy etap "po decyzji":
 
 - Ten sam `correlationId` nadal oznacza idempotentny wynik w `idempotency_keys`.
 - Egress nie psuje idempotency:
-  - replay nie tworzy nowej decyzji biznesowej,
-  - replay nie powinien duplikować audytu "new decision".
+   - replay nie tworzy nowej decyzji biznesowej,
+   - replay nie powinien duplikować audytu "new decision".
 - Pipeline pozostaje deterministyczny: ten sam klucz -> ten sam efekt decyzji.
 
 ---
@@ -98,7 +98,7 @@ W part-3 dokładamy etap "po decyzji":
 - Rozumie różnicę między wynikiem biznesowym a skutkami ubocznymi systemu.
 
 ### Jak opowiedzieć to w 30-60 sekund
-"Po part-2 mieliśmy stabilne processing + idempotency. W part-3 domknęliśmy Egress: Orchestrator publikuje event decyzji, listener zapisuje audit trail do `decision_log` i wystawia metryki. Replay requestu nie tworzy duplikatu efektów ubocznych. Dzięki temu pipeline jest kompletny: Ingress -> Processing -> Egress." 
+"Po part-2 mieliśmy stabilne processing + idempotency. W part-3 domknęliśmy Egress: Orchestrator publikuje event decyzji, listener zapisuje audit trail do `decision_log` i wystawia metryki. Replay requestu nie tworzy duplikatu efektów ubocznych. Dzięki temu pipeline jest kompletny: Ingress -> Processing -> Egress."
 
 ### Słowa-klucze na rozmowę
 - separation of concerns,

@@ -4,6 +4,7 @@ import jakarta.persistence.*
 
 import java.time.Instant
 
+// Ta klasa reprezentuje encję JPA dla tabeli "idempotency_keys" w bazie danych.
 @Entity
 @Table(
         name = "idempotency_keys",

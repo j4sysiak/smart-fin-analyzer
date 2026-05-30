@@ -1,4 +1,4 @@
-# Lab96 - Symulacja Systemów: Ingress / Processing / Egress - part 1
+# Lab96 - Symulacja Systemów: Ingress / Processing / Egress  -  part 1
 
 ## Cel laba
 W tym labie porządkujemy pełny przepływ danych w aplikacji:

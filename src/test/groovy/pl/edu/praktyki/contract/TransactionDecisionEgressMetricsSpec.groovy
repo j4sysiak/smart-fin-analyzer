@@ -30,29 +30,51 @@ class TransactionDecisionEgressMetricsSpec extends BaseIntegrationSpec {
         }
     }
 
+    private static TransactionIngressRequest ingressRequest(
+            String transactionId,
+            String accountId,
+            String correlationId,
+            Instant timestamp,
+            BigDecimal amount,
+            Map payload
+    ) {
+        TransactionIngressRequest.builder()
+                .transactionId(transactionId)
+                .accountId(accountId)
+                .correlationId(correlationId)
+                .timestamp(timestamp)
+                .amount(amount)
+                .payload(payload)
+                .build()
+    }
+
+    private def decisionCounter(String decision, String replay) {
+        meterRegistry.find("egress.decisions.count")
+                .tag("decision", decision)
+                .tag("replay", replay)
+                .counter()
+    }
+
     // =========================================================================
     // Scenariusz 1: Nowa decyzja ACCEPT → metryka egress.decisions.count++
     //              z tagami: decision=ACCEPT, replay=false
     // =========================================================================
     def "nowa decyzja ACCEPT powinien inkrementować metrykę z tagami"() {
         given:
-        def request = TransactionIngressRequest.builder()
-                .transactionId("TX-METRICS-001")
-                .accountId("ACC-METRICS-001")
-                .correlationId("CORR-METRICS-001")
-                .timestamp(Instant.parse("2026-05-25T12:00:00Z"))
-                .amount(100.00)  // → ACCEPT
-                .payload([:])
-                .build()
+        def request = ingressRequest(
+                "TX-METRICS-001",
+                "ACC-METRICS-001",
+                "CORR-METRICS-001",
+                Instant.parse("2026-05-25T12:00:00Z"),
+                100.00G,  // → ACCEPT
+                [:]
+        )
 
         when:
         orchestrator.process(request)
 
         then: "metryka egress.decisions.count ma rekord z decision=ACCEPT, replay=false"
-        def counter = meterRegistry.find("egress.decisions.count")
-                .tag("decision", "ACCEPT")
-                .tag("replay", "false")
-                .counter()
+        def counter = decisionCounter("ACCEPT", "false")
 
         counter != null
         counter.count() >= 1.0d  // co najmniej 1 inkrementacja (może być więcej jeśli inne testy)
@@ -63,42 +85,36 @@ class TransactionDecisionEgressMetricsSpec extends BaseIntegrationSpec {
     // =========================================================================
     def "replay powinien inkrementować metrykę z tagami decision=ACCEPT, replay=true"() {
         given:
-        def request = TransactionIngressRequest.builder()
-                .transactionId("TX-METRICS-002")
-                .accountId("ACC-METRICS-002")
-                .correlationId("CORR-METRICS-002")
-                .timestamp(Instant.parse("2026-05-25T12:01:00Z"))
-                .amount(100.00)  // → ACCEPT
-                .payload([:])
-                .build()
+        def request = ingressRequest(
+                "TX-METRICS-002",
+                "ACC-METRICS-002",
+                "CORR-METRICS-002",
+                Instant.parse("2026-05-25T12:01:00Z"),
+                100.00G,  // → ACCEPT
+                [:]
+        )
 
         when: "pierwszy request — nowa decyzja"
         orchestrator.process(request)
 
         and: "drugi request — replay"
-        def replayRequest = TransactionIngressRequest.builder()
-                .transactionId("TX-METRICS-002-B")
-                .accountId("ACC-METRICS-002")
-                .correlationId("CORR-METRICS-002")
-                .timestamp(Instant.parse("2026-05-25T12:02:00Z"))
-                .amount(100.00)
-                .payload([:])
-                .build()
+        def replayRequest = ingressRequest(
+                "TX-METRICS-002-B",
+                "ACC-METRICS-002",
+                "CORR-METRICS-002",
+                Instant.parse("2026-05-25T12:02:00Z"),
+                100.00G,
+                [:]
+        )
         orchestrator.process(replayRequest)
 
         then: "metryka ma rekordy zarówno dla replay=false jak i replay=true"
-        def newDecisionCounter = meterRegistry.find("egress.decisions.count")
-                .tag("decision", "ACCEPT")
-                .tag("replay", "false")
-                .counter()
+        def newDecisionCounter = decisionCounter("ACCEPT", "false")
         newDecisionCounter != null
         newDecisionCounter.count() >= 1.0d
 
         and: "metryka replay=true również istnieje i jest >= 1"
-        def replayCounter = meterRegistry.find("egress.decisions.count")
-                .tag("decision", "ACCEPT")
-                .tag("replay", "true")
-                .counter()
+        def replayCounter = decisionCounter("ACCEPT", "true")
         replayCounter != null
         replayCounter.count() >= 1.0d
     }
@@ -109,40 +125,36 @@ class TransactionDecisionEgressMetricsSpec extends BaseIntegrationSpec {
     // =========================================================================
     def "różne typy decyzji powinny mieć oddzielne liczniki"() {
         given: "request z amount = ACCEPT"
-        def acceptRequest = TransactionIngressRequest.builder()
-                .transactionId("TX-METRICS-ACCEPT")
-                .accountId("ACC-METRICS-03")
-                .correlationId("CORR-METRICS-ACCEPT")
-                .timestamp(Instant.parse("2026-05-25T12:10:00Z"))
-                .amount(100.00)   // → ACCEPT (poniżej progu 10000)
-                .payload([:])
-                .build()
+        def acceptRequest = ingressRequest(
+                "TX-METRICS-ACCEPT",
+                "ACC-METRICS-03",
+                "CORR-METRICS-ACCEPT",
+                Instant.parse("2026-05-25T12:10:00Z"),
+                100.00G,   // → ACCEPT (poniżej progu 10000)
+                [:]
+        )
 
         and: "request z amount = ACCEPT_WITH_WARNING (FLAGGED)"
-        def flaggedRequest = TransactionIngressRequest.builder()
-                .transactionId("TX-METRICS-FLAGGED")
-                .accountId("ACC-METRICS-04")
-                .correlationId("CORR-METRICS-FLAGGED")
-                .timestamp(Instant.parse("2026-05-25T12:11:00Z"))
-                .amount(50000.00)  // → FLAGGED (powyżej progu 10000)
-                .payload([:])
-                .build()
+        def flaggedRequest = ingressRequest(
+                "TX-METRICS-FLAGGED",
+                "ACC-METRICS-04",
+                "CORR-METRICS-FLAGGED",
+                Instant.parse("2026-05-25T12:11:00Z"),
+                50000.00G,  // → FLAGGED (powyżej progu 10000)
+                [:]
+        )
 
         when: "przetwarzamy oba requesty"
         orchestrator.process(acceptRequest)
         orchestrator.process(flaggedRequest)
 
         then: "metryka ACCEPT ma rekord"
-        def acceptCounter = meterRegistry.find("egress.decisions.count")
-                .tag("decision", "ACCEPT")
-                .counter()
+        def acceptCounter = decisionCounter("ACCEPT", "false")
         acceptCounter != null
         acceptCounter.count() >= 1.0d
 
         and: "metryka ACCEPT_WITH_WARNING ma rekord"
-        def flaggedCounter = meterRegistry.find("egress.decisions.count")
-                .tag("decision", "ACCEPT_WITH_WARNING")
-                .counter()
+        def flaggedCounter = decisionCounter("ACCEPT_WITH_WARNING", "false")
         flaggedCounter != null
         flaggedCounter.count() >= 1.0d
     }

@@ -70,11 +70,11 @@ class SmartFinCliRunner implements CommandLineRunner {
 
     @Override
     void run(String... args) {
-        def cli = new CliBuilder(usage: 'smart-fin-db -u <user> [-c <currency>]')
+        def cli = new CliBuilder(usage: 'smart-fin-db -u <user> [-c <currency>] [-f <file>]')
         cli.with {
             u longOpt: 'user', args: 1, required: true, 'Imię i nazwisko użytkownika'
             c longOpt: 'currency', args: 1, 'Waluta bazowa (domyślnie PLN)'
-            f longOpt: 'file', args: 1, required: true, 'Ścieżka do pliku CSV lub JSON'
+            f longOpt: 'file', args: 1, required: false, 'Ścieżka do pliku CSV lub JSON (domyślnie: transactions_upload.csv)'
             h longOpt: 'help', 'Pokaż pomoc'
         }
 
@@ -92,9 +92,10 @@ class SmartFinCliRunner implements CommandLineRunner {
                 return
             }
         }
-        def myFile = new File(opts.f as String)
+        def inputFilePath = (opts.f ?: 'transactions_upload.csv') as String
+        def myFile = new File(inputFilePath)
         if (!myFile.exists()) {
-            System.err.println "BŁĄD: Plik ${myFile.path} nie istnieje."
+            System.err.println "BŁĄD: Plik ${myFile.path} nie istnieje. Użyj --file <ścieżka> aby wskazać inny plik."
             return
         }
 
@@ -106,6 +107,12 @@ class SmartFinCliRunner implements CommandLineRunner {
 
         List<TransactionDto> rawData = parser.parse(myFile)
         println ">>> Zaimportowano ${rawData.size()} transakcji z pliku."
+
+        // Każde uruchomienie CLI dostaje unikalny suffix, żeby te same ID
+        // z pliku CSV nie kolidowały z poprzednimi runami w bazie danych.
+        String runSuffix = "RUN-${System.currentTimeMillis()}-${UUID.randomUUID().toString().take(6).toUpperCase()}"
+        rawData.each { tx -> tx.id = "${tx.id}-${runSuffix}" }
+        println ">>> Przypisano suffix per-run: ${runSuffix}"
         /*
         def rawData = [
                 new TransactionDto(id: "1", amount: 100, currency: "EUR", category: "Jedzenie", description: "Obiad", date: LocalDate.now()),

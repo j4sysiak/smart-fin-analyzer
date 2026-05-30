@@ -7,9 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import pl.edu.praktyki.repository.TransactionEntity
+import pl.edu.praktyki.repository.CategoryEntity
+import pl.edu.praktyki.repository.CategoryRepository
 import pl.edu.praktyki.repository.TransactionRepository
 import pl.edu.praktyki.security.JwtService
+import pl.edu.praktyki.service.ThreadTracker
+import groovy.json.JsonOutput
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -59,33 +62,49 @@ class AsyncBulkSpec extends BaseIntegrationSpec {
 
     @Autowired TransactionRepository repository
 
+    @Autowired CategoryRepository categoryRepository
+
+    @Autowired ThreadTracker threadTracker
+
     def setup() {
         // Przed każdym testem czyścimy bazę i dodajemy świeże dane
         repository.deleteAll()
+        categoryRepository.deleteAll()
+        categoryRepository.saveAndFlush(new CategoryEntity(name: 'Jedzenie', monthlyLimit: 1500.0G))
+        threadTracker?.remove('SmartFinFacade.processInBackgroundTask')
     }
 
     def "powinien przyjąć wielką paczkę danych i przetworzyć ją w tle"() {
         given: "1000 transakcji"
         String token = jwtService.generateToken("admin") // <-- KLUCZOWE JWT
-        def data = (1..1000).collect { new TransactionDto(id: "ASYNC-$it", amount: 10.0, category: "Async") }
-        String json = groovy.json.JsonOutput.toJson(data)
+        def data = (1..1000).collect { new TransactionDto(id: "ASYNC-$it", amount: 10.0, category: "Jedzenie") }
+        String json = JsonOutput.toJson(data)
 
         when: "uderzamy w endpoint /bulk"
+        long start = System.currentTimeMillis()
         def response = mvc.perform(post("/api/transactions/bulk")  // leci do TransactionController.bulkUpload()
                 .header("Authorization", "Bearer $token") // <-- KLUCZOWE JWT
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
+        long duration = System.currentTimeMillis() - start
 
         then: "serwer odpowiada 202 Accepted natychmiast"
         response.andExpect(status().isAccepted())
+        duration < 1000
 
-        and: "w tej milisekundzie baza wciąż może być pusta"
-        repository.count() < 1000
+        and: "wątek tła zapisuje metadane o wykonaniu"
+        await().atMost(10, TimeUnit.SECONDS).until {
+            threadTracker.get('SmartFinFacade.processInBackgroundTask') != null
+        }
 
         then: "po krótkiej chwili Awaitility potwierdza, że dane wpadły do bazy"
         // Asynchronous processing may take longer on CI or under load — increase timeout to be more robust
         await().atMost(15, TimeUnit.SECONDS).until {
             repository.count() == 1000
         }
+
+        and: "zapis został wykonany na wątku z puli bulk"
+        Map stats = threadTracker.get('SmartFinFacade.processInBackgroundTask') as Map
+        stats.thread?.startsWith("bulkTaskExecutorZapierdala--")
     }
 }

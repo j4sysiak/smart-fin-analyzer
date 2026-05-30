@@ -2,16 +2,62 @@
     =========================================
     RAPORT FINANSOWY DLA: JACEK
     =========================================
-    Data wygenerowania: 2026-04-16
+    Data wygenerowania: 2026-05-26
 
     PODSUMOWANIE:
     -----------------------------------------
-    Bilans ca³kowity:  4063714.38 PLN
-    G³ówny wydatek:    Jedzenie
+    Bilans ca³kowity:  111326578.78 PLN
+    G³ówny wydatek:    Rozrywka
 
     WYDATKI WG KATEGORII:
     
-    - Jedzenie        : 1120.00 PLN
+    - Rozrywka        : 1465344.72 PLN
+    
+    - Jedzenie        : 495490.92 PLN
+    
+    - Zakupy          : 531380.12 PLN
+    
+    - Samochód        : 502163.33 PLN
+    
+    - Transport       : 514034.85 PLN
+    
+    - Us³ugi          : 506398.61 PLN
+    
+    - Zdrowie         : 515826.35 PLN
+    
+    - Podró¿e         : 506684.99 PLN
+    
+    - Prezenty        : 524377.19 PLN
+    
+    - Dom             : 481916.31 PLN
+    
+    - Inwestycje      : 490278.72 PLN
+    
+    - Oprogramowanie  : 484646.43 PLN
+    
+    - Paliwo          : 501778.42 PLN
+    
+    - Podatki         : 490939.58 PLN
+    
+    - Restauracje     : 497868.61 PLN
+    
+    - Ubezpieczenia   : 465990.43 PLN
+    
+    - Edukacja        : 486167.86 PLN
+    
+    - Praca           : 527879.34 PLN
+    
+    - Sprzêt          : 557961.43 PLN
+    
+    - Gaming          : 490813.85 PLN
+    
+    - Ksi¹¿ki         : 560274.16 PLN
+    
+    - Sport           : 541768.40 PLN
+    
+    - Media           : 532239.27 PLN
+    
+    - Zakupy1         : 587.89 PLN
     
     -----------------------------------------
     Status: NA PLUSIE
