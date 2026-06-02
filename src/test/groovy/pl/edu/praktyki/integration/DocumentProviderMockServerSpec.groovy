@@ -1,22 +1,26 @@
 package pl.edu.praktyki.integration
 
-import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import groovy.json.JsonSlurper
+import pl.edu.praktyki.support.mock.DocumentApiMockServer
 import spock.lang.Shared
 import spock.lang.Specification
 
-import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*
+
+// Ten test integracyjny pokazuje, jak używać DocumentApiMockServer do testowania interakcji
+// z zewnętrznym systemem dokumentów.
+// Jest to przykład testu integracyjnego, który może być uruchamiany lokalnie lub w pipeline CI,
+// aby zweryfikować, że nasz system poprawnie komunikuje się z API dokumentów.
 
 class DocumentProviderMockServerSpec extends Specification {
 
+    private static final File SCENARIOS_FILE = new File("src/test/resources/mock/document-scenarios.json")
+
     @Shared
-    WireMockServer documentApi = new WireMockServer(WireMockConfiguration.wireMockConfig().dynamicPort())
+    DocumentApiMockServer documentApi = DocumentApiMockServer.dynamicPort()
 
     @Shared
     HttpClient httpClient = HttpClient.newHttpClient()
@@ -30,28 +34,20 @@ class DocumentProviderMockServerSpec extends Specification {
     }
 
     def setup() {
-        documentApi.resetAll()
+        documentApi.reset()
     }
 
-    def "powinien pobrac dokument JSON z zamockowanego systemu zewnetrznego"() {
-        given: "mockowany serwer dokumentow wystawia endpoint GET /api/documents/{id}"
+    def "powinien pobrać dokument JSON z zamockowanego systemu zewnętrznego"() {
+        given: "mockowany serwer dokumentów wystawia endpoint GET /api/documents/{id}"
         def documentId = "INV-2026-05-001"
+        // Przygotowujemy stub, który symuluje odpowiedź z zewnętrznego API dokumentów dla danego ID.
+        // documentApi to nasz mock serwer (http://localhost:55159), który pozwala nam definiować,
+        // jakie odpowiedzi ma zwracać na konkretne zapytania.
+        documentApi.stubDocumentOk(documentId, true)
 
-        documentApi.stubFor(get(urlPathEqualTo("/api/documents/${documentId}"))
-                .withQueryParam("includeMetadata", equalTo("true"))
-                .willReturn(okJson("""
-                    {
-                      "id": "${documentId}",
-                      "status": "READY",
-                      "owner": "JAN_KOWALSKI",
-                      "contentType": "application/pdf",
-                      "downloadUrl": "https://documents.example.local/files/${documentId}.pdf"
-                    }
-                """.stripIndent())))
-
-        and: "nasz system wykonuje HTTP GET do zewnetrznego serwera"
+        and: "nasz system wykonuje HTTP GET do zewnętrznego serwera"
         def request = HttpRequest.newBuilder()
-                .uri(URI.create("${documentApi.baseUrl()}/api/documents/${documentId}?includeMetadata=true"))
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/${documentId}?includeMetadata=true"))  // http://localhost:55159/api/documents/INV-2026-05-001?includeMetadata=true
                 .GET()
                 .build()
 
@@ -67,19 +63,13 @@ class DocumentProviderMockServerSpec extends Specification {
         body.contentType == "application/pdf"
 
         and: "weryfikujemy kontrakt requestu do obcego systemu"
-        documentApi.verify(1, getRequestedFor(urlPathEqualTo("/api/documents/${documentId}"))
-                .withQueryParam("includeMetadata", equalTo("true")))
+        documentApi.verifyDocumentRequested(documentId, true)
     }
 
-    def "powinien zwrocic 404 gdy dokument nie istnieje"() {
+    def "powinien zwrócić 404 gdy dokument nie istnieje"() {
         given:
         def missingId = "INV-404"
-
-        documentApi.stubFor(get(urlPathEqualTo("/api/documents/${missingId}"))
-                .willReturn(aResponse()
-                        .withStatus(404)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody('{"error":"DOCUMENT_NOT_FOUND"}')))
+        documentApi.stubDocumentNotFound(missingId)
 
         def request = HttpRequest.newBuilder()
                 .uri(URI.create("${documentApi.baseUrl()}/api/documents/${missingId}"))
@@ -94,5 +84,48 @@ class DocumentProviderMockServerSpec extends Specification {
         response.statusCode() == 404
         body.error == "DOCUMENT_NOT_FOUND"
     }
-}
 
+    def "powinien automatycznie wygenerować wiele stubów z pliku json"() {
+        given:
+        // Ten test pokazuje, jak można zdefiniować wiele scenariuszy odpowiedzi w jednym pliku JSON (src/test/resources/mock/document-scenarios.json),
+        // a następnie załadować je do naszego mock serwera za pomocą metody stubFromJsonFile.
+        // Plik JSON zawiera listę scenariuszy, z których każdy definiuje, jak ma wyglądać odpowiedź dla konkretnego ID dokumentu.
+        // Dzięki temu możemy łatwo zarządzać wieloma scenariuszami testowymi w jednym miejscu,
+        // bez konieczności ręcznego definiowania stubów w kodzie testu.
+        // W tym teście sprawdzamy zarówno scenariusz, w którym dokument istnieje (ID: INV-2026-05-001, INV-2026-05-002),
+        // jak i scenariusz, w którym dokument nie istnieje (ID: INV-404).
+        int loaded = documentApi.stubFromJsonFile(SCENARIOS_FILE)
+
+        when:
+        def request200 = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-2026-05-001?includeMetadata=true"))
+                .GET()
+                .build()
+        def response200 = httpClient.send(
+                request200,
+                HttpResponse.BodyHandlers.ofString()
+        )
+
+        def request404 = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-404"))
+                .GET()
+                .build()
+        def response404 = httpClient.send(
+                request404,
+                HttpResponse.BodyHandlers.ofString()
+        )
+
+        def body200 = new JsonSlurper().parseText(response200.body()) as Map
+        def body404 = new JsonSlurper().parseText(response404.body()) as Map
+
+        then:
+        loaded >= 3
+        response200.statusCode() == 200
+        body200.id == "INV-2026-05-001"
+        body200.owner == "JAN_KOWALSKI"
+
+        and:
+        response404.statusCode() == 404
+        body404.error == "DOCUMENT_NOT_FOUND"
+    }
+}

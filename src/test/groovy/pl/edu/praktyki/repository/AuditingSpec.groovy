@@ -44,8 +44,10 @@ class AuditingSpec extends BaseIntegrationSpec {
         saved.createdDate != null
         saved.lastModifiedDate != null
 
-        // Sprawdzamy czy data jest z dzisiaj (z dokładnością do minuty)
-        saved.createdDate.isBefore(LocalDateTime.now().plusSeconds(1))
+        // Sprawdzamy tylko sensowność czasu, a nie pojedyncze sekundy z zegara systemowego
+        def now = LocalDateTime.now()
+        saved.createdDate.isBefore(now.plusSeconds(5))
+        saved.createdDate.isAfter(now.minusMinutes(1))
 
         and: "wyświetlamy dowód w logach"
         println "--------------------------------------------------------"

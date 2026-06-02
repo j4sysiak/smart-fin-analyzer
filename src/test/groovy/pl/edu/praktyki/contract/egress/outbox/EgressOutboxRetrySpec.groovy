@@ -42,6 +42,12 @@ class EgressOutboxRetrySpec extends BaseIntegrationSpec {
         outboxRepository.save(new EgressOutboxEntity(args))
     }
 
+    private static void assertDelayWithin(Instant reference, Instant actual, long expectedDelayMs, long toleranceMs) {
+        def actualDelay = actual.toEpochMilli() - reference.toEpochMilli()
+        assert actualDelay >= expectedDelayMs - toleranceMs
+        assert actualDelay <= expectedDelayMs + toleranceMs
+    }
+
 
     def "błąd przetwarzania powinien ustawić RETRY i nextAttemptAt w przyszłości"() {
         given: "rekord już claimed przez dispatcher (PROCESSING), ale payload jest uszkodzony"
@@ -67,8 +73,8 @@ class EgressOutboxRetrySpec extends BaseIntegrationSpec {
         updated.lastError != null
         updated.processedAt == null
 
-        and: "backoff po 1. nieudanej próbie to ok. 2 sekundy"
-        updated.nextAttemptAt.isAfter(before.plusMillis(1500))
+        and: "backoff po 1. nieudanej próbie to ok. 2 sekundy z tolerancją"
+        assertDelayWithin(before, updated.nextAttemptAt, 2000L, 700L)
 
         and: "metryka retry została zwiększona"
         def retryCounter = meterRegistry.find("egress.outbox.dispatch.retry.count").counter()

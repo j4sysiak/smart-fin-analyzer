@@ -12,6 +12,7 @@ import org.springframework.dao.PessimisticLockingFailureException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import javax.sql.DataSource
+import java.util.concurrent.atomic.AtomicBoolean
 import pl.edu.praktyki.service.ThreadTracker
 
 /**
@@ -45,6 +46,7 @@ abstract class BaseIntegrationSpec extends Specification {
 
     // Logger used in static and instance contexts inside this base test class
     private static final Logger log = LoggerFactory.getLogger(BaseIntegrationSpec.class)
+    private static final AtomicBoolean KEEP_DATA_NOTICE_PRINTED = new AtomicBoolean(false)
 
     def setup() {
         // For deterministic integration tests: truncate domain tables before each test
@@ -52,7 +54,9 @@ abstract class BaseIntegrationSpec extends Specification {
             if (!KEEP_LOCAL_DATA) {
                 doTruncateDatabase()
             } else {
-                System.out.println(">>> [BaseIntegrationSpec] local-pg.keepdata=true — nie trunacjuję bazy przed testem")
+                if (KEEP_DATA_NOTICE_PRINTED.compareAndSet(false, true)) {
+                    System.out.println(">>> [BaseIntegrationSpec] local-pg.keepdata=true — nie trunacjuję bazy przed testem")
+                }
             }
         } else {
             // In tc (testcontainer) profile we truncate before each test to ensure isolation
@@ -99,10 +103,12 @@ abstract class BaseIntegrationSpec extends Specification {
         try {
             def stmt = conn.createStatement()
             try {
-                System.out.println(">>> [BaseIntegrationSpec] Acquiring advisory lock for truncate (key=${LOCK_KEY})")
                 stmt.execute("SELECT pg_advisory_lock(${LOCK_KEY})")
 
-                System.out.println(">>> [BaseIntegrationSpec] Truncating domain tables before test (RESTART IDENTITY CASCADE)")
+                if (verboseLogsEnabled()) {
+                    System.out.println(">>> [BaseIntegrationSpec] Acquiring advisory lock for truncate (key=${LOCK_KEY})")
+                    System.out.println(">>> [BaseIntegrationSpec] Truncating domain tables before test (RESTART IDENTITY CASCADE)")
+                }
                 String truncateSql = '''
             TRUNCATE TABLE 
                 transactions, 
@@ -150,6 +156,8 @@ abstract class BaseIntegrationSpec extends Specification {
     static final boolean ENABLE_FLYWAY = (System.getProperty('enable.flyway') ?: 'true').toBoolean()
     // Jeśli true, nie trunacjuj danych w local-pg przed każdym testem.
     static final boolean KEEP_LOCAL_DATA = Boolean.getBoolean('local.pg.keepdata')
+    // Domyślnie wyciszamy najbardziej gadatliwe logi setupu w local-pg, żeby pełny run był czytelniejszy.
+    static final boolean QUIET_LOCAL_PG = (System.getProperty('local.pg.quiet') ?: 'true').toBoolean()
 
     // --- Konfiguracja automatycznego kontenera (tryb 'tc') ---
     static final String CONTAINER_NAME = "smartfin-test-pg"
@@ -293,12 +301,22 @@ abstract class BaseIntegrationSpec extends Specification {
     private static int runCmd(String command) {
         try {
             def process = command.execute()
+            if (LOCAL_PG && QUIET_LOCAL_PG) {
+                def out = new ByteArrayOutputStream()
+                def err = new ByteArrayOutputStream()
+                process.consumeProcessOutput(out, err)
+                return process.waitFor()
+            }
             process.consumeProcessOutput(System.out, System.err)
             return process.waitFor()
         } catch (Exception e) {
             System.err.println("Błąd podczas wykonywania: $command — ${e.message}")
             return -1
         }
+    }
+
+    private static boolean verboseLogsEnabled() {
+        return !(LOCAL_PG && QUIET_LOCAL_PG)
     }
 
     @DynamicPropertySource

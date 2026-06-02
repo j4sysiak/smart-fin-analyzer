@@ -26,17 +26,45 @@ Aplikacja: `src\main\groovy\pl\edu\praktyki\SmartFinDbApp.groovy`
 
 ```powershell
 # tc — pełny, powtarzalny run
+Set-Location "C:\dev\smart-fin-analyzer"
 .\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" clean test --no-daemon
 
 # tc — pojedynczy test
+Set-Location "C:\dev\smart-fin-analyzer"
 .\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" test --tests "pl.edu.praktyki.repository.CategorySpec" --no-daemon
 
-# local-pg — start bazy + cleanup
-WAŻNE:  docker compose up -d db
+gdy są błędy uruchom z debugiem i zapisz logi do pliku, potem przefiltruj:
+Set-Location "C:\dev\smart-fin-analyzer"
+.\gradlew.bat "-Dspring.profiles.active=tc" "-Denable.flyway=true" clean test --no-daemon 2>&1 | Tee-Object tc-full-run.log
+
+wyciągnij pierwsze 80 linii z błędami:
+Set-Location "C:\dev\smart-fin-analyzer"
+Select-String -Path .\tc-full-run.log -Pattern "FAILED|FAILURE: Build failed|> Task :test FAILED|Caused by:" | Select-Object -First 80
+
+
+
+
+
+# local-pg — pełny run z lokalnym PG (zalecany do debugowania, nie do powtarzalnych runów)
+# local-pg — start bazy + cleanup danych w bazie (zalecany przed pełnym runem)
+Set-Location "C:\dev\smart-fin-analyzer"
+docker compose up -d db
+docker ps --filter name=smartfin-postgres
+docker exec smartfin-postgres pg_isready -U finuser
+
+Set-Location "C:\dev\smart-fin-analyzer"
+UWAGA!!!  to czyszczenie baszy musi być uruchomione i zakończone sukcesem.   
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\clean-db.ps1 -Mode local-pg -Force
 
-# local-pg — pełny run
-.\gradlew.bat "-Dlocal.pg=true" "-Denable.flyway=true" clean test --no-daemon
+Set-Location "C:\dev\smart-fin-analyzer"
+.\gradlew.bat "-Dlocal.pg=true" "-Dspring.profiles.active=local-pg" "-Denable.flyway=true" clean test --no-daemon
+
+gdy są błędy uruchom z debugiem i zapisz logi do pliku, potem przefiltruj:
+.\gradlew.bat "-Dlocal.pg=true" "-Dspring.profiles.active=local-pg" "-Denable.flyway=true" clean test --no-daemon 2>&1 | Tee-Object local-pg-full-run.log
+
+wyciągnij pierwsze 80 linii z błędami:
+Select-String -Path .\local-pg-full-run.log -Pattern "FAILED|FAILURE: Build failed|> Task :test FAILED|Caused by:" | Select-Object -First 80
+
 ```
 
 ---
@@ -58,7 +86,7 @@ Zalety: szybki restart, hot-reload, pełna widoczność logów, debugger działa
 docker compose stop
 docker compose down -v
 Get-Process java,javaw,gradle -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Format-Table -AutoSize | Out-String
-
+ 
    Id ProcessName StartTime
    -- ----------- ---------
    25352 java        9.05.2026 21:24:25
@@ -93,6 +121,7 @@ docker exec smartfin-postgres pg_isready -U finuser
 **Sposób 1: Gradle task `runSmartFinDb` (zalecany)**
 
 ```powershell
+Set-Location "C:\dev\smart-fin-analyzer"
 .\gradlew.bat runSmartFinDb -PappArgs="-u Jacek"    # start aplikacji bez importu CSV
 
 .\gradlew.bat runSmartFinDb -PappArgs="-u Jacek -f transactions_upload.csv"     # start aplikacji + import CSV

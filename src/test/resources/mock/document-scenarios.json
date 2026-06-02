@@ -1,0 +1,37 @@
+{
+  "scenarios": [
+    {
+      "id": "INV-2026-05-001",
+      "includeMetadata": true,
+      "statusCode": 200,
+      "body": {
+        "id": "INV-2026-05-001",
+        "status": "READY",
+        "owner": "JAN_KOWALSKI",
+        "contentType": "application/pdf",
+        "downloadUrl": "https://documents.example.local/files/INV-2026-05-001.pdf"
+      }
+    },
+    {
+      "id": "INV-2026-05-002",
+      "includeMetadata": false,
+      "statusCode": 200,
+      "body": {
+        "id": "INV-2026-05-002",
+        "status": "READY",
+        "owner": "JACEK_NOWAK",
+        "contentType": "application/pdf",
+        "downloadUrl": "https://documents.example.local/files/INV-2026-05-002.pdf"
+      }
+    },
+    {
+      "id": "INV-404",
+      "includeMetadata": false,
+      "statusCode": 404,
+      "body": {
+        "error": "DOCUMENT_NOT_FOUND"
+      }
+    }
+  ]
+}
+

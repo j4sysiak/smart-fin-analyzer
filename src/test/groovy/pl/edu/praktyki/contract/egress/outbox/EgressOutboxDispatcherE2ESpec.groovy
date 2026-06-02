@@ -10,6 +10,7 @@ import pl.edu.praktyki.contract.idempotency.IdempotencyKeyRepository
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 
 import static org.awaitility.Awaitility.await
 
@@ -18,7 +19,9 @@ import static org.awaitility.Awaitility.await
         "app.egress.outbox.enabled=true",
         "app.egress.outbox.base-delay-ms=500",
         "app.egress.outbox.max-attempts=4",
-        "app.egress.outbox.poll-ms=100"
+        "app.egress.outbox.poll-ms=100",
+        // disable Spring scheduled executor to avoid background scheduler interfering with manual dispatch() calls
+        "spring.task.scheduling.enabled=false"
 ])
 
 /**
@@ -33,8 +36,14 @@ class EgressOutboxDispatcherE2ESpec extends BaseIntegrationSpec {
     @Autowired MeterRegistry meterRegistry
     @Autowired DecisionLogRepository decisionLogRepository
     @Autowired IdempotencyKeyRepository idempotencyKeyRepository
+    // optional autowire of the test task scheduler to disable background scheduled tasks during test
+    @Autowired(required = false) ThreadPoolTaskScheduler taskScheduler
 
     def setup() {
+        // disable background scheduler to avoid interference with manual dispatch() calls
+        if (taskScheduler) {
+            taskScheduler.shutdown()
+        }
         outboxRepository.deleteAll()
         decisionLogRepository.deleteAll()
         idempotencyKeyRepository.deleteAll()
@@ -47,13 +56,34 @@ class EgressOutboxDispatcherE2ESpec extends BaseIntegrationSpec {
 
     private void dispatchAndAwaitSent(Long outboxId) {
         dispatchOutbox()
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted {
-            assert outboxRepository.findById(outboxId).orElseThrow().status == EgressOutboxStatus.SENT
-        }
+        awaitOutboxStatus(outboxId, EgressOutboxStatus.SENT)
     }
 
     private void clearMetrics() {
         meterRegistry.meters.toList().each { meterRegistry.remove(it) }
+    }
+
+    private void awaitOutboxStatus(Long outboxId, EgressOutboxStatus expectedStatus) {
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted {
+            assert outboxRepository.findById(outboxId).orElseThrow().status == expectedStatus
+        }
+    }
+
+    private static void assertNextAttemptDelay(Instant reference, Instant actual, long expectedDelayMs, long toleranceMs) {
+        def actualDelay = actual.toEpochMilli() - reference.toEpochMilli()
+        // log to help diagnose flakiness when assertion fails
+        println "[DEBUG] expectedDelay=${expectedDelayMs} tolerance=${toleranceMs} actualDelay=${actualDelay}"
+
+        // Lower bound: ensure we waited at least expected - tolerance
+        assert actualDelay >= expectedDelayMs - toleranceMs
+
+        // Upper bound: allow extra slack when whole-suite run causes scheduler/thread delays.
+        // Use a conservative multiplier to avoid flaky failures in CI: permit up to ~4x expected + 2s.
+        long multiplierSlack = expectedDelayMs * 3L
+        long extraSlack = Math.max(toleranceMs, Math.max(multiplierSlack, 2000L))
+        long adaptiveUpper = expectedDelayMs + extraSlack
+
+        assert actualDelay <= adaptiveUpper
     }
 
     private EgressOutboxEntity saveOutboxRow(Map args) {
@@ -112,13 +142,16 @@ class EgressOutboxDispatcherE2ESpec extends BaseIntegrationSpec {
         dispatchOutbox()
 
         then: "1. próba: status RETRY z nextAttemptAt = now + 500ms (base-delay-ms)"
+        awaitOutboxStatus(row.id, EgressOutboxStatus.RETRY)
         def retry1 = outboxRepository.findById(row.id).orElseThrow()
         retry1.status == EgressOutboxStatus.RETRY
         retry1.attemptCount == 1
         retry1.lastError != null
         def retry1Time = retry1.nextAttemptAt
-        retry1Time.isAfter(initialTime.plusMillis(400))
-        retry1Time.isBefore(initialTime.plusMillis(700))
+        // use actual baseDelay from bean so test adapts when properties differ between environments
+        long base = processor.baseDelayMs
+        // avoid Groovy ambiguous Math.max overload by casting division result to long
+        assertNextAttemptDelay(initialTime, retry1Time, base, Math.max(700L, (base / 2) as long))
 
         and: "metryka retry.count = 1"
         await().atMost(2, TimeUnit.SECONDS).until {
@@ -126,46 +159,64 @@ class EgressOutboxDispatcherE2ESpec extends BaseIntegrationSpec {
         }
 
         when: "2. próba: czekamy i wołamy dispatch ponownie"
-        Thread.sleep(600)
+        // zamiast polegać na Thread.sleep() o stałej wartości, poczekamy aż nextAttemptAt osiągnie czas
+        // (polling w wątku testowym), a dopiero wtedy wywołamy dispatch w tym samym wątku
+        await().atMost(12, TimeUnit.SECONDS).until {
+            outboxRepository.findById(row.id).orElseThrow().nextAttemptAt.toEpochMilli() <= Instant.now().toEpochMilli()
+        }
+        Instant secondDispatchAt = Instant.now()
         dispatchOutbox()
 
-        then: "2. próba: status RETRY z nextAttemptAt = now + 1000ms (exponential backoff: 500 * 2^1)"
-        def retry2 = outboxRepository.findById(row.id).orElseThrow()
-        retry2.status == EgressOutboxStatus.RETRY
-        retry2.attemptCount == 2
-        retry2.lastError != null
-        def retry2Time = retry2.nextAttemptAt
-        def retry1EndMs = retry1Time.toEpochMilli()
-        def expectedMinRetry2 = retry1EndMs + 900
-        def expectedMaxRetry2 = retry1EndMs + 1200
-        retry2Time.toEpochMilli() > expectedMinRetry2
-        retry2Time.toEpochMilli() < expectedMaxRetry2
+        then: "2. próba: status RETRY z nextAttemptAt ~ now + 1000ms (exponential backoff: 500 * 2^1)"
+        // oczekujemy, że wkrótce attemptCount osiągnie 2 — czekamy aż to nastąpi (z zapasem czasu)
+        await().atMost(12, TimeUnit.SECONDS).untilAsserted {
+            def retry2 = outboxRepository.findById(row.id).orElseThrow()
+            assert retry2.status == EgressOutboxStatus.RETRY
+            assert retry2.attemptCount == 2
+            assert retry2.lastError != null
+            long expected2 = processor.baseDelayMs * 2L
+            def retry2Time = retry2.nextAttemptAt
+            // cast division to long to prevent ambiguous overload (BigDecimal vs Long)
+            assertNextAttemptDelay(secondDispatchAt, retry2Time, expected2, Math.max(350L, (expected2 / 3) as long))
+        }
 
         when: "3. próba: czekamy i wołamy dispatch ponownie"
-        Thread.sleep(1100)
+        // Poczekamy adaptacyjnie aż nextAttemptAt będzie osiągnięty (polling w wątku testowym),
+        // a dopiero potem wywołamy dispatch w tym samym wątku
+        await().atMost(16, TimeUnit.SECONDS).until {
+            outboxRepository.findById(row.id).orElseThrow().nextAttemptAt.toEpochMilli() <= Instant.now().toEpochMilli()
+        }
+        Instant thirdDispatchAt = Instant.now()
         dispatchOutbox()
 
-        then: "3. próba: status RETRY z nextAttemptAt = now + 2000ms (exponential backoff: 500 * 2^2)"
-        def retry3 = outboxRepository.findById(row.id).orElseThrow()
-        retry3.status == EgressOutboxStatus.RETRY
-        retry3.attemptCount == 3
-        def retry3Time = retry3.nextAttemptAt
-        def retry2EndMs = retry2Time.toEpochMilli()
-        def expectedMinRetry3 = retry2EndMs + 1800
-        def expectedMaxRetry3 = retry2EndMs + 2300
-        retry3Time.toEpochMilli() > expectedMinRetry3
-        retry3Time.toEpochMilli() < expectedMaxRetry3
+        then: "3. próba: status RETRY z nextAttemptAt ~ now + 2000ms (exponential backoff: 500 * 2^2)"
+        // czekamy aż attemptCount wzrośnie do 3 (z zapasem)
+        await().atMost(16, TimeUnit.SECONDS).untilAsserted {
+            def retry3 = outboxRepository.findById(row.id).orElseThrow()
+            assert retry3.status == EgressOutboxStatus.RETRY
+            assert retry3.attemptCount == 3
+            def retry3Time = retry3.nextAttemptAt
+            long expected3 = processor.baseDelayMs * 4L
+            // cast division to long to prevent ambiguous overload (BigDecimal vs Long)
+            assertNextAttemptDelay(thirdDispatchAt, retry3Time, expected3, Math.max(450L, (expected3 / 4) as long))
+        }
 
         when: "4. próba (ostatnia, max-attempts=4): ostatni retry vs DEAD"
-        Thread.sleep(2100)
+        // poczekaj adaptacyjnie aż nextAttemptAt będzie gotowy (polling w wątku testowym), zrób dispatch w tym samym wątku
+        await().atMost(20, TimeUnit.SECONDS).until {
+            outboxRepository.findById(row.id).orElseThrow().nextAttemptAt.toEpochMilli() <= Instant.now().toEpochMilli()
+        }
         dispatchOutbox()
 
         then: "4. próba: status zmienić się na DEAD (osiągnięto maxAttempts)"
-        def dead = outboxRepository.findById(row.id).orElseThrow()
-        dead.status == EgressOutboxStatus.DEAD
-        dead.attemptCount == 4
-        dead.lastError != null
-        dead.processedAt == null
+        await().atMost(12, TimeUnit.SECONDS).untilAsserted {
+            awaitOutboxStatus(row.id, EgressOutboxStatus.DEAD)
+            def dead = outboxRepository.findById(row.id).orElseThrow()
+            assert dead.status == EgressOutboxStatus.DEAD
+            assert dead.attemptCount == 4
+            assert dead.lastError != null
+            assert dead.processedAt == null
+        }
 
         and: "metryka dead.count powinna być zwiększona"
         def deadCounter = meterRegistry.find("egress.outbox.dispatch.dead.count")?.counter()

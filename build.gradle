@@ -189,6 +189,8 @@ jib {
     }
 }
 
+
+
 // Zadanie pomocnicze: uruchamia Flyway (używa env vars: FLYWAY_URL, FLYWAY_USER, FLYWAY_PASSWORD)
 tasks.register('runFlywayLocal', JavaExec) {
     group = 'database'
@@ -198,8 +200,62 @@ tasks.register('runFlywayLocal', JavaExec) {
 
     // Wymuszenie Java 17 przez toolchain (jak w innych zadaniach JavaExec)
     def toolchainService = project.extensions.getByType(JavaToolchainService)
+    // toolchain to konfiguracja Java w sekcji java { toolchain { ... } }, a launcherFor() zwraca odpowiednią implementację JavaLauncher dla tej konfiguracji.
     javaLauncher.set(toolchainService.launcherFor(java.toolchain))
 }
+
+
+
+// Zadanie do uruchamiania lokalnego mock serwera dokumentów (WireMock) do testów curl.
+// Użycie: ./gradlew runDocumentMockServer -DdocMockPort=8089 -DdocMockScenarios=src/test/resources/mock/document-scenarios.json
+tasks.register('runDocumentMockServer', JavaExec) {
+    group = 'verification'
+    description = 'Uruchamia mockowany serwer dokumentów (WireMock) do lokalnych testów curl.'
+
+    mainClass.set('pl.edu.praktyki.support.mock.DocumentApiMockServerRunner')
+    classpath = sourceSets.test.runtimeClasspath
+
+    if (project.hasProperty('docMockPort')) {
+        systemProperty 'doc.mock.port', project.getProperty('docMockPort')
+    }
+    if (project.hasProperty('docMockScenarios')) {
+        systemProperty 'doc.mock.scenarios', project.getProperty('docMockScenarios')
+    }
+
+    def toolchainService = project.extensions.getByType(JavaToolchainService)
+    javaLauncher.set(toolchainService.launcherFor(java.toolchain))
+}
+
+
+
+// Zadanie do uruchamiania tylko testów związanych z DocumentProviderMockServerSpec, z osobnym katalogiem wyników,
+// aby uniknąć konfliktów z domyślnym katalogiem test-results.
+// Uruchomienie: ./gradlew.bat documentMockTest
+// co się stanie jak uruchomię to zadanie?
+// Uruchomi tylko testy z DocumentProviderMockServerSpec, a wyniki będą w build/test-results/documentMock/ i build/reports/tests/documentMock/
+
+tasks.register('documentMockTest', Test) {
+    group = 'verification'
+    description = 'Uruchamia tylko DocumentProviderMockServerSpec z osobnym katalogiem wyników.'
+
+    useJUnitPlatform()
+    include '**/DocumentProviderMockServerSpec.*'
+
+    // Separate binary results to avoid collisions with locked default test output.bin
+    binaryResultsDirectory.set(layout.buildDirectory.dir('test-results/documentMock/binary'))
+    reports.junitXml.outputLocation.set(layout.buildDirectory.dir('test-results/documentMock/xml'))
+    reports.html.outputLocation.set(layout.buildDirectory.dir('reports/tests/documentMock'))
+
+    testLogging {
+        events "passed", "skipped", "failed", "standardOut", "standardError"
+        showStandardStreams = true
+        exceptionFormat = 'full'
+        showCauses = true
+        showExceptions = true
+    }
+}
+
+
 configurations.all {
     resolutionStrategy {
         // Wymuszamy, aby każda biblioteka używała Groovy 4.0.16

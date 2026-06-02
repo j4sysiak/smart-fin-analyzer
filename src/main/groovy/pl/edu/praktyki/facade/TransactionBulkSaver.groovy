@@ -8,6 +8,7 @@ import org.postgresql.core.BaseConnection
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.core.BatchPreparedStatementSetter
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.jdbc.datasource.DataSourceUtils
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -81,7 +82,8 @@ class TransactionBulkSaver {
             def conn = null
             boolean copySucceeded = false
             try {
-                conn = dataSource.getConnection()
+                // Use transaction-bound connection so COPY sees rows inserted earlier in the same transaction.
+                conn = DataSourceUtils.getConnection(dataSource)
                 BaseConnection baseConn = conn.unwrap(BaseConnection.class)
                 if (baseConn != null) {
                     log.info('>>> [BULK SAVER] Używam ścieżki COPY FROM STDIN')
@@ -141,7 +143,7 @@ class TransactionBulkSaver {
             } catch (Exception e) {
                 log.warn('>>> [BULK SAVER] COPY path failed ({}): {} — fallback do batchUpdate', e.class.simpleName, e.message, e)
             } finally {
-                try { conn?.close() } catch (ignored) {}
+                DataSourceUtils.releaseConnection(conn, dataSource)
             }
             if (copySucceeded) return
         }
