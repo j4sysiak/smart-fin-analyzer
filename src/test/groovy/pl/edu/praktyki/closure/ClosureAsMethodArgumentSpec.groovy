@@ -16,6 +16,7 @@ class ClosureAsMethodArgumentSpec extends Specification {
     więc calls zwiększa się o 1
      */
 
+
     def "powinien uruchomić closure przekazaną do metody"() {
         given:
         // execute przyjmuje jeden argument action
