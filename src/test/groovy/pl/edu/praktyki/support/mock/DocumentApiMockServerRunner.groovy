@@ -36,7 +36,24 @@ class DocumentApiMockServerRunner {
 
         println "Document API mock server started on ${mockServer.baseUrl()}"
         println "Loaded scenarios: ${loadedScenarios} from ${new File(scenariosPath).absolutePath}"
+
+
         println "Try: curl.exe \"${mockServer.baseUrl()}/api/documents/INV-2026-05-001?includeMetadata=true\""
+        // to jest przykładowa odpowiedź, którą można uzyskać z mock serwera dla dokumentu INV-2026-05-001
+        // po wpisaniu do przeglądarki zawartości tego curl (lub po prosu curla w terminalu).:
+        // Przykładowe polecenia curl:
+        // curl.exe "http://localhost:8089/api/documents/INV-2026-05-001?includeMetadata=true"
+        // curl.exe "http://localhost:8089/api/documents/INV-404"
+
+        println "Example response:"
+        println """ {
+            "id": "INV-2026-05-001",
+            "status": "READY",
+            "owner": "JAN_KOWALSKI",
+            "contentType": "application/pdf",
+            "downloadUrl": "https://documents.example.local/files/INV-2026-05-001.pdf"  
+        } """.stripIndent()
+
         println "Press Ctrl+C to stop."
 
         while (true) {
@@ -44,4 +61,6 @@ class DocumentApiMockServerRunner {
         }
     }
 }
+
+
 

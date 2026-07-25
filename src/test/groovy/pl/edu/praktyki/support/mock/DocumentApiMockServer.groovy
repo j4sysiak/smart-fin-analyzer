@@ -119,7 +119,8 @@ class DocumentApiMockServer {
         //  - zawiera URL do pobrania pliku PDF.
 
         // Ostatecznie rejestrujemy ten stub w WireMock,
-        // który będzie obsługiwał zapytania zgodnie z tym scenariuszem (i zwracał 200 z odpowiednim JSON-em dla GET /api/documents/{documentId}).
+        // który będzie obsługiwał zapytania zgodnie z tym scenariuszem
+        // (i zwracał 200 z odpowiednim JSON-em dla GET /api/documents/{documentId}).
         server.stubFor(mapping.willReturn(okJson("""
             {
               "id": "${documentId}",

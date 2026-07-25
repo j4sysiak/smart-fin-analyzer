@@ -4,21 +4,21 @@ Aplikacja: `src\main\groovy\pl\edu\praktyki\SmartFinDbApp.groovy`
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│  CAŁY PROJEKT UŻYWA POSTGRESQL (brak H2!)                                 │
+│  CAŁY PROJEKT UŻYWA POSTGRESQL (brak H2!)                                  │
 │                                                                            │
-│  Produkcja — TRYB DEV (zalecany lokalnie):                                │
-│             docker compose up -d          ← tylko baza (smartfin-postgres) │
-│             .\gradlew.bat runSmartFinDb  ← aplikacja przez Gradle/JVM    │
-│             baza: smartfin_db, port 5432, finuser/finpass                 │
-│             schemat: Flyway (ddl-auto=none)                               │
+│  Produkcja — TRYB DEV (zalecany lokalnie):                                 │
+│             docker compose up -d         ← tylko baza (smartfin-postgres)  │
+│             .\gradlew.bat runSmartFinDb  ← aplikacja przez Gradle/JVM      │
+│             baza: smartfin_db, port 5432, finuser/finpass                  │
+│             schemat: Flyway (ddl-auto=none)                                │
 │                                                                            │
-│  Produkcja — TRYB DOCKER (pełny kontener):                                │
-│             .\gradlew.bat jibDockerBuild ← zbuduj obraz raz              │
-│             docker compose up -d          ← baza + aplikacja w Dockerze   │
+│  Produkcja — TRYB DOCKER (pełny kontener):                                 │
+│             .\gradlew.bat jibDockerBuild ← zbuduj obraz raz                │
+│             docker compose up -d          ← baza + aplikacja w Dockerze    │
 │                                                                            │
-│  Testy      (.\gradlew.bat test):      PostgreSQL via Docker CLI          │
-│             ├─ tryb 'tc'       (domyślny) — auto-kontener, port 15432     │
-│             └─ tryb 'local-pg' (inspekcja) — ręczny kontener, port 5432   │
+│  Testy      (.\gradlew.bat test):      PostgreSQL via Docker CLI           │
+│             ├─ tryb 'tc'       (domyślny) — auto-kontener, port 15432      │
+│             └─ tryb 'local-pg' (inspekcja) — ręczny kontener, port 5432    │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
