@@ -3,15 +3,17 @@ package pl.edu.praktyki.support.mock
 /**
  * Manual runner for local curl checks against a mocked external document API.
  */
-// Ten runner jest prostym narzędziem do uruchamiania lokalnego serwera WireMock, który to serwer symuluje zewnętrzne API dokumentów.
-// Jest to przydatne do ręcznego testowania interakcji z API dokumentów za pomocą narzędzi takich jak curl, Postman itp.
-// Można go uruchomić lokalnie, a następnie wykonywać zapytania HTTP do zdefiniowanych endpointów,
-// aby zweryfikować, że nasz system poprawnie komunikuje się z API dokumentów.
-// przykładowo, po uruchomieniu tego runnera, możemy wykonać curl do endpointu /api/documents/INV-2026-05-001?includeMetadata=true
-// i zobaczyć, jak mock serwer odpowiada na to zapytanie, zwłaszcza jeśli mamy zdefiniowane scenariusze w pliku document-scenarios.json,
-// które symulują różne stany dokumentów (np. READY, NOT_FOUND, ERROR itp.).
+// Ten runner uruchamia lokalny serwer WireMock, który symuluje zewnętrzne API dokumentów.
+// Służy do ręcznego testowania integracji, np. za pomocą curl lub Postman.
+// Po uruchomieniu można wysyłać żądania HTTP do zdefiniowanych endpointów
+// i weryfikować, czy aplikacja poprawnie komunikuje się z API dokumentów.
+// Na przykład można wykonać żądanie do endpointu
+// /api/documents/INV-2026-05-001?includeMetadata=true
+// i sprawdzić odpowiedź mock serwera na podstawie scenariuszy z pliku
+// document-scenarios.json, które symulują różne stany dokumentu
+// \(np. READY, NOT_FOUND, ERROR\).
 
-// przykłady curla:
+// Przykładowe polecenia curl:
 // curl.exe "http://localhost:8089/api/documents/INV-2026-05-001?includeMetadata=true"
 // curl.exe "http://localhost:8089/api/documents/INV-404"
 

@@ -95,8 +95,8 @@ class DocumentApiMockServer {
         // która tworzy odpowiedni stub w WireMock.
         // stub to: definicja, jak ma wyglądać odpowiedź dla danego ID dokumentu,
         // w zależności od tego, czy includeMetadata jest true czy false.
-        scenarios.each { Map scenario ->
-            stubSingleScenario(scenario)
+        scenarios.each { Map s ->
+            stubSingleScenario(s)
         }
         return scenarios.size()
     }
@@ -177,10 +177,23 @@ class DocumentApiMockServer {
         // w zależności od potrzeb testowych.
 
         // Ostatecznie rejestrujemy ten stub w WireMock, który będzie obsługiwał zapytania zgodnie z tym scenariuszem.
-        server.stubFor(requestBuilder.willReturn(aResponse()
-                .withStatus(statusCode)
-                .withHeader("Content-Type", "application/json")
-                .withBody(responseBody)))
+        // server.stubFor(...) zapisuje całość w serwerze WireMock.
+        //    - aResponse() tworzy definicję odpowiedzi mocka.
+        //    - .withStatus(statusCode) ustawia kod HTTP, np. 200, 404, 500.
+        //    - .withHeader("Content\-Type", "application/json") ustawia nagłówek odpowiedzi.
+        //    - .withBody(responseBody) ustawia treść odpowiedzi.
+        //    - server.stubFor(...) zapisuje całość w serwerze WireMock.
+
+        // W praktyce: Gdy test wyśle request pasujący do requestBuilder, mock server zwróci przygotowaną odpowiedź.
+        // Czyli w praktyce to jest odpowiednik:
+        //   - jeśli przyjdzie taki request,
+        //   - to zwróć taki status, takie nagłówki i takie body.
+        // To jest centralny moment, w którym scenariusz testowy staje się aktywny.
+        server.stubFor(requestBuilder.willReturn(
+                aResponse()
+                    .withStatus(statusCode)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(responseBody)))
     }
 
     private static String toResponseBody(Map scenario) {
