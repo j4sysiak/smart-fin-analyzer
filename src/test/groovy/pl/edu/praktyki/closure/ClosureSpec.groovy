@@ -4,85 +4,66 @@ import spock.lang.Specification
 
 class ClosureSpec extends Specification {
 
-    def "powinien zwrocic imie w przywitaniu"() {
-        given: "tworzymy closure, ktora przyjmuje jedno imie"
-        def greet = { name ->
-            "Cześć, $name"
-        }
+    def service = new ClosureSpecService()
 
-        when: "wywolujemy closure z argumentem"
-        def result = greet("Ania")
+    def "powinien zwrócić imię w przywitaniu"() {
+        when: "wywołujemy metodę produkcyjną z argumentem"
+        def result = service.greet("Ania")
 
         then: "dostajemy poprawny tekst"
         result == "Cześć, Ania"
     }
 
     def "powinien zwrocic prosty tekst bez parametrow"() {
-        given: "tworzymy closure bez argumentow"
-        def hello = {
-            "Hej!"
-        }
+        when: "uruchamiamy metodę bez argumentów"
+        def result = service.hello()
 
-        when: "uruchamiamy closure"
-        def result = hello()
-
-        then: "closure zwraca oczekiwany napis"
+        then: "metoda zwraca oczekiwany napis"
         result == "Hej!"
     }
 
     def "powinien dodac dwie liczby"() {
-        given: "tworzymy closure z dwoma parametrami"
-        def add = { a, b ->
-            a + b
-        }
-
         when: "podajemy dwie liczby"
-        def result = add(2, 3)
+        def result = service.add(2, 3)
 
-        then: "closure zwraca ich sume"
+        then: "metoda zwraca ich sumę"
         result == 5
     }
 
-    def "powinien przejsc po wszystkich elementach listy"() {
-        given: "mamy liste imion i pusta liste wynikow"
+    def "powinien przejść po wszystkich elementach listy"() {
+        given: "mamy listę imion"
         def names = ["Ala", "Ola", "Jan"]
-        def greetings = []
 
-        when: "each wywoluje closure dla kazdego elementu"
-        names.each { name ->
-            greetings << "Witaj $name"
-        }
+        when: "wywołujemy metodę produkcyjną"
+        def greetings = service.greetAll(names)
 
-        then: "zapisujemy wszystkie przywitania w tej samej kolejnosci"
+        then: "zapisujemy wszystkie przywitania w tej samej kolejności"
         greetings == ["Witaj Ala", "Witaj Ola", "Witaj Jan"]
     }
 
     def "powinien uzyc zmiennej zewnetrznej w closure"() {
-        given: "closure widzi zmienna z otaczajacego zakresu"
-        def prefix = "Pani"
-        def greet = { name ->
-            "$prefix $name"
-        }
+        when: "wywołujemy metodę z prefiksem"
+        def result = service.greetWithPrefix("Pani", "Kasia")
 
-        when: "uruchamiamy closure"
-        def result = greet("Kasia")
-
-        then: "closure korzysta z prefixu z zewnatrz"
+        then: "metoda korzysta z przekazanego prefiksu"
         result == "Pani Kasia"
     }
 
-    def "powinien zwrocic closure z innej closure"() {
-        given: "closure fabrykujaca inne closure"
-        def multiplier = { factor ->
-            return { value ->
-                value * factor
-            }
-        }
-
+    def "powinien zwrócić closure z innej closure"() {
+        // To jest test Spocka sprawdzający, czy metoda multiplier(2) zwraca closure.
         when: "tworzymy closure do podwajania"
-        def timesTwo = multiplier(2)
+        // service.multiplier(2) tworzy nową funkcję z „zapamiętanym” mnożnikiem 2, czyli tworzy closure
+        // to Closure jest zapisane do zmiennej timesTwo.
 
-        then: "nowa closure dziala jak zwykla funkcja"
+        def timesTwo = service.multiplier(2)
+
+        // def timesTwoClosure =  { int value -> value * factor }
+           def timesTwoClosure =  { int value -> value * 2 }
+
+        then: "nowa closure działa jak zwykła funkcja"
+        // timesTwo(5) wywołuje tę zwróconą closure z argumentem 5.
+        // Oczekiwany wynik to 10, więc test potwierdza, że działa jak funkcja mnożąca przez 2.
         timesTwo(5) == 10
+        timesTwoClosure(5) == 10
     }
 }

@@ -159,7 +159,7 @@ Plik: `src/test/groovy/pl/edu/praktyki/BaseIntegrationSpec.groovy`
 | **Kontener**     | automatyczny (`smartfin-test-pg`)       | ręczny (docker-compose / `docker run`)  |
 | **Port**         | `15432`                                 | `5432`                                  |
 | **Baza**         | `testdb`                                | `smartfin_test`                         |
-| **User/Pass**    | `test` / `test`                         | `finuser` / `finpass`                   |
+| **User/Pass**    | `ClosureLikeInJava` / `ClosureLikeInJava`                         | `finuser` / `finpass`                   |
 | **ddl-auto**     | `create` (schemat od zera)              | `update` (dane zostają)                 |
 | **Po teście**    | kontener zostaje (usunięty przy kolejnym run) | dane do inspekcji (psql/DBeaver) |
 
@@ -280,7 +280,7 @@ Komentarz w `build.gradle` wyjaśnia powód:
 
 ### 2.6. Konfiguracja Gradle — przekazywanie flagi `-Dlocal.pg=true`
 
-W bloku `test` w `build.gradle` dodaliśmy jedną kluczową linię:
+W bloku `ClosureLikeInJava` w `build.gradle` dodaliśmy jedną kluczową linię:
 
 ```groovy
 test {

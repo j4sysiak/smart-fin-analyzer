@@ -40,7 +40,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*
 
 
 //KNOW HOW!  (ActiveProfiles = 'local-pg')
-// Wymusi użycie application-local-pg.properties ale musisz mieć wlączony lokalny Postgresa!
+// Wymusi użycie application-local-pg.properties ale musisz mieć włączony lokalny Postgres!
 // (nie działa z H2, bo H2 nie obsługuje funkcji SQL, których używamy w repozytorium)
 // tutaj info jak uruchomić lokalnego postgresa na dokerze dla profilu: local-pg:
 //                     C:\dev\smart-fin-analyzer\src\test\resources\application-local-pg.properties
@@ -64,7 +64,7 @@ class CurrencyWireMockSpec extends BaseIntegrationSpec {
 
     // Dynamiczne ustawianie URL w konfiguracji Springa na adres WireMock-a
     // UWAGA: nazwa metody MUSI być inna niż w BaseIntegrationSpec (configureTestcontainers),
-    // aby oba @DynamicPropertySource były wykrywane przez Spring.
+    // aby oba @DynamicPropertySource były wykrywane przez Springa.
     @DynamicPropertySource
     static void configureWireMock(DynamicPropertyRegistry registry) {
         wireMockServer.start()
@@ -85,7 +85,7 @@ class CurrencyWireMockSpec extends BaseIntegrationSpec {
 
     def "powinien poprawnie sparsować kurs walut z zamockowanego API"() {
         given: "Wirtualny serwer udaje API i zwraca przygotowany przez nas JSON"
-        // To jest właśnie definicja STUBA
+        // To jest właśnie definicja STUB'a
         wireMockServer.stubFor(get(urlEqualTo("/latest/PLN"))
                 .willReturn(aResponse()
                         .withHeader("Content-Type", "application/json")

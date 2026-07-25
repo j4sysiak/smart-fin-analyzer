@@ -274,9 +274,9 @@ Uwaga: Gdy skończysz inspekcję, przywróć profil tc w teście (Testcontainers
 
 
 
-3. Testy z profilem `test` (H2) — do pozostałych testów, które nie wymagają prawdziwej bazy danych,
-pozostale test będą używały profilu `test` z H2, więc nie będą kolidować z Testcontainers.
-przykladowe polecenie do uruchomienia testów z profilem `test`:
+3. Testy z profilem `ClosureLikeInJava` (H2) — do pozostałych testów, które nie wymagają prawdziwej bazy danych,
+pozostale test będą używały profilu `ClosureLikeInJava` z H2, więc nie będą kolidować z Testcontainers.
+przykladowe polecenie do uruchomienia testów z profilem `ClosureLikeInJava`:
 `./gradlew test --tests "pl.edu.praktyki.repository.*" -Dspring.profiles.active=test`
 
 

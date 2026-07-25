@@ -4,14 +4,12 @@ import spock.lang.Specification
 
 class ClosureExamplesSpec extends Specification {
 
-    def "powinien policzyć kwadrat liczby"() {
-        given:
-        def square = { x ->
-            x * x
-        }
+    // klasa produkcyjna — nie definiujemy logiki w teście
+    def examples = new ClosureExamples()
 
+    def "powinien policzyć kwadrat liczby"() {
         expect:
-        square(4) == 16
+        examples.square(4) == 16
     }
 
     def "powinien podwoić elementy listy"() {
@@ -19,43 +17,31 @@ class ClosureExamplesSpec extends Specification {
         def numbers = [1, 2, 3, 4]
 
         expect:
-        numbers.collect { it * 2 } == [2, 4, 6, 8]
+        examples.doubleElements(numbers) == [2, 4, 6, 8]
     }
 
     def "powinien sprawdzić pełnoletność"() {
-        given:
-        def isAdult = { age ->
-            age >= 18
-        }
-
         expect:
-        isAdult(20)
-        !isAdult(15)
+        examples.isAdult(20)
+        !examples.isAdult(15)
     }
 
-    def "powinien użyć zmiennej z zewnątrz"() {
+    def "powinien użyć zmiennej z zewnątrz (closure capture)"() {
         given:
+        // multiplier pochodzi "z zewnątrz" — przekazujemy go do metody
         def multiplier = 3
-        def multiply = { x ->
-            x * multiplier
-        }
 
         expect:
-        multiply(5) == 15
+        examples.multiply(5, multiplier) == 15
     }
 
     def "powinien uruchomić akcję dwa razy"() {
         given:
         def calls = 0
-        def repeatTwice = { action ->
-            action()
-            action()
-        }
 
         when:
-        repeatTwice {
-            calls++
-        }
+        // przekazujemy closure do metody produkcyjnej
+        examples.repeatTwice { calls++ }
 
         then:
         calls == 2
