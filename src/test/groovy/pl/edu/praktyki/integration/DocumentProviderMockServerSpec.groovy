@@ -37,7 +37,7 @@ class DocumentProviderMockServerSpec extends Specification {
         documentApi.reset()
     }
 
-    def "powinien pobrać dokument JSON z zamockowanego systemu zewnętrznego"() {
+    def "powinien pobrać dokument JSON z zamocowanego systemu zewnętrznego"() {
         given: "mockowany serwer dokumentów wystawia endpoint GET /api/documents/{id}"
         def documentId = "INV-2026-05-001"
         // Przygotowujemy stub, który symuluje odpowiedź z zewnętrznego API dokumentów dla danego ID.
@@ -92,6 +92,7 @@ class DocumentProviderMockServerSpec extends Specification {
         // Plik JSON zawiera listę scenariuszy, z których każdy definiuje, jak ma wyglądać odpowiedź dla konkretnego ID dokumentu.
         // Dzięki temu możemy łatwo zarządzać wieloma scenariuszami testowymi w jednym miejscu,
         // bez konieczności ręcznego definiowania stubów w kodzie testu.
+        // Stub to testowa, uproszczona atrapa zależności, która zwraca wcześniej zdefiniowane odpowiedzi, aby kontrolować zachowanie testowanego kodu.
         // W tym teście sprawdzamy zarówno scenariusz, w którym dokument istnieje (ID: INV-2026-05-001, INV-2026-05-002),
         // jak i scenariusz, w którym dokument nie istnieje (ID: INV-404).
         int loaded = documentApi.stubFromJsonFile(SCENARIOS_FILE)

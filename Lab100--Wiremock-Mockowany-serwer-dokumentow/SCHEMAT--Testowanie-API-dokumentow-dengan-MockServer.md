@@ -35,29 +35,29 @@
                         ROZWIĄZANIE: MockServer
 
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                                                                           │
-│  ZAMIAST → polegać na prawdziwym API                                     │
+│                                                                          │
+│  ZAMIAST   → polegać na prawdziwym API                                   │
 │  ROBIMY    → uruchamiamy FAKE serwer HTTP (WireMock)                     │
-│             na LOCALHOST, pod KONTROLĄ testu                            │
-│                                                                           │
+│              na LOCALHOST, pod KONTROLĄ testu                            │
+│                                                                          │
 │        ┌─────────────────────────────────────────────────────────┐       │
-│        │  WireMock - FAKE API Serwer (na porcie 8089)           │       │
+│        │  WireMock - FAKE API Serwer (na porcie 8089)            │       │
 │        │                                                         │       │
-│        │  Definicja: "Gdy dostanę GET /api/documents/INV-001"  │       │
-│        │             "Zwróć JSON: { id: INV-001, ... }"        │       │
+│        │  Definicja: "Gdy dostanę GET /api/documents/INV-001"    │       │
+│        │             "Zwróć JSON: { id: INV-001, ... }"          │       │
 │        │                                                         │       │
-│        │  ✅ Zawsze dostępny                                    │       │
-│        │  ✅ Natychmiast odpowiada (<1ms)                       │       │
-│        │  ✅ Możliwy do sterowania (status 200, 404, etc)      │       │
+│        │  ✅ Zawsze dostępny                                     │       │
+│        │  ✅ Natychmiast odpowiada (<1ms)                        │       │
+│        │  ✅ Możliwy do sterowania (status 200, 404, etc)        │       │
 │        │  ✅ Testowy                                             │       │
 │        └─────────────────────────────────────────────────────────┘       │
-│                         ↑                                                 │
+│                         ↑                                                │
 │                    HTTP GET                                              │
-│        http://localhost:8089/api/documents/INV-001                      │
-│                                                                           │
-│        Twój system myśli, że rozmawia z prawdziwym API,                 │
-│        ale faktycznie rozmawia z FAKE serwerem (WireMock)               │
-│                                                                           │
+│        http://localhost:8089/api/documents/INV-001                       │
+│                                                                          │
+│        Twój system myśli, że rozmawia z prawdziwym API,                  │
+│        ale faktycznie rozmawia z FAKE serwerem (WireMock)                │
+│                                                                          │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -74,20 +74,20 @@
                             ↓
                             │
 ┌─────────────────────────────────────────────────────────────────┐
-│                                                                  │
+│                                                                 │
 │  KROK 1: DocumentProviderMockServerSpec.setupSpec()             │
 │           └─→ Uruchamiam WireMock server:                       │
 │               DocumentApiMockServer mockApi = new ...()         │
 │               mockApi.start()  ← Serwer HTTP słucha na :8089    │
-│                                                                  │
+│                                                                 │
 │  KROK 2: setup() [przed każdym testem]                          │
-│           └─→ mockApi.reset()  ← Czyszczę poprzednie stuby     │
-│                                                                  │
-│  KROK 3: Test "powinien pobrać dokument..."                    │
+│           └─→ mockApi.reset()  ← Czyszczę poprzednie stuby      │
+│                                                                 │
+│  KROK 3: Test "powinien pobrać dokument..."                     │
 │           └─→ given: mockApi.stubDocumentOk("INV-001", true)    │
-│               ✓ Definiuję fake endpoint                         │
+│               ✓ Definiuję fake endpoint                        │
 │               ✓ "Wtedy zwrócisz mi JSON dokument"              │
-│                                                                  │
+│                                                                 │
 │           └─→ when: HttpRequest GET /api/documents/INV-001      │
 │               ✓ Wysyłam PRAWDZIWY HTTP request do localhost    │
 │               ✓ WireMock przechwytuje, zwraca stubbed JSON     │
@@ -109,39 +109,39 @@
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │  Uruchomienie: ./gradlew.bat runDocumentMockServer               │
-│                           -PdocMockPort=8097                    │
+│                           -PdocMockPort=8097                     │
 └──────────────────────────────────────────────────────────────────┘
                             ↓
                             │
 ┌──────────────────────────────────────────────────────────────────┐
-│                                                                   │
-│  main() klasy DocumentApiMockServerRunner:                        │
-│                                                                   │
+│                                                                  │
+│  main() klasy DocumentApiMockServerRunner:                       │
+│                                                                  │
 │  1. Wczytaj port: 8097                                           │
-│  2. Stwórz WireMock: new DocumentApiMockServer.fixedPort(8097)  │
-│  3. Załaduj scenariusze z JSON:                                 │
+│  2. Stwórz WireMock: new DocumentApiMockServer.fixedPort(8097)   │
+│  3. Załaduj scenariusze z JSON:                                  │
 │     mockServer.stubFromJsonFile("document-scenarios.json")       │
-│     └─→ Czyta plik, for each scenariusz (INV-001, INV-404, ...) │
-│         └─→ Dodaje stub do serwera (200 OK, 404, etc)          │
+│     └─→ Czyta plik, for each scenariusz (INV-001, INV-404, ...)  │
+│         └─→ Dodaje stub do serwera (200 OK, 404, etc)            │
 │  4. Start: mockServer.start()                                    │
-│  5. Wypisz: "Server started on http://localhost:8097"           │
-│  6. Czekaj w nieskończonej pętli (aż Ctrl+C)                    │
-│                                                                   │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│                                                                   │
+│  5. Wypisz: "Server started on http://localhost:8097"            │
+│  6. Czekaj w nieskończonej pętli (aż Ctrl+C)                     │
+│                                                                  │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━     │
+│                                                                  │
 │  Ty teraz (w innym terminalu):                                   │
-│                                                                   │
+│                                                                  │
 │  curl.exe http://localhost:8097/api/documents/INV-001            │
 │  │                                                               │
-│  └─→ WireMock przechwyci request                                │
-│      └─→ Znajdzie stub dla "INV-001"                            │
-│          └─→ ZwróciJSON z document-scenarios.json               │
+│  └─→ WireMock przechwyci request                                 │
+│      └─→ Znajdzie stub dla "INV-001"                             │
+│          └─→ ZwróciJSON z document-scenarios.json                │
 │              └─→ curl wydrukuje JSON na ekranie ✓               │
-│                                                                   │
+│                                                                  │
 │  curl.exe http://localhost:8097/api/documents/INV-404            │
 │  │                                                               │
-│  └─→ WireMock zwróci 404 DOCUMENT_NOT_FOUND                     │
-│                                                                   │
+│  └─→ WireMock zwróci 404 DOCUMENT_NOT_FOUND                      │
+│                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -152,11 +152,11 @@
 │  Plik: src/test/resources/mock/document-scenarios.json        │
 │                                                               │
 │  {                                                            │
-│    "scenarios": [                                            │
-│      { "id": "INV-001", "statusCode": 200, "body": {...} }, │
-│      { "id": "INV-002", "statusCode": 200, "body": {...} }, │
-│      { "id": "INV-404", "statusCode": 404, "body": {...} },  │
-│      { "id": "TIMEOUT", "statusCode": 500, "body": {...} }   │
+│    "scenarios": [                                             │
+│      { "id": "INV-001", "statusCode": 200, "body": {...} },   │
+│      { "id": "INV-002", "statusCode": 200, "body": {...} },   │
+│      { "id": "INV-404", "statusCode": 404, "body": {...} },   │
+│      { "id": "TIMEOUT", "statusCode": 500, "body": {...} }    │
 │    ]                                                          │
 │  }                                                            │
 └───────────────────────────────────────────────────────────────┘
@@ -321,15 +321,15 @@ Efekt: Zweryfikowałem, że kontrakt API jest OK 🎯
 
 ## 5) PODSUMOWANIE — CO SIĘ DZIEJE?
 
-| Aspekt            | MockServer                          | Prawdziwy API          |
-|-------------------|-------------------------------------|------------------------|
-| **Dostępność**    | ✅ Zawsze (kod źródłowy)            | ❌ Offline = test fail |
-| **Szybkość**      | ✅ <1ms                             | ❌ 1-5s latency        |
-| **Koszt**         | ✅ Darmowy (localhost)              | ❌ Zapłacić za call    |
-| **Bezpieczeństwo**| ✅ Test data (fake)                 | ❌ Ryzyko prod damage  |
-| **Debugging**     | ✅ Pełna kontrola                   | ❌ Black box           |
+| Aspekt            | MockServer                          | Prawdziwy API           |
+|-------------------|-------------------------------------|-------------------------|
+| **Dostępność**    | ✅ Zawsze (kod źródłowy)            | ❌ Offline = test fail  |
+| **Szybkość**      | ✅ <1ms                             | ❌ 1-5s latency         |
+| **Koszt**         | ✅ Darmowy (localhost)              | ❌ Zapłacić za call     |
+| **Bezpieczeństwo**| ✅ Test data (fake)                 | ❌ Ryzyko prod damage   |
+| **Debugging**     | ✅ Pełna kontrola                   | ❌ Black box            |
 | **Edge-case**     | ✅ Łatwo (stubuję 404, timeout)     | ❌ Nie mogę forsować    |
-| **Kontrat API**   | ✅ Weryfikuję żeby był poprawny     | ❌ Ufam na słowo       |
+| **Kontrat API**   | ✅ Weryfikuję żeby był poprawny     | ❌ Ufam na słowo        |
 
 ---
 
@@ -385,15 +385,15 @@ TESTOWANIE API DOKUMENTÓW to:
 
 ┌─────────────────────────────────────────────────────┐
 │                                                     │
-│  1. PROBLEM: Nie chcę polegać na prawdziwym API    │
+│  1. PROBLEM: Nie chcę polegać na prawdziwym API     │
 │             (offline, powolne, drogi, niebezpieczne)│
 │                                                     │
-│  2. ROZWIĄZANIE: Zamiast prawdziwego API             │
+│  2. ROZWIĄZANIE: Zamiast prawdziwego API            │
 │                 Tworzę FAKE serwer HTTP             │
 │                 (WireMock) na LOCALHOST             │
 │                                                     │
-│  3. DEFINICJA: "Gdy przychodzi GET /api/docs/1"    │
-│                "Zwróć 200 + JSON"                  │
+│  3. DEFINICJA: "Gdy przychodzi GET /api/docs/1"     │
+│                "Zwróć 200 + JSON"                   │
 │                                                     │
 │  4. TEST: Wysyłam HTTP request do FAKE serwera      │
 │           Weryfikuję odpowiedź                      │
