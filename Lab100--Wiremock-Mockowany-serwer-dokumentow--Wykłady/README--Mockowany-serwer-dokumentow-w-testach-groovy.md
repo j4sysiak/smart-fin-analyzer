@@ -88,4 +88,4 @@ curl.exe "http://localhost:8089/api/documents/INV-404"
 
 To rozwiazanie mozesz skopiowac 1:1 do kolejnych integracji (np. faktury, statusy platnosci, profile klienta), zmieniajac tylko endpointy i JSON-y stubow.
 
-Jesli dostaniesz blad "Address already in use", uruchom runner na innym porcie (`-PdocMockPort=8095`) albo zwolnij port 8089.
+Jeśli dostaniesz blad "Address already in use", uruchom runner na innym porcie (`-PdocMockPort=8095`) albo zwolnij port 8089.
