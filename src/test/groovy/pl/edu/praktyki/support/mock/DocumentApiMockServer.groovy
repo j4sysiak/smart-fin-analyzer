@@ -101,6 +101,19 @@ class DocumentApiMockServer {
         return scenarios.size()
     }
 
+    // closure scenario = „zamień scenariusz na stub”
+    // scenarios.each { scenario(it) } = „zrób to samo dla wszystkich scenariuszy”
+    int registerScenarios(List scenarios) {
+
+           // definiujmy Closure to pozwala na wywołanie stubSingleScenario dla każdego scenariusza w liście.
+           def scenarioClosure = { s -> stubSingleScenario(s as Map) }
+
+           // To jest wywołanie closure dla każdego scenariusza w liście, co tworzy odpowiednie `stuby` w WireMock.
+           scenarios.each { scenarioClosure(it) }
+
+        return scenarios.size()
+    }
+
     // Ta metoda pozwala na zdefiniowanie pojedynczego scenariusza,
     // w którym dokument o danym ID istnieje i jest gotowy do pobrania,
     // a API zwraca 200 z odpowiednim JSON-em.

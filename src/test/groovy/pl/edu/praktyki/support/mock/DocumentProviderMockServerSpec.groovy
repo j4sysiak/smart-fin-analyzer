@@ -1,14 +1,12 @@
-package pl.edu.praktyki.integration
+package pl.edu.praktyki.support.mock
 
 import groovy.json.JsonSlurper
-import pl.edu.praktyki.support.mock.DocumentApiMockServer
 import spock.lang.Shared
 import spock.lang.Specification
 
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-
 
 // Ten test integracyjny pokazuje, jak używać DocumentApiMockServer do testowania interakcji
 // z zewnętrznym systemem dokumentów.
@@ -130,5 +128,63 @@ class DocumentProviderMockServerSpec extends Specification {
         and:
         response404.statusCode() == 404
         body404.error == "DOCUMENT_NOT_FOUND"
+    }
+
+
+
+
+    // tworzy listę map scenarios
+    // woła documentApi.registerScenarios(scenarios)
+    // sprawdza odpowiedź 200 i 404
+
+    // Co to znaczy praktycznie
+    // To jest właśnie ten „mini-DSL” z README: punkt-4  (C:\dev\smart-fin-analyzer\Lab100--Wiremock-i-Closure--Wykłady\Readme.md)
+    // każda mapa w scenarios = jeden scenariusz
+    // closure scenario = „zamień scenariusz na stub”
+    // scenarios.each { scenario(it) } = „zrób to samo dla wszystkich scenariuszy”
+
+    // Czyli zamiast:
+    //  - stubDocumentOk(...)
+    //  - stubDocumentNotFound(...)
+    //  - stubDocumentError(...)
+    // mamy jedną logiczną ścieżkę:
+    // scenarios.each { scenario(it) }
+
+    def "powinien zarejestrować scenariusze przez closure mini-DSL"() {
+
+        given:
+        def scenarios = [
+                [id: "INV-DSL-001", statusCode: 200, includeMetadata: true, body: [id: "INV-DSL-001", status: "READY", owner: "JAN_KOWALSKI"]],
+                [id: "INV-DSL-404", statusCode: 404, body: [error: "DOCUMENT_NOT_FOUND"]]
+        ]
+
+        def registered = documentApi.registerScenarios(scenarios)
+
+        when:
+        def okRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-DSL-001?includeMetadata=true"))
+                .GET()
+                .build()
+
+        def missingRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-DSL-404"))
+                .GET()
+                .build()
+
+        def okResponse = httpClient.send(okRequest, HttpResponse.BodyHandlers.ofString())
+        def missingResponse = httpClient.send(missingRequest, HttpResponse.BodyHandlers.ofString())
+
+        def okBody = new JsonSlurper().parseText(okResponse.body()) as Map
+        def missingBody = new JsonSlurper().parseText(missingResponse.body()) as Map
+
+        then:
+        registered == 2
+        okResponse.statusCode() == 200
+        okBody.id == "INV-DSL-001"
+        okBody.status == "READY"
+        okBody.owner == "JAN_KOWALSKI"
+
+        missingResponse.statusCode() == 404
+        missingBody.error == "DOCUMENT_NOT_FOUND"
     }
 }
