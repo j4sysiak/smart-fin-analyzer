@@ -190,6 +190,63 @@ class DocumentApiMockServer {
         //   - jeśli przyjdzie taki request,
         //   - to zwróć taki status, takie nagłówki i takie body.
         // To jest centralny moment, w którym scenariusz testowy staje się aktywny.
+        // Stub  to testowa, uproszczona atrapa zależności, która zwraca wcześniej zdefiniowane odpowiedzi, aby kontrolować zachowanie testowanego kodu.
+        // i tutaj właśnie tworzony jest `stub`, czyli definicja zachowania mocka dla określonego requestu.
+
+/*
+
+
+        ### Co jest w `document-scenarios.json`
+        Jeśli w pliku jest `4` elementy w tablicy `scenarios`, to są to `4` scenariusze odpowiedzi.
+
+                Każdy scenariusz mówi mniej więcej:
+
+        - dla jakiego `id` dokumentu,
+        - z jakim ewentualnym parametrem `includeMetadata`,
+        - jaki ma być `statusCode`,
+        - jakie ma być `body` albo `bodyText`.
+
+        ### Co robi `stubSingleScenario(...)`
+        Ta metoda bierze **jeden** scenariusz z JSON\-a i tworzy **jeden stub** w WireMock.
+
+        Czyli:
+
+        - `1` wpis w JSON \= `1` stub
+        - `4` wpisy w JSON \= `4` stuby
+
+        ### Co robi zaznaczony fragment
+        Ten fragment:
+
+        - buduje odpowiedź HTTP,
+        - ustawia `statusCode`,
+        - ustawia nagłówek `Content-Type: application/json`,
+        - ustawia treść odpowiedzi `responseBody`,
+        - rejestruje to w WireMock przez `server.stubFor(...)`
+
+        Czyli: **ten kod zapisuje jeden konkretny przypadek zachowania mocka**.
+
+        ### Czy stub ma 4 przypadki?
+        Nie do końca.
+
+                Dokładniej:
+
+        - nie ma **jednego stuba z 4 przypadkami**,
+                - są **4 osobne stuby**, jeśli w JSON są `4` scenariusze.
+
+        ### Czy to jest „wpisane do stuba”?
+        Tak.
+
+                Każdy scenariusz z JSON zostaje zamieniony na definicję stuba w WireMock.
+
+        Czyli można to rozumieć tak:
+
+        - JSON opisuje przypadki,
+        - `stubFromJsonFile(...)` je wczytuje,
+                - `stubSingleScenario(...)` zamienia każdy przypadek na stub,
+        - WireMock potem reaguje zgodnie z tymi stubami.
+        */
+
+
         server.stubFor(requestBuilder.willReturn(
                 aResponse()
                     .withStatus(statusCode)

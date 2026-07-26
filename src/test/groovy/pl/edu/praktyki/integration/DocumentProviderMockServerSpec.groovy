@@ -102,6 +102,7 @@ class DocumentProviderMockServerSpec extends Specification {
                 .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-2026-05-001?includeMetadata=true"))
                 .GET()
                 .build()
+        // response200 to odpowiedź z mockowanego serwera dla dokumentu wg scenariusza w Stubie dla id = INV-2026-05-001.
         def response200 = httpClient.send(
                 request200,
                 HttpResponse.BodyHandlers.ofString()
@@ -111,6 +112,7 @@ class DocumentProviderMockServerSpec extends Specification {
                 .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-404"))
                 .GET()
                 .build()
+        // respose404 to odpowiedź z mockowanego serwera dla dokumentu wg scenariusza w Stubie dla id = INV-404.
         def response404 = httpClient.send(
                 request404,
                 HttpResponse.BodyHandlers.ofString()
