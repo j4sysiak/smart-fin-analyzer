@@ -211,7 +211,7 @@ class DocumentProviderMockServerSpec extends Specification {
 
         int registered = documentApi.registerPracticalScenarios(scenarios)
 
-        when: "includeMetadata=true powinno zwrocic pelny JSON"
+        when: "includeMetadata=true powinno zwrócić pełny JSON"
         def fullRequest = HttpRequest.newBuilder()
                 .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-P8-200?includeMetadata=true"))
                 .GET()
@@ -219,7 +219,7 @@ class DocumentProviderMockServerSpec extends Specification {
         def fullResponse = httpClient.send(fullRequest, HttpResponse.BodyHandlers.ofString())
         def fullBody = new JsonSlurper().parseText(fullResponse.body()) as Map
 
-        and: "bez includeMetadata powinno zwrocic okrojony JSON"
+        and: "bez includeMetadata powinno zwrócić okrojony JSON"
         def reducedRequest = HttpRequest.newBuilder()
                 .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-P8-200"))
                 .GET()
@@ -227,7 +227,7 @@ class DocumentProviderMockServerSpec extends Specification {
         def reducedResponse = httpClient.send(reducedRequest, HttpResponse.BodyHandlers.ofString())
         def reducedBody = new JsonSlurper().parseText(reducedResponse.body()) as Map
 
-        and: "ID pasujace do wzorca VIP-* dostaje specjalne pole"
+        and: "ID pasujące do wzorca VIP-* dostaje specjalne pole"
         def vipRequest = HttpRequest.newBuilder()
                 .uri(URI.create("${documentApi.baseUrl()}/api/documents/VIP-777"))
                 .GET()
