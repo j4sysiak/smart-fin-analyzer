@@ -114,6 +114,125 @@ class DocumentApiMockServer {
         return scenarios.size()
     }
 
+    /**
+     * Punkt 8 z Readme:  C:\dev\smart-fin-analyzer\Lab100--Wiremock-i-Closure--Wykłady\Readme.md
+
+     A: generator stubow z listy scenariuszy (np. z JSON),
+     Zamiast ręcznie stubować dokumenty, robisz closure, która bierze jeden rekord scenariusza i ustawia WireMocka.
+
+     B: reuzywalne closure dla OK/404/500/timeout,
+     Możesz mieć np. closure do:
+     - dokumentu poprawnego,
+     - dokumentu brakującego,
+     - dokumentu z błędem 500,
+     - dokumentu z timeoutem.
+
+     C: specyficzne zachowania (includeMetadata i ID pasujace do wzorca VIP-*).
+     Np.:
+     - jeśli request ma parametr includeMetadata=true, zwróć pełny JSON,
+     - jeśli nie ma parametru, zwróć okrojony JSON,
+     - jeśli id pasuje do wzorca, odpowiedz inaczej
+     */
+    int registerPracticalScenarios(List<Map> scenarios) {
+        if (scenarios == null) {
+            throw new IllegalArgumentException("Scenarios list must not be null")
+        }
+
+        def stubOk = { String id, boolean includeMetadata, Map body, Integer fixedDelayMs ->
+            Map normalizedBody = (body ?: [id: id, status: "READY"]) as Map
+            Map vipAwareBody = id ==~ /^VIP-.+/ ? (normalizedBody + [segment: "VIP"]) : normalizedBody
+            Map reducedBody = buildReducedBody(vipAwareBody, id)
+
+            // Najpierw fallback bez wymaganego query param - zwraca skrocone body.
+            def fallbackResponse = aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(JsonOutput.toJson(reducedBody))
+            if (fixedDelayMs != null && fixedDelayMs > 0) {
+                fallbackResponse = fallbackResponse.withFixedDelay(fixedDelayMs)
+            }
+            server.stubFor(get(urlPathEqualTo("/api/documents/${id}"))
+                    .willReturn(fallbackResponse))
+
+            // Gdy includeMetadata=true, zwracamy pelny JSON.
+            if (includeMetadata) {
+                def fullResponse = aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(JsonOutput.toJson(vipAwareBody))
+                if (fixedDelayMs != null && fixedDelayMs > 0) {
+                    fullResponse = fullResponse.withFixedDelay(fixedDelayMs)
+                }
+
+                server.stubFor(get(urlPathEqualTo("/api/documents/${id}"))
+                        .withQueryParam("includeMetadata", equalTo("true"))
+                        .willReturn(fullResponse))
+            }
+        }
+
+        def stubNotFound = { String id ->
+            server.stubFor(get(urlPathEqualTo("/api/documents/${id}"))
+                    .willReturn(aResponse()
+                            .withStatus(404)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody('{"error":"DOCUMENT_NOT_FOUND"}')))
+        }
+
+        def stubError = { String id, String message ->
+            String errorMessage = message ?: "DOCUMENT_PROVIDER_ERROR"
+            server.stubFor(get(urlPathEqualTo("/api/documents/${id}"))
+                    .willReturn(aResponse()
+                            .withStatus(500)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody(JsonOutput.toJson([error: errorMessage]))))
+        }
+
+        def stubTimeout = { String id, int statusCode, Map body, int fixedDelayMs, boolean includeMetadata ->
+            Map timeoutBody = (body ?: [id: id, status: "PENDING"]) as Map
+            def response = aResponse()
+                    .withStatus(statusCode)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(JsonOutput.toJson(timeoutBody))
+                    .withFixedDelay(fixedDelayMs)
+
+            def mapping = get(urlPathEqualTo("/api/documents/${id}"))
+            if (includeMetadata) {
+                mapping = mapping.withQueryParam("includeMetadata", equalTo("true"))
+            }
+            server.stubFor(mapping.willReturn(response))
+        }
+
+        def registerScenario = { Map s ->
+            String id = s.id as String
+            if (!id) {
+                throw new IllegalArgumentException("Each scenario must contain non-empty 'id'.")
+            }
+
+            int statusCode = (s.statusCode ?: 200) as int
+            boolean includeMetadata = (s.includeMetadata ?: false) as boolean
+            Map body = (s.body ?: [:]) as Map
+            Integer fixedDelayMs = s.fixedDelayMs != null ? (s.fixedDelayMs as int) : null
+
+            if (fixedDelayMs != null && fixedDelayMs > 0) {
+                stubTimeout(id, statusCode, body, fixedDelayMs, includeMetadata)
+                return
+            }
+
+            if (statusCode == 200) {
+                stubOk(id, includeMetadata, body, fixedDelayMs)
+            } else if (statusCode == 404) {
+                stubNotFound(id)
+            } else if (statusCode == 500) {
+                stubError(id, s.errorMessage as String)
+            } else {
+                stubSingleScenario(s)
+            }
+        }
+
+        scenarios.each(registerScenario)
+        return scenarios.size()
+    }
+
     // Ta metoda pozwala na zdefiniowanie pojedynczego scenariusza,
     // w którym dokument o danym ID istnieje i jest gotowy do pobrania,
     // a API zwraca 200 z odpowiednim JSON-em.
@@ -275,6 +394,17 @@ class DocumentApiMockServer {
             return scenario.bodyText as String
         }
         return '{}'
+    }
+
+    private static Map buildReducedBody(Map source, String id) {
+        Map reduced = [
+                id    : source.id ?: id,
+                status: source.status ?: "READY"
+        ]
+        if (source.segment != null) {
+            reduced.segment = source.segment
+        }
+        return reduced
     }
 }
 

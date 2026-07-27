@@ -187,4 +187,104 @@ class DocumentProviderMockServerSpec extends Specification {
         missingResponse.statusCode() == 404
         missingBody.error == "DOCUMENT_NOT_FOUND"
     }
+
+    def "punkt 8 - praktyczne scenariusze: json generator, helpery i specyficzne zachowania"() {
+        given:
+        def scenarios = [
+                [
+                        id: "INV-P8-200",
+                        statusCode: 200,
+                        includeMetadata: true,
+                        body: [
+                                id: "INV-P8-200",
+                                status: "READY",
+                                owner: "ANNA_KOWALSKA",
+                                contentType: "application/pdf",
+                                downloadUrl: "https://documents.example.local/files/INV-P8-200.pdf"
+                        ]
+                ],
+                [id: "INV-P8-404", statusCode: 404],
+                [id: "INV-P8-500", statusCode: 500, errorMessage: "DOCUMENT_PROVIDER_UNAVAILABLE"],
+                [id: "INV-P8-SLOW", statusCode: 200, fixedDelayMs: 220, body: [id: "INV-P8-SLOW", status: "PENDING"]],
+                [id: "VIP-777", statusCode: 200, includeMetadata: false, body: [id: "VIP-777", status: "READY", owner: "VIP_OWNER"]]
+        ]
+
+        int registered = documentApi.registerPracticalScenarios(scenarios)
+
+        when: "includeMetadata=true powinno zwrocic pelny JSON"
+        def fullRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-P8-200?includeMetadata=true"))
+                .GET()
+                .build()
+        def fullResponse = httpClient.send(fullRequest, HttpResponse.BodyHandlers.ofString())
+        def fullBody = new JsonSlurper().parseText(fullResponse.body()) as Map
+
+        and: "bez includeMetadata powinno zwrocic okrojony JSON"
+        def reducedRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-P8-200"))
+                .GET()
+                .build()
+        def reducedResponse = httpClient.send(reducedRequest, HttpResponse.BodyHandlers.ofString())
+        def reducedBody = new JsonSlurper().parseText(reducedResponse.body()) as Map
+
+        and: "ID pasujace do wzorca VIP-* dostaje specjalne pole"
+        def vipRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/VIP-777"))
+                .GET()
+                .build()
+        def vipResponse = httpClient.send(vipRequest, HttpResponse.BodyHandlers.ofString())
+        def vipBody = new JsonSlurper().parseText(vipResponse.body()) as Map
+
+        and: "scenariusze 404 i 500"
+        def notFoundRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-P8-404"))
+                .GET()
+                .build()
+        def notFoundResponse = httpClient.send(notFoundRequest, HttpResponse.BodyHandlers.ofString())
+        def notFoundBody = new JsonSlurper().parseText(notFoundResponse.body()) as Map
+
+        def errorRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-P8-500"))
+                .GET()
+                .build()
+        def errorResponse = httpClient.send(errorRequest, HttpResponse.BodyHandlers.ofString())
+        def errorBody = new JsonSlurper().parseText(errorResponse.body()) as Map
+
+        and: "scenariusz timeout (fixedDelay)"
+        def slowRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-P8-SLOW"))
+                .GET()
+                .build()
+        long startedNs = System.nanoTime()
+        def slowResponse = httpClient.send(slowRequest, HttpResponse.BodyHandlers.ofString())
+        long elapsedMs = (System.nanoTime() - startedNs) / 1_000_000L
+        def slowBody = new JsonSlurper().parseText(slowResponse.body()) as Map
+
+        then:
+        registered == 5
+
+        fullResponse.statusCode() == 200
+        fullBody.id == "INV-P8-200"
+        fullBody.owner == "ANNA_KOWALSKA"
+        fullBody.contentType == "application/pdf"
+
+        reducedResponse.statusCode() == 200
+        reducedBody.id == "INV-P8-200"
+        reducedBody.status == "READY"
+        !reducedBody.containsKey("owner")
+
+        vipResponse.statusCode() == 200
+        vipBody.id == "VIP-777"
+        vipBody.segment == "VIP"
+
+        notFoundResponse.statusCode() == 404
+        notFoundBody.error == "DOCUMENT_NOT_FOUND"
+
+        errorResponse.statusCode() == 500
+        errorBody.error == "DOCUMENT_PROVIDER_UNAVAILABLE"
+
+        slowResponse.statusCode() == 200
+        slowBody.status == "PENDING"
+        elapsedMs >= 180
+    }
 }
