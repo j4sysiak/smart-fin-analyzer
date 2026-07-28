@@ -1,0 +1,44 @@
+{
+  "scenarios": [
+    {
+      "id": "INV-PJSON-200",
+      "includeMetadata": true,
+      "statusCode": 200,
+      "body": {
+        "id": "INV-PJSON-200",
+        "status": "READY",
+        "owner": "ANNA_KOWALSKA",
+        "contentType": "application/pdf",
+        "downloadUrl": "https://documents.example.local/files/INV-PJSON-200.pdf"
+      }
+    },
+    {
+      "id": "INV-PJSON-404",
+      "statusCode": 404
+    },
+    {
+      "id": "INV-PJSON-500",
+      "statusCode": 500,
+      "errorMessage": "DOCUMENT_PROVIDER_UNAVAILABLE"
+    },
+    {
+      "id": "INV-PJSON-SLOW",
+      "statusCode": 200,
+      "fixedDelayMs": 220,
+      "body": {
+        "id": "INV-PJSON-SLOW",
+        "status": "PENDING"
+      }
+    },
+    {
+      "id": "VIP-PJSON-001",
+      "statusCode": 200,
+      "body": {
+        "id": "VIP-PJSON-001",
+        "status": "READY",
+        "owner": "VIP_OWNER"
+      }
+    }
+  ]
+}
+

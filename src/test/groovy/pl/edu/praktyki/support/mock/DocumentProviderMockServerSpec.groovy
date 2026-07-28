@@ -16,16 +16,13 @@ import java.net.http.HttpResponse
 class DocumentProviderMockServerSpec extends Specification {
 
     private static final File SCENARIOS_FILE = new File("src/test/resources/mock/document-scenarios.json")
+    private static final File PRACTICAL_SCENARIOS_FILE = new File("src/test/resources/mock/document-scenarios-practical.json")
 
     @Shared
-    DocumentApiMockServer documentApi = DocumentApiMockServer.dynamicPort()
+    DocumentApiMockServer documentApi = createStartedMockServer()
 
     @Shared
     HttpClient httpClient = HttpClient.newHttpClient()
-
-    def setupSpec() {
-        documentApi.start()
-    }
 
     def cleanupSpec() {
         documentApi.stop()
@@ -33,6 +30,12 @@ class DocumentProviderMockServerSpec extends Specification {
 
     def setup() {
         documentApi.reset()
+    }
+
+    private static DocumentApiMockServer createStartedMockServer() {
+        DocumentApiMockServer server = DocumentApiMockServer.dynamicPort()
+        server.start()
+        return server
     }
 
     def "powinien pobrać dokument JSON z zamocowanego systemu zewnętrznego"() {
@@ -257,7 +260,7 @@ class DocumentProviderMockServerSpec extends Specification {
                 .build()
         long startedNs = System.nanoTime()
         def slowResponse = httpClient.send(slowRequest, HttpResponse.BodyHandlers.ofString())
-        long elapsedMs = (System.nanoTime() - startedNs) / 1_000_000L
+        long elapsedMs = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNs)
         def slowBody = new JsonSlurper().parseText(slowResponse.body()) as Map
 
         then:
@@ -282,6 +285,85 @@ class DocumentProviderMockServerSpec extends Specification {
 
         errorResponse.statusCode() == 500
         errorBody.error == "DOCUMENT_PROVIDER_UNAVAILABLE"
+
+        slowResponse.statusCode() == 200
+        slowBody.status == "PENDING"
+        elapsedMs >= 180
+    }
+
+    def "punkt 8 - praktyczna metoda ładuje i rejestruje scenariusze bezposrednio z JSON"() {
+        given:
+        int registered = documentApi.registerPracticalScenariosFromJsonFile(PRACTICAL_SCENARIOS_FILE)
+
+        when: "200 z includeMetadata=true zwraca pelny JSON"
+        def fullRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-PJSON-200?includeMetadata=true"))
+                .GET()
+                .build()
+        def fullResponse = httpClient.send(fullRequest, HttpResponse.BodyHandlers.ofString())
+        def fullBody = new JsonSlurper().parseText(fullResponse.body()) as Map
+
+        and: "200 bez includeMetadata zwraca okrojona odpowiedz"
+        def reducedRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-PJSON-200"))
+                .GET()
+                .build()
+        def reducedResponse = httpClient.send(reducedRequest, HttpResponse.BodyHandlers.ofString())
+        def reducedBody = new JsonSlurper().parseText(reducedResponse.body()) as Map
+
+        and: "404 i 500 sa mapowane na dedykowane helpery"
+        def notFoundRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-PJSON-404"))
+                .GET()
+                .build()
+        def notFoundResponse = httpClient.send(notFoundRequest, HttpResponse.BodyHandlers.ofString())
+        def notFoundBody = new JsonSlurper().parseText(notFoundResponse.body()) as Map
+
+        def errorRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-PJSON-500"))
+                .GET()
+                .build()
+        def errorResponse = httpClient.send(errorRequest, HttpResponse.BodyHandlers.ofString())
+        def errorBody = new JsonSlurper().parseText(errorResponse.body()) as Map
+
+        and: "VIP-* dostaje specjalne zachowanie"
+        def vipRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/VIP-PJSON-001"))
+                .GET()
+                .build()
+        def vipResponse = httpClient.send(vipRequest, HttpResponse.BodyHandlers.ofString())
+        def vipBody = new JsonSlurper().parseText(vipResponse.body()) as Map
+
+        and: "fixedDelayMs tworzy opoznienie"
+        def slowRequest = HttpRequest.newBuilder()
+                .uri(URI.create("${documentApi.baseUrl()}/api/documents/INV-PJSON-SLOW"))
+                .GET()
+                .build()
+        long startedNs = System.nanoTime()
+        def slowResponse = httpClient.send(slowRequest, HttpResponse.BodyHandlers.ofString())
+        long elapsedMs = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNs)
+        def slowBody = new JsonSlurper().parseText(slowResponse.body()) as Map
+
+        then:
+        registered == 5
+
+        fullResponse.statusCode() == 200
+        fullBody.owner == "ANNA_KOWALSKA"
+        fullBody.contentType == "application/pdf"
+
+        reducedResponse.statusCode() == 200
+        reducedBody.id == "INV-PJSON-200"
+        reducedBody.status == "READY"
+        !reducedBody.containsKey("owner")
+
+        notFoundResponse.statusCode() == 404
+        notFoundBody.error == "DOCUMENT_NOT_FOUND"
+
+        errorResponse.statusCode() == 500
+        errorBody.error == "DOCUMENT_PROVIDER_UNAVAILABLE"
+
+        vipResponse.statusCode() == 200
+        vipBody.segment == "VIP"
 
         slowResponse.statusCode() == 200
         slowBody.status == "PENDING"

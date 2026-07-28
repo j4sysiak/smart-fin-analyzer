@@ -95,8 +95,8 @@ class DocumentApiMockServer {
         // która tworzy odpowiedni stub w WireMock.
         // stub to: definicja, jak ma wyglądać odpowiedź dla danego ID dokumentu,
         // w zależności od tego, czy includeMetadata jest true czy false.
-        scenarios.each { Map s ->
-            stubSingleScenario(s)
+        scenarios.each { s ->
+            stubSingleScenario(s as Map)
         }
         return scenarios.size()
     }
@@ -122,10 +122,11 @@ class DocumentApiMockServer {
 
      B: reuzywalne closure dla OK/404/500/timeout,
      Możesz mieć np. closure do:
-     - dokumentu poprawnego,
-     - dokumentu brakującego,
-     - dokumentu z błędem 500,
-     - dokumentu z timeoutem.
+     - dokumentu poprawnego,  def stubOk = { ... }
+     - dokumentu brakującego, def stubNotFound = { ... }
+     - dokumentu z błędem 500, def stubError = { ... }
+     - dokumentu z timeoutem. def stubTimeout = { ... }
+      i wreszcie: rejestrowanie scenariusza, def registerScenario = { ... }
 
      C: specyficzne zachowania (includeMetadata i ID pasujace do wzorca VIP-*).
      Np.:
@@ -138,6 +139,7 @@ class DocumentApiMockServer {
             throw new IllegalArgumentException("Scenarios list must not be null")
         }
 
+        // to jest closure do generowania stubów 200 OK (reużywalny kawałek logiki do tworzenia stubów sukcesu).
         def stubOk = { String id, boolean includeMetadata, Map body, Integer fixedDelayMs ->
             Map normalizedBody = (body ?: [id: id, status: "READY"]) as Map
             Map vipAwareBody = id ==~ /^VIP-.+/ ? (normalizedBody + [segment: "VIP"]) : normalizedBody
@@ -170,6 +172,7 @@ class DocumentApiMockServer {
             }
         }
 
+        // to jest closure do generowania stubów 404 Not Found (reużywalny kawałek logiki do tworzenia stubów błędu 404.)
         def stubNotFound = { String id ->
             server.stubFor(get(urlPathEqualTo("/api/documents/${id}"))
                     .willReturn(aResponse()
@@ -178,6 +181,7 @@ class DocumentApiMockServer {
                             .withBody('{"error":"DOCUMENT_NOT_FOUND"}')))
         }
 
+        // to jest closure do generowania stubów 500 Internal Server Error (reużywalny kawałek logiki do tworzenia stubów błędu 500.)
         def stubError = { String id, String message ->
             String errorMessage = message ?: "DOCUMENT_PROVIDER_ERROR"
             server.stubFor(get(urlPathEqualTo("/api/documents/${id}"))
@@ -187,6 +191,7 @@ class DocumentApiMockServer {
                             .withBody(JsonOutput.toJson([error: errorMessage]))))
         }
 
+        // to jest closure do generowania stubów z opóźnieniem (timeout) (reużywalny kawałek logiki do tworzenia stubów z opóźnieniem).
         def stubTimeout = { String id, int statusCode, Map body, int fixedDelayMs, boolean includeMetadata ->
             Map timeoutBody = (body ?: [id: id, status: "PENDING"]) as Map
             def response = aResponse()
@@ -202,6 +207,8 @@ class DocumentApiMockServer {
             server.stubFor(mapping.willReturn(response))
         }
 
+        // to jest closure do rejestrowania scenariusza
+        // (przetwarzanie pojedynczego scenariusza z listy) (reużywalny kawałek logiki do rejestrowania scenariusza).
         def registerScenario = { Map s ->
             String id = s.id as String
             if (!id) {
@@ -218,6 +225,10 @@ class DocumentApiMockServer {
                 return
             }
 
+            // to jest główny punkt decyzyjny, który na podstawie statusCode decyduje, jaki stub utworzyć:
+            // - jeśli statusCode == 200, tworzymy stub OK
+            // - jeśli statusCode == 404, tworzymy stub Not Found
+            // - jeśli statusCode == 500, tworzymy stub Error
             if (statusCode == 200) {
                 stubOk(id, includeMetadata, body, fixedDelayMs)
             } else if (statusCode == 404) {
@@ -231,6 +242,25 @@ class DocumentApiMockServer {
 
         scenarios.each(registerScenario)
         return scenarios.size()
+    }
+
+    /**
+     * Wygodna metoda pod LAB101: laduje scenariusze z JSON i stosuje praktyczny dispatcher
+     * (200/404/500/timeout + includeMetadata + wzorzec VIP-*).
+     */
+    int registerPracticalScenariosFromJsonFile(File jsonFile) {
+        if (!jsonFile?.exists()) {
+            throw new IllegalArgumentException("Scenarios file does not exist: ${jsonFile?.absolutePath}")
+        }
+
+        def parsed = new JsonSlurper().parse(jsonFile)
+        def scenarios = parsed?.scenarios
+        if (!(scenarios instanceof List)) {
+            throw new IllegalArgumentException("Invalid scenarios JSON. Expected top-level 'scenarios' array.")
+        }
+
+        List<Map> mappedScenarios = scenarios.collect { it as Map }
+        return registerPracticalScenarios(mappedScenarios)
     }
 
     // Ta metoda pozwala na zdefiniowanie pojedynczego scenariusza,
