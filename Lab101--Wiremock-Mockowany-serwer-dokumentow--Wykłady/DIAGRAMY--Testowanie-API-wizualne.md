@@ -138,7 +138,7 @@ URUCHAMIAM: ./gradlew.bat documentMockTest
                             ↓
 
         ┌───────────────────────────────────────┐
-        │  cleanupSpec() - RUN ONCE (after all)  │
+        │  cleanupSpec() - RUN ONCE (after all) │
         └───────────────────────────────────────┘
                             ↓
         documentApi.stop()

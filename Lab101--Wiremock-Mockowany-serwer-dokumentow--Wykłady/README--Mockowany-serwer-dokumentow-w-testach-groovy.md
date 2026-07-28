@@ -21,7 +21,7 @@ Scenariusze:
 - `GET /api/documents/{id}?includeMetadata=true` -> `200` i JSON dokumentu,
 - `GET /api/documents/{id}` dla brakujacego ID -> `404` i JSON bledu.
 
-## 3) Runner do recznych testow curl
+## 3) Runner do ręcznych testów curl
 
 Runner: `src/test/groovy/pl/edu/praktyki/support/mock/DocumentApiMockServerRunner.groovy`
 
@@ -86,6 +86,6 @@ curl.exe "http://localhost:8089/api/documents/INV-2026-05-001?includeMetadata=tr
 curl.exe "http://localhost:8089/api/documents/INV-404"
 ```
 
-To rozwiazanie mozesz skopiowac 1:1 do kolejnych integracji (np. faktury, statusy platnosci, profile klienta), zmieniajac tylko endpointy i JSON-y stubow.
+To rozwiązanie możesz skopiować 1:1 do kolejnych integracji (np. faktury, statusy płatności, profile klienta), zmieniając tylko endpointy i JSON-y stubów.
 
-Jeśli dostaniesz blad "Address already in use", uruchom runner na innym porcie (`-PdocMockPort=8095`) albo zwolnij port 8089.
+Jeśli dostaniesz błąd "Address already in use", uruchom runner na innym porcie (`-PdocMockPort=8095`) albo zwolnij port 8089.
