@@ -36,7 +36,7 @@ class EgressOutboxDispatcher {
         this.transactionTemplate = transactionTemplate
     }
 
-    // Sheduler, który co 2 sekundy sprawdza, czy są nowe wpisy do wysłania
+    // Scheduler, który co 2 sekundy sprawdza, czy są nowe wpisy do wysłania
     // czyli, prawdza w bazie danych tabela egress_outbox, czy są wpisy o statusie NEW lub RETRY, które są gotowe do wysłania (readyToSendAt <= teraz).
     // i "rezerwuje" je do przetworzenia (ustawiając status na PROCESSING) i deleguje do `EgressOutboxProcessora`
     @Scheduled(fixedDelayString = '${app.egress.outbox.poll-ms:2000}')

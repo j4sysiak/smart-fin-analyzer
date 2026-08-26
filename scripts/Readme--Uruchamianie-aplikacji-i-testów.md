@@ -13,7 +13,7 @@ Aplikacja: `src\main\groovy\pl\edu\praktyki\SmartFinDbApp.groovy`
 │             schemat: Flyway (ddl-auto=none)                                │
 │                                                                            │
 │  Produkcja — TRYB DOCKER (pełny kontener):                                 │
-│             .\gradlew.bat jibDockerBuild ← zbuduj obraz raz                │
+│             .\gradlew.bat jibDockerBuild  ← zbuduj obraz raz                │
 │             docker compose up -d          ← baza + aplikacja w Dockerze    │
 │                                                                            │
 │  Testy      (.\gradlew.bat test):      PostgreSQL via Docker CLI           │
@@ -45,7 +45,7 @@ Select-String -Path .\tc-full-run.log -Pattern "FAILED|FAILURE: Build failed|> T
 
 
 
-# local-pg — pełny run z lokalnym PG (zalecany do debugowania, nie do powtarzalnych runów)
+# local-pg — pełny run z lokalnym PG (zalecany do debugowania, nie do powtarzalnych runów (testów))
 # local-pg — start bazy + cleanup danych w bazie (zalecany przed pełnym runem)
 Set-Location "C:\dev\smart-fin-analyzer"
 docker compose up -d db
@@ -53,7 +53,7 @@ docker ps --filter name=smartfin-postgres
 docker exec smartfin-postgres pg_isready -U finuser
 
 Set-Location "C:\dev\smart-fin-analyzer"
-UWAGA!!!  to czyszczenie baszy musi być uruchomione i zakończone sukcesem.   
+UWAGA!!!  to czyszczenie bazy musi być uruchomione i zakończone sukcesem.   
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\clean-db.ps1 -Mode local-pg -Force
 
 Set-Location "C:\dev\smart-fin-analyzer"
@@ -123,7 +123,7 @@ docker exec smartfin-postgres pg_isready -U finuser
 ```powershell
 Set-Location "C:\dev\smart-fin-analyzer"
 .\gradlew.bat runSmartFinDb -PappArgs="-u Jacek"    # start aplikacji bez importu CSV
-
+      lub
 .\gradlew.bat runSmartFinDb -PappArgs="-u Jacek -f transactions_upload.csv"     # start aplikacji + import CSV
 
 # jeśli chcesz tylko więcej logów Flyway przy starcie aplikacji:
@@ -528,9 +528,9 @@ Ten fragment może być skopiowany do `scripts/Readme--Odpalanie-RESTów-z-Postm
 
 ## 6. Dodatkowe informacje — migracje Flyway i helpery
 
-- Migracje Flyway są w `src/main/resources/db/migration`; aktualny stan repo to **V1–V19**.
+- Migracje Flyway są w `src/main/resources/db/migration`; aktualny stan repo to **V1–V22**.
 - `V18` — `idempotency_keys` (persisted idempotency).
-- `V19` — `decision_log` (egress audit trail).
+- `V22` — `V22__create_operations_table` .
 - W testach najlepiej uruchamiać migracje przez standardowe komendy z sekcji `## 2` (`-Denable.flyway=true`), bo pełna logika profili i cleanupu siedzi w `BaseIntegrationSpec`.
 - Dla ręcznego sprawdzenia migracji poza testami jest helper `src/main/groovy/tools/RunFlyway.groovy` i task Gradle `runFlywayLocal`:
   ```powershell
