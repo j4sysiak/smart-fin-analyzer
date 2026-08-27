@@ -25,8 +25,56 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
         mockServer.start()
 
         // Przekierowanie klienta na dynamiczny port WireMocka
+        /*
+        Ta linia: `bankOperationClient.mockServerUrl = mockServer.baseUrl()`
+        robi **przekierowanie klienta HTTP na lokalny mock serwer**.
+
+        ### Co to oznacza
+        - `mockServer.baseUrl()` zwraca adres uruchomionego WireMocka, np. `http://localhost:12345`
+        - ten adres jest przypisywany do pola `mockServerUrl` w `bankOperationClient`
+        - od tego momentu `bankOperationClient` wysyła żądania do WireMocka, a nie do prawdziwego API
+
+        ### Po co to jest w teście
+        WireMock startuje na **dynamicznym porcie**, więc adres nie jest znany wcześniej.
+        Dlatego po uruchomieniu serwera test wstrzykuje ten aktualny adres do klienta.
+
+        ### Efekt
+        Gdy `batchOperationService.processAll()` wywoła endpointy typu:
+        - `/api/batch/deposits`
+        - `/api/batch/withdrawals`
+
+        to trafią one do zdefiniowanych stubów w teście, a nie do prawdziwego API. Dzięki temu test jest:
+        - izolowany
+        - powtarzalny
+        - niezależny od zewnętrznego systemu
+         */
         bankOperationClient.mockServerUrl = mockServer.baseUrl()
 
+
+        /*
+        To oznacza zdefiniowanie `stuba` w WireMocku w pliku:
+        `src/test/groovy/pl/edu/praktyki/operation/BatchOperationServiceSpec.groovy`.
+
+        **Co robi ten fragment:**
+        - przechwytuje żądanie HTTP `GET` na endpoint `/api/batch/deposits`,
+        - zwraca odpowiedź `200`,
+        - ustawia nagłówek `Content\-Type: application/json`,
+        - odsyła JSON z 2 operacjami typu `DEPOSIT`.
+
+        **W praktyce:**
+        test udaje zewnętrzne API bankowe, żeby `batchOperationService.processAll()` mógł pobrać dane bez wywoływania prawdziwego serwera.
+
+        **Znaczenie poszczególnych elementów:**
+        - `stubFor(...)` \- rejestruje zachowanie mocka,
+        - `get(urlEqualTo(...))` \- dopasowuje dokładnie żądanie `GET` pod wskazany URL,
+        - `willReturn(aResponse())` \- definiuje odpowiedź,
+                - `withStatus(200)` \- odpowiedź poprawna,
+                - `withHeader(...)` \- nagłówek odpowiedzi,
+                - `withBody(...)` \- ciało odpowiedzi w formacie JSON.
+
+        **Efekt w teście:**
+        jeśli kod aplikacji wywoła `/api/batch/deposits`, dostanie dokładnie te 2 rekordy depozytów.
+         */
         // 1) deposits -> 2 rekordy
         mockServer.stubFor(get(urlEqualTo("/api/batch/deposits"))
                 .willReturn(aResponse()
@@ -77,7 +125,7 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
         mockServer?.stop()
     }
 
-    def "powinien pobrac operacje z mockservera i zapisac je do operations"() {
+    def "powinien pobrać operacje z mockservera i zapisać je do operations"() {
         when:
         def summary = batchOperationService.processAll()
 
@@ -95,7 +143,24 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
         operationRepository.findByOperationId("OP-C-001").present
     }
 
-    def "powinien pominac duplikaty po operationId"() {
+    def "powinien pominąć duplikaty po operationId"() {
+
+        /*
+        Ta linia jest potrzebna do **przygotowania stanu testu**.
+        Pierwsze wywołanie `processAll()`:
+
+        - pobiera operacje z WireMocka,
+        - zapisuje je do bazy przez `operationRepository`,
+        - sprawia, że kolejne wywołanie dostanie **te same `operationId`**.
+
+        Dzięki temu drugie wywołanie w sekcji `when` sprawdza, czy serwis:
+
+        - wykrywa duplikaty,
+        - **nie zapisuje ich ponownie**,
+        - zwiększa `skipped`, a nie `saved`.
+
+        Bez tej linii drugi test nie sprawdzałby duplikatów, tylko znowu zwykły pierwszy zapis.
+        */
         given:
         batchOperationService.processAll()
 
