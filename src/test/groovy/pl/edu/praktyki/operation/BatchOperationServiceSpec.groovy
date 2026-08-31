@@ -77,52 +77,96 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
          */
         // 1) deposits -> 2 rekordy
         mockServer.stubFor(get(urlEqualTo("/api/batch/deposits"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("""
+                    .willReturn(aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("""
 [
-  {"operationId":"OP-D-001","operationType":"DEPOSIT","targetAccount":"PL001","amount":100.00,"sourceCurrency":"PLN","correlationId":"BATCH-1"},
-  {"operationId":"OP-D-002","operationType":"DEPOSIT","targetAccount":"PL002","amount":250.00,"sourceCurrency":"PLN","correlationId":"BATCH-1"}
+  {
+    "operationId": "OP-D-001",
+    "operationType": "DEPOSIT",
+    "targetAccount": "PL001",
+    "amount": 100.00,
+    "sourceCurrency": "PLN",
+    "correlationId": "BATCH-1"
+  },
+  {
+    "operationId": "OP-D-002",
+    "operationType": "DEPOSIT",
+    "targetAccount": "PL002",
+    "amount": 250.00,
+    "sourceCurrency": "PLN",
+    "correlationId": "BATCH-1"
+  }
 ]
 """)))
 
-        // 2) withdrawals -> 1 rekord
-        mockServer.stubFor(get(urlEqualTo("/api/batch/withdrawals"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("""
+            mockServer.stubFor(get(urlEqualTo("/api/batch/withdrawals"))
+                    .willReturn(aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("""
 [
-  {"operationId":"OP-W-001","operationType":"WITHDRAWAL","sourceAccount":"PL003","amount":50.00,"sourceCurrency":"PLN","correlationId":"BATCH-1"}
+  {
+    "operationId": "OP-W-001",
+    "operationType": "WITHDRAWAL",
+    "sourceAccount": "PL003",
+    "amount": 50.00,
+    "sourceCurrency": "PLN",
+    "correlationId": "BATCH-1"
+  }
 ]
 """)))
 
-        // 3) transfers -> 1 rekord
-        mockServer.stubFor(get(urlEqualTo("/api/batch/transfers"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("""
+            mockServer.stubFor(get(urlEqualTo("/api/batch/transfers"))
+                    .willReturn(aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("""
 [
-  {"operationId":"OP-T-001","operationType":"TRANSFER","sourceAccount":"PL004","targetAccount":"PL005","amount":75.00,"sourceCurrency":"PLN","correlationId":"BATCH-1"}
+  {
+    "operationId": "OP-T-001",
+    "operationType": "TRANSFER",
+    "sourceAccount": "PL004",
+    "targetAccount": "PL005",
+    "amount": 75.00,
+    "sourceCurrency": "PLN",
+    "correlationId": "BATCH-1"
+  }
 ]
 """)))
 
-        // 4) conversions -> 1 rekord
-        mockServer.stubFor(get(urlEqualTo("/api/batch/conversions"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("""
+            // poprawna + błędna konwersja (druga bez fxRate)
+            mockServer.stubFor(get(urlEqualTo("/api/batch/conversions"))
+                    .willReturn(aResponse()
+                            .withStatus(200)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("""
 [
-  {"operationId":"OP-C-001","operationType":"CONVERSION","sourceAccount":"PL006","amount":10.00,"sourceCurrency":"EUR","targetCurrency":"PLN","fxRate":4.25,"correlationId":"BATCH-1"}
+  {
+    "operationId": "OP-C-001",
+    "operationType": "CONVERSION",
+    "sourceAccount": "PL006",
+    "amount": 10.00,
+    "sourceCurrency": "EUR",
+    "targetCurrency": "PLN",
+    "fxRate": 4.25,
+    "correlationId": "BATCH-1"
+  },
+  {
+    "operationId": "OP-C-002",
+    "operationType": "CONVERSION",
+    "sourceAccount": "PL007",
+    "amount": 10.00,
+    "sourceCurrency": "EUR",
+    "targetCurrency": "PLN",
+    "correlationId": "BATCH-1"
+  }
 ]
 """)))
-    }
-
+}
     def cleanup() {
-        mockServer?.stop()
+      mockServer?.stop()
     }
 
     def "powinien pobrać operacje z mockservera i zapisać je do operations"() {
@@ -130,17 +174,20 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
         def summary = batchOperationService.processAll()
 
         then:
-        summary.total == 5
+        summary.total == 6
         summary.saved == 5
         summary.skipped == 0
-        summary.failed == 0
+        summary.failed == 1
 
         and:
         operationRepository.count() == 5
         operationRepository.findByOperationId("OP-D-001").present
+        operationRepository.findByOperationId("OP-D-002").present
         operationRepository.findByOperationId("OP-W-001").present
         operationRepository.findByOperationId("OP-T-001").present
         operationRepository.findByOperationId("OP-C-001").present
+        // //OP-C-002 jest błędny, bo nie ma fxRate, walidator powienien go odrzucić
+        operationRepository.findByOperationId("OP-C-002").isEmpty()
     }
 
     def "powinien pominąć duplikaty po operationId"() {
@@ -168,12 +215,14 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
         def summary = batchOperationService.processAll()
 
         then:
-        summary.total == 5
+        summary.total == 6
         summary.saved == 0
         summary.skipped == 5
-        summary.failed == 0
+        summary.failed == 1
 
         and:
         operationRepository.count() == 5
     }
+
+
 }

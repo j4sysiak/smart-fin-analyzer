@@ -21,7 +21,20 @@ import org.springframework.stereotype.Component
 class OperationTypeDispatcher {
 
     // --- CLOSURE DISPATCHER (serce tego wzorca) ---
+    // Dispatcher to „rozdzielacz”, który decyduje jaką logikę uruchomić dla danego typu operacji.
+    // Czyli zamiast pisać if/switch w wielu miejscach projektu, masz jedno centralne miejsce decyzji.
     // Każda operacja trafia tu i dostaje właściwe przetworzenie
+    /*
+    Praktycznie:
+     1. BatchOperationService pobiera listę operacji,
+        woła dispatcher dla każdej (operations.each { dispatcher.processOperation(it) }),
+     2. dispatcher wybiera właściwą ścieżkę.
+
+     To jest dokładnie wzorzec z Closure, który ćwiczyliśmy:
+     jedna closure (processOperation)
+     wiele scenariuszy wejściowych
+     czytelne i łatwe do rozszerzania (np. jutro dodasz CHARGEBACK).
+     */
     def processOperation = { OperationDto op ->
         log.info("Dispatch: {} [{}] kwota={} {}", op.operationType, op.operationId, op.amount, op.sourceCurrency)
 

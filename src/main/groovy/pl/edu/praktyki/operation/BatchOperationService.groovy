@@ -20,13 +20,16 @@ class BatchOperationService {
     final BankOperationClient bankOperationClient
     final OperationTypeDispatcher dispatcher
     final OperationRepository operationRepository
+    final OperationValidator operationValidator
 
     BatchOperationService(BankOperationClient bankOperationClient,
                           OperationTypeDispatcher dispatcher,
-                          OperationRepository operationRepository) {
+                          OperationRepository operationRepository,
+                          OperationValidator operationValidator) {
         this.bankOperationClient  = bankOperationClient
         this.dispatcher           = dispatcher
         this.operationRepository  = operationRepository
+        this.operationValidator   = operationValidator
     }
 
     /**
@@ -80,6 +83,12 @@ class BatchOperationService {
 
         operations.each { OperationDto op ->
             try {
+                if (!operationValidator.isValid(op)) {
+                    failed++
+                    log.warn("Walidacja nie przeszła dla operationId={}", op?.operationId)
+                    return
+                }
+
                 // Idempotencja: nie przetwarzaj tej samej operacji dwa razy
                 if (operationRepository.existsByOperationId(op.operationId)) {
                     log.debug("Pominięto duplikat: {}", op.operationId)
