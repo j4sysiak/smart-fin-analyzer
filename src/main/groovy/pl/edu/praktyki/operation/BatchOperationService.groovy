@@ -1,6 +1,8 @@
 package pl.edu.praktyki.operation
 
 import groovy.util.logging.Slf4j
+import org.springframework.context.ApplicationEventPublisher
+import pl.edu.praktyki.event.OperationBatchProcessedEvent
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -21,15 +23,18 @@ class BatchOperationService {
     final OperationTypeDispatcher dispatcher
     final OperationRepository operationRepository
     final OperationValidator operationValidator
+    final ApplicationEventPublisher eventPublisher
 
     BatchOperationService(BankOperationClient bankOperationClient,
                           OperationTypeDispatcher dispatcher,
                           OperationRepository operationRepository,
-                          OperationValidator operationValidator) {
-        this.bankOperationClient  = bankOperationClient
-        this.dispatcher           = dispatcher
-        this.operationRepository  = operationRepository
-        this.operationValidator   = operationValidator
+                          OperationValidator operationValidator,
+                          ApplicationEventPublisher eventPublisher) {
+        this.bankOperationClient = bankOperationClient
+        this.dispatcher = dispatcher
+        this.operationRepository = operationRepository
+        this.operationValidator = operationValidator
+        this.eventPublisher = eventPublisher
     }
 
     /**
@@ -43,7 +48,8 @@ class BatchOperationService {
         def all = bankOperationClient.fetchAll()
         log.info("Pobrano {} operacji łącznie", all.size())
 
-        return processList(all)
+        //return processList(all)
+        return processList(all, "ALL")
     }
 
     /**
@@ -54,7 +60,10 @@ class BatchOperationService {
     Map processType(String operationType) {
         log.info("=== Start przetwarzania operacji typu: {} ===", operationType)
 
-        def ops = switch (operationType.toUpperCase()) {
+        String normalizedType = operationType?.toUpperCase()
+
+        //def ops = switch (operationType.toUpperCase()) {
+        def ops = switch (normalizedType) {
             case "DEPOSIT"    -> bankOperationClient.fetchDeposits()
             case "WITHDRAWAL" -> bankOperationClient.fetchWithdrawals()
             case "TRANSFER"   -> bankOperationClient.fetchTransfers()
@@ -65,7 +74,7 @@ class BatchOperationService {
             }
         }
 
-        return processList(ops)
+        return processList(ops, normalizedType ?: "UNKNOWN")
     }
 
     /**
@@ -76,7 +85,7 @@ class BatchOperationService {
      * 4. Zwraca podsumowanie
      */
     @Transactional
-    Map processList(List<OperationDto> operations) {
+    Map processList(List<OperationDto> operations, String trigger = "ALL") {
         int saved    = 0
         int skipped  = 0
         int failed   = 0
@@ -119,6 +128,15 @@ class BatchOperationService {
                 failed : failed
         ]
         log.info("=== Zakończono przetwarzanie: {} ===", summary)
+
+        eventPublisher.publishEvent(new OperationBatchProcessedEvent(
+                trigger: trigger,
+                total: summary.total as int,
+                saved: summary.saved as int,
+                skipped: summary.skipped as int,
+                failed: summary.failed as int
+        ))
+
         return summary
     }
 }

@@ -7,6 +7,10 @@ import pl.edu.praktyki.BaseIntegrationSpec
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 
+import pl.edu.praktyki.operation.OperationBatchAuditListener
+import static org.awaitility.Awaitility.await
+import java.util.concurrent.TimeUnit
+
 class BatchOperationServiceSpec extends BaseIntegrationSpec {
 
     @Autowired
@@ -18,9 +22,13 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
     @Autowired
     OperationRepository operationRepository
 
+    @Autowired
+    OperationBatchAuditListener operationBatchAuditListener
+
     WireMockServer mockServer
 
     def setup() {
+        operationBatchAuditListener.reset()
         mockServer = new WireMockServer(options().dynamicPort())
         mockServer.start()
 
@@ -180,6 +188,11 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
         summary.failed == 1
 
         and:
+        await().atMost(5, TimeUnit.SECONDS).until {
+            operationBatchAuditListener.getProcessedCount() == 1
+        }
+
+        and:
         operationRepository.count() == 5
         operationRepository.findByOperationId("OP-D-001").present
         operationRepository.findByOperationId("OP-D-002").present
@@ -224,5 +237,27 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
         operationRepository.count() == 5
     }
 
+    def "powinien publikować event z poprawnym triggerem dla processType(#operationType)"() {
+        when:
+        def summary = batchOperationService.processType(operationType)
 
+        then:
+        summary.total == expectedTotal
+        summary.saved == expectedSaved
+        summary.skipped == 0
+        summary.failed == expectedFailed
+
+        and:
+        await().atMost(5, TimeUnit.SECONDS).until {
+            operationBatchAuditListener.getProcessedCount() == 1 &&
+                    operationBatchAuditListener.getLastTrigger() == expectedTrigger
+        }
+
+        where:
+        operationType | expectedTrigger | expectedTotal | expectedSaved | expectedFailed
+        "deposit"     | "DEPOSIT"       | 2             | 2             | 0
+        //"WITHDRAWAL"  | "WITHDRAWAL"    | 1             | 1             | 0
+        //"TRANSFER"    | "TRANSFER"      | 1             | 1             | 0
+        //"conversion"  | "CONVERSION"    | 2             | 1             | 1
+    }
 }
