@@ -4,12 +4,11 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import org.springframework.beans.factory.annotation.Autowired
 import pl.edu.praktyki.BaseIntegrationSpec
 
+import java.util.concurrent.TimeUnit
+
 import static com.github.tomakehurst.wiremock.client.WireMock.*
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
-
-import pl.edu.praktyki.operation.OperationBatchAuditListener
 import static org.awaitility.Awaitility.await
-import java.util.concurrent.TimeUnit
 
 class BatchOperationServiceSpec extends BaseIntegrationSpec {
 
@@ -85,10 +84,10 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
          */
         // 1) deposits -> 2 rekordy
         mockServer.stubFor(get(urlEqualTo("/api/batch/deposits"))
-                    .willReturn(aResponse()
-                            .withStatus(200)
-                            .withHeader("Content-Type", "application/json")
-                            .withBody("""
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
 [
   {
     "operationId": "OP-D-001",
@@ -109,11 +108,11 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
 ]
 """)))
 
-            mockServer.stubFor(get(urlEqualTo("/api/batch/withdrawals"))
-                    .willReturn(aResponse()
-                            .withStatus(200)
-                            .withHeader("Content-Type", "application/json")
-                            .withBody("""
+        mockServer.stubFor(get(urlEqualTo("/api/batch/withdrawals"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
 [
   {
     "operationId": "OP-W-001",
@@ -126,11 +125,11 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
 ]
 """)))
 
-            mockServer.stubFor(get(urlEqualTo("/api/batch/transfers"))
-                    .willReturn(aResponse()
-                            .withStatus(200)
-                            .withHeader("Content-Type", "application/json")
-                            .withBody("""
+        mockServer.stubFor(get(urlEqualTo("/api/batch/transfers"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
 [
   {
     "operationId": "OP-T-001",
@@ -144,12 +143,12 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
 ]
 """)))
 
-            // poprawna + błędna konwersja (druga bez fxRate)
-            mockServer.stubFor(get(urlEqualTo("/api/batch/conversions"))
-                    .willReturn(aResponse()
-                            .withStatus(200)
-                            .withHeader("Content-Type", "application/json")
-                            .withBody("""
+        // poprawna + błędna konwersja (druga bez fxRate)
+        mockServer.stubFor(get(urlEqualTo("/api/batch/conversions"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
 [
   {
     "operationId": "OP-C-001",
@@ -172,9 +171,10 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
   }
 ]
 """)))
-}
+    }
+
     def cleanup() {
-      mockServer?.stop()
+        mockServer?.stop()
     }
 
     def "powinien pobrać operacje z mockservera i zapisać je do operations"() {
@@ -255,8 +255,9 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
 
         where:
         operationType | expectedTrigger | expectedTotal | expectedSaved | expectedFailed
-        "deposit"     | "DEPOSIT"       | 2             | 2             | 0
-        //"WITHDRAWAL"  | "WITHDRAWAL"    | 1             | 1             | 0
+        //"abc"         | "ABC"           | 0             | 0             | 0
+        //"deposit"     | "DEPOSIT"       | 2             | 2             | 0
+        "WITHDRAWAL"  | "WITHDRAWAL"    | 1             | 1             | 0
         //"TRANSFER"    | "TRANSFER"      | 1             | 1             | 0
         //"conversion"  | "CONVERSION"    | 2             | 1             | 1
     }

@@ -48,7 +48,6 @@ class BatchOperationService {
         def all = bankOperationClient.fetchAll()
         log.info("Pobrano {} operacji łącznie", all.size())
 
-        //return processList(all)
         return processList(all, "ALL")
     }
 
@@ -62,20 +61,33 @@ class BatchOperationService {
 
         String normalizedType = operationType?.toUpperCase()
 
-        //def ops = switch (operationType.toUpperCase()) {
-        def ops = switch (normalizedType) {
-            case "DEPOSIT"    -> bankOperationClient.fetchDeposits()
-            case "WITHDRAWAL" -> bankOperationClient.fetchWithdrawals()
-            case "TRANSFER"   -> bankOperationClient.fetchTransfers()
-            case "CONVERSION" -> bankOperationClient.fetchConversions()
-            default -> {
-                log.warn("Nieznany typ operacji: {}", operationType)
-                yield []
-            }
+        // Tutaj fetcher nie jest wynikiem metody, tylko closure, czyli kawałkiem kodu do uruchomienia później
+        // To jest odczyt z mapy po kluczu.
+        // operationFetchers to mapa typu: Map<String, Closure<List<OperationDto>>>
+        // A ta linia: - bierze normalizedType - szuka w mapie operationFetchers wartości pod tym kluczem - przypisuje wynik do fetcherr
+        // Czyli praktycznie:
+        //  - dla DEPOSIT dostanie closure wywołujące fetchDeposits()
+        //  - dla WITHDRAWAL dostanie closure wywołujące fetchWithdrawals()
+        //  - itd.
+        def fetcher = operationFetchers[normalizedType]
+
+        if (!fetcher) {
+            log.warn("Nieznany typ operacji: {}", operationType)
+            return processList([], normalizedType ?: "UNKNOWN")
         }
 
+        // fetcher.call() wywoła właściwą metodę fetch...() dopiero teraz, w tym miejscu.
+        // najpierw w metodzie operationFetchers zdefiniowaliśmy mapę closure, a dopiero teraz ją wywołujemy.
+        List<OperationDto> ops = fetcher.call()
         return processList(ops, normalizedType ?: "UNKNOWN")
     }
+
+    private final Map<String, Closure<List<OperationDto>>> operationFetchers = [
+            DEPOSIT   : { bankOperationClient.fetchDeposits() },  // to jest closure, więc wywołanie nastąpi dopiero w BatchOperationService.processType().
+            WITHDRAWAL: { bankOperationClient.fetchWithdrawals() },
+            TRANSFER  : { bankOperationClient.fetchTransfers() },
+            CONVERSION: { bankOperationClient.fetchConversions() }
+    ]
 
     /**
      * Przetwarza przekazaną listę OperationDto:
@@ -106,6 +118,8 @@ class BatchOperationService {
                 }
 
                 // Dispatch przez closure
+                // Każdy typ operacji ma swoją logikę w OperationTypeDispatcher, więc tu nie ma if/switch, tylko wywołanie jednej closure.
+                // a w Closure jest switch, który wybiera właściwą logikę dla danego typu operacji.
                 def result = dispatcher.processOperation(op)
 
                 // Zapis do bazy
