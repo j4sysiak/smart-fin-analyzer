@@ -6,19 +6,24 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import pl.edu.praktyki.domain.TransactionDto
 import pl.edu.praktyki.service.ThreadTracker
+import pl.edu.praktyki.operation.BatchOperationService
 
 
 @Service
 @Slf4j
 class SmartFinFacade {
     // Fasada ukrywa w sobie całą złożoność podsystemu (wstrzykuje 5 różnych klas!)
-    // to jest lekki entry-pointem (sync i async) do świata zewnętrznego (CLI, REST, GUI) - to jest JEDYNA metoda, o której musi wiedzieć świat zewnętrzny będzie ją wołał np: (CLI, REST, GUI).
+    // to jest lekkim entry-pointem (sync i async) do świata zewnętrznego (CLI, REST, GUI)
+    //         - to jest JEDYNA metoda, o której musi wiedzieć świat zewnętrzny będzie ją wołał np: (CLI, REST, GUI).
 
     @Autowired
     ThreadTracker threadTracker
+
     @Autowired
     SmartFinReportOrchestrator reportOrchestrator
 
+    @Autowired
+    BatchOperationService batchOperationService
 
     /**
      * NOWOŚĆ: Asynchroniczne procesowanie.
@@ -76,6 +81,17 @@ class SmartFinFacade {
         log.info(">>> [ASYNC] Rozpoczynam (dotyczy testu EventDecouplingSpec) ciężką pracę w tle dla: {}", userName)
 
         return reportOrchestrator.processAndGenerateReport(userName, rawTransactions, rules)
+    }
+
+    Map processOperationsBatch(String operationType) {
+        String raw = operationType?.trim()
+        if (!raw) {
+            log.info(">>> [FASADA-BATCH] Start processAll()")
+            return batchOperationService.processAll()
+        }
+
+        log.info(">>> [FASADA-BATCH] Start processType({})", raw)
+        return batchOperationService.processType(raw)
     }
 
 }

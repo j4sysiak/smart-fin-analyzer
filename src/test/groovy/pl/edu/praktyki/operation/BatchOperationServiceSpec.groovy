@@ -28,6 +28,8 @@ class BatchOperationServiceSpec extends BaseIntegrationSpec {
 
     def setup() {
         operationBatchAuditListener.reset()
+        // Izolacja testu: kasujemy operacje niezależnie od globalnego truncate z BaseIntegrationSpec.
+        operationRepository.deleteAll()
         mockServer = new WireMockServer(options().dynamicPort())
         mockServer.start()
 

@@ -20,17 +20,20 @@ import org.springframework.transaction.annotation.Transactional
 class BatchOperationService {
 
     final BankOperationClient bankOperationClient
+    final OperationFetcherRegistry operationFetcherRegistry
     final OperationTypeDispatcher dispatcher
     final OperationRepository operationRepository
     final OperationValidator operationValidator
     final ApplicationEventPublisher eventPublisher
 
     BatchOperationService(BankOperationClient bankOperationClient,
+                          OperationFetcherRegistry operationFetcherRegistry,
                           OperationTypeDispatcher dispatcher,
                           OperationRepository operationRepository,
                           OperationValidator operationValidator,
                           ApplicationEventPublisher eventPublisher) {
         this.bankOperationClient = bankOperationClient
+        this.operationFetcherRegistry = operationFetcherRegistry
         this.dispatcher = dispatcher
         this.operationRepository = operationRepository
         this.operationValidator = operationValidator
@@ -60,34 +63,17 @@ class BatchOperationService {
         log.info("=== Start przetwarzania operacji typu: {} ===", operationType)
 
         String normalizedType = operationType?.toUpperCase()
+        String trigger = normalizedType ?: "UNKNOWN"
 
-        // Tutaj fetcher nie jest wynikiem metody, tylko closure, czyli kawałkiem kodu do uruchomienia później
-        // To jest odczyt z mapy po kluczu.
-        // operationFetchers to mapa typu: Map<String, Closure<List<OperationDto>>>
-        // A ta linia: - bierze normalizedType - szuka w mapie operationFetchers wartości pod tym kluczem - przypisuje wynik do fetcherr
-        // Czyli praktycznie:
-        //  - dla DEPOSIT dostanie closure wywołujące fetchDeposits()
-        //  - dla WITHDRAWAL dostanie closure wywołujące fetchWithdrawals()
-        //  - itd.
-        def fetcher = operationFetchers[normalizedType]
-
-        if (!fetcher) {
+        List<OperationDto> ops = operationFetcherRegistry.fetchByType(normalizedType)
+        if (ops == null) {
             log.warn("Nieznany typ operacji: {}", operationType)
-            return processList([], normalizedType ?: "UNKNOWN")
+            return processList([], trigger)
         }
 
-        // fetcher.call() wywoła właściwą metodę fetch...() dopiero teraz, w tym miejscu.
-        // najpierw w metodzie operationFetchers zdefiniowaliśmy mapę closure, a dopiero teraz ją wywołujemy.
-        List<OperationDto> ops = fetcher.call()
-        return processList(ops, normalizedType ?: "UNKNOWN")
+        return processList(ops, trigger)
     }
 
-    private final Map<String, Closure<List<OperationDto>>> operationFetchers = [
-            DEPOSIT   : { bankOperationClient.fetchDeposits() },  // to jest closure, więc wywołanie nastąpi dopiero w BatchOperationService.processType().
-            WITHDRAWAL: { bankOperationClient.fetchWithdrawals() },
-            TRANSFER  : { bankOperationClient.fetchTransfers() },
-            CONVERSION: { bankOperationClient.fetchConversions() }
-    ]
 
     /**
      * Przetwarza przekazaną listę OperationDto:
