@@ -65,6 +65,10 @@ class BatchOperationService {
         String normalizedType = operationType?.toUpperCase()
         String trigger = normalizedType ?: "UNKNOWN"
 
+        /*
+        - jeśli normalizedType to np. DEPOSIT, rejestr zwróci listę operacji tego typu
+        - jeśli typ nie jest obsługiwany, metoda może zwrócić null, co jest sprawdzane w kolejnej instrukcji if
+        * */
         List<OperationDto> ops = operationFetcherRegistry.fetchByType(normalizedType)
         if (ops == null) {
             log.warn("Nieznany typ operacji: {}", operationType)
