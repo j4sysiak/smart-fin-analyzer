@@ -42,6 +42,7 @@ class OperationBatchAuditListener {
         processedEventsCount.set(0)
         lastTrigger.set(null)
         lastSummary.set(null)
+        history.clear()
     }
 
     @Async("bulkTaskExecutor")
@@ -82,9 +83,5 @@ class OperationBatchAuditListener {
         }
 
         return stream.limit(safeLimit).collect(java.util.stream.Collectors.toList())
-    }
-
-    void clearHistory() {
-        history.clear()
     }
 }

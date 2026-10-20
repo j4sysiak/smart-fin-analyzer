@@ -12,7 +12,7 @@ import pl.edu.praktyki.operation.BankOperationClient
 import pl.edu.praktyki.operation.OperationRepository
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import static com.github.tomakehurst.wiremock.client.WireMock.get
+import org.springframework.test.annotation.DirtiesContext
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit
 @AutoConfigureMockMvc
 @ActiveProfiles("tc")
 @WithMockUser(username = "test-admin", roles = ["ADMIN"])
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class BatchProcessingControllerSpec extends BaseIntegrationSpec {
 
     @Autowired
