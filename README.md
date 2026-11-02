@@ -31,11 +31,11 @@ Pełne komendy SQL / `psql` są w `scripts/Readme--Uruchamianie-aplikacji-i-test
 Smart-Fin-Analyzer to nowoczesna aplikacja CLI do importu, przetwarzania i analizy transakcji finansowych, zbudowana w oparciu o **Spring Boot 3** oraz ekosystem **Java/Groovy**. Projekt łączy stabilność Javy i Springa z ekspresyjnością Groovy'ego, dynamicznymi regułami biznesowymi oraz wygodnym I/O.
 
 ## 🛠️ Stos technologiczny
-* **Core:** Java 17, Groovy 4.0
+* **Core:** Java 21, Groovy 4.0.26
 * **Framework:** Spring Boot 3.2, Spring Data JPA
 * **Concurrency:** GPars (Groovy Parallel Systems)
 * **Database:** PostgreSQL
-* **Testing:** Spock Framework 2.3 (BDD), profile `tc` / `local-pg` na PostgreSQL
+* **Testing:** Spock Framework 2.5 dla Groovy 4 (BDD), profile `tc` / `local-pg` na PostgreSQL
 * **Build Tool:** Gradle 8.x (with Toolchains)
 * **Integration:** Java `HttpClient` (REST API integration)
 
@@ -237,8 +237,6 @@ Licznik `processedEventsCount` jest aktualizowany z wątków asynchronicznych, w
 - `@EventListener` odpowiada za nasłuchiwanie zdarzeń w aplikacji,
 - `@Async` przenosi obsługę zdarzenia do wykonania w tle,
 - połączenie obu mechanizmów dobrze nadaje się do zadań ubocznych, które nie powinny wydłużać głównego przepływu biznesowego.
-
-
 
 
 

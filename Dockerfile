@@ -2,7 +2,7 @@
 # ETAP 1 — BUILD
 # Kompiluje aplikację wewnątrz kontenera (nie wymaga lokalnego JDK/Gradle)
 # =============================================================
-FROM gradle:8.7-jdk17-alpine AS builder
+FROM gradle:8.14-jdk21-alpine AS builder
 
 WORKDIR /app
 
@@ -10,10 +10,6 @@ WORKDIR /app
 COPY gradle/ gradle/
 COPY gradlew gradlew.bat settings.gradle build.gradle gradle.properties ./
 
-# gradle.properties w repo może zawierać windowsowy org.gradle.java.home dla
-# lokalnych uruchomień. W kontenerze Linux usuwamy ten wpis, aby Gradle użył
-# JDK dostępnego w obrazie buildera.
-RUN sed -i '/^org\.gradle\.java\.home=/d' gradle.properties || true
 
 # Pobieramy zależności (osobna warstwa cache — nie przebudowuje przy zmianie kodu)
 RUN gradle dependencies --no-daemon -q || true
@@ -29,7 +25,7 @@ RUN gradle bootJar --no-daemon -x test -x codenarcMain -x codenarcTest
 # ETAP 2 — RUNTIME
 # Lekki obraz JRE — tylko uruchomienie, bez narzędzi budowania
 # =============================================================
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
@@ -41,4 +37,3 @@ EXPOSE 8080
 
 # Uruchomienie aplikacji
 ENTRYPOINT ["java", "-jar", "app.jar"]
-

@@ -11,7 +11,7 @@ Zakres:
 
 ## 1) Wymagania
 
-- JDK 17+ dostępne w systemie (`java`, `jcmd`),
+- JDK 21+ dostępne w systemie (`java`, `jcmd`),
 - uruchomiona aplikacja (`pl.edu.praktyki.SmartFinDbApp`),
 - VisualVM 2.x.
 
@@ -239,4 +239,3 @@ Histogram klas:
 ```powershell
 jcmd <PID> GC.class_histogram > C:\dev\smart-fin-analyzer\build\heapdumps\lab95_hist_post.txt
 ```
-

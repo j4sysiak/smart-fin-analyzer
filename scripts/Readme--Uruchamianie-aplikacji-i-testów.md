@@ -2,6 +2,8 @@
 
 Aplikacja: `src\main\groovy\pl\edu\praktyki\SmartFinDbApp.groovy`
 
+Wymagany jest JDK 21; Gradle uruchamia kompilację i zadania aplikacji z toolchainem Java 21.
+
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
 │  CAŁY PROJEKT UŻYWA POSTGRESQL (brak H2!)                                  │

@@ -18,8 +18,12 @@ plugins {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
+}
+
+springBoot {
+    mainClass = 'pl.edu.praktyki.SmartFinDbApp'
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -38,7 +42,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
 
     // Groovy (wykluczamy groovy-test-junit5, bo koliduje z silnikiem Spock)
-    implementation('org.apache.groovy:groovy-all:4.0.15') {
+    implementation('org.apache.groovy:groovy-all:4.0.26') {
         exclude group: 'org.apache.groovy', module: 'groovy-test'
         exclude group: 'org.apache.groovy', module: 'groovy-test-junit5'
         exclude group: 'org.apache.groovy', module: 'groovy-testng'
@@ -51,8 +55,8 @@ dependencies {
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude module: 'junit-jupiter'
     }
-    testImplementation 'org.spockframework:spock-spring:2.3-groovy-4.0'
-    testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
+    testImplementation 'org.spockframework:spock-spring:2.5-groovy-4.0'
+    testImplementation 'org.spockframework:spock-core:2.5-groovy-4.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // warstwa dostępu do danych (JPA)
@@ -153,7 +157,7 @@ tasks.register('runSmartFinDb', JavaExec) {
     mainClass.set('pl.edu.praktyki.SmartFinDbApp')
     classpath = sourceSets.main.runtimeClasspath
 
-    // Wymuszenie Java 17
+    // Uruchomienie na wersji Javy zdefiniowanej w toolchainie projektu.
     def toolchainService = project.extensions.getByType(JavaToolchainService)
     javaLauncher.set(toolchainService.launcherFor(java.toolchain))
 
@@ -179,6 +183,9 @@ jacocoTestReport {
 }
 
 jib {
+    from {
+        image = 'eclipse-temurin:21-jre'
+    }
     to {
         image = 'smart-fin-analyzer:latest' // Nazwa twojego obrazu
     }
@@ -198,7 +205,7 @@ tasks.register('runFlywayLocal', JavaExec) {
     mainClass.set('tools.RunFlyway')
     classpath = sourceSets.main.runtimeClasspath
 
-    // Wymuszenie Java 17 przez toolchain (jak w innych zadaniach JavaExec)
+    // Uruchomienie na wersji Javy zdefiniowanej w toolchainie projektu.
     def toolchainService = project.extensions.getByType(JavaToolchainService)
     // toolchain to konfiguracja Java w sekcji java { toolchain { ... } }, a launcherFor() zwraca odpowiednią implementację JavaLauncher dla tej konfiguracji.
     javaLauncher.set(toolchainService.launcherFor(java.toolchain))
@@ -258,10 +265,10 @@ tasks.register('documentMockTest', Test) {
 
 configurations.all {
     resolutionStrategy {
-        // Wymuszamy, aby każda biblioteka używała Groovy 4.0.16
-        force 'org.apache.groovy:groovy:4.0.16'
-        force 'org.apache.groovy:groovy-xml:4.0.16'
-        force 'org.apache.groovy:groovy-json:4.0.16'
-        force 'org.apache.groovy:groovy-sql:4.0.16'
+        // Utrzymujemy jedną wersję Groovy dla aplikacji i testów.
+        force 'org.apache.groovy:groovy:4.0.26'
+        force 'org.apache.groovy:groovy-xml:4.0.26'
+        force 'org.apache.groovy:groovy-json:4.0.26'
+        force 'org.apache.groovy:groovy-sql:4.0.26'
     }
 }
